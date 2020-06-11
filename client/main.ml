@@ -2,7 +2,7 @@ open Astring
 open Lwt.Infix
 open Capnp_rpc_lwt
 
-module Client = Ocaml_ci_api.Client
+module Client = Opam_repo_ci_api.Client
 
 let () =
   Logging.init ~level:Logs.Warning ()
@@ -56,7 +56,7 @@ let import_ci_ref ~vat = function
     match Sys.getenv_opt "HOME" with
     | None -> errorf "$HOME not set! Can't get default cap file location.@."
     | Some home ->
-      let path = Filename.concat home ".ocaml-ci.cap" in
+      let path = Filename.concat home ".opam-repo-ci.cap" in
       if Sys.file_exists path then
         Capnp_rpc_unix.Cap_file.load vat path
       else
@@ -131,7 +131,7 @@ let cap =
   Arg.value @@
   Arg.opt Arg.(some Capnp_rpc_unix.sturdy_uri) None @@
   Arg.info
-    ~doc:"The ocaml-ci.cap file."
+    ~doc:"The opam-repo-ci.cap file."
     ~docv:"CAP"
     ["ci-cap"]
 
@@ -205,7 +205,7 @@ let to_fn = function
   | `Show_status -> show_status
 
 let cmd =
-  let doc = "Client for ocaml-ci" in
+  let doc = "Client for opam-repo-ci" in
   let main ci_uri repo target variant job_op =
     let job_op = to_fn job_op in
     match Lwt_main.run (main ~ci_uri ~repo ~target ~variant ~job_op) with
@@ -214,6 +214,6 @@ let cmd =
     | Error `Msg m -> Fmt.epr "%s@." m; exit 1
   in
   Term.(const main $ cap $ repo $ target $ variant $ job_op),
-  Term.info "ocaml-ci" ~doc
+  Term.info "opam-repo-ci" ~doc
 
 let () = Term.(exit @@ eval cmd)

@@ -74,8 +74,8 @@ let backend_cap =
     ["backend"]
 
 let cmd =
-  let doc = "A web front-end for OCaml-CI" in
+  let doc = "A web front-end for opam-repo-ci" in
   Term.(const main $ port $ backend_cap $ Prometheus_unix.opts),
-  Term.info "ocaml-ci-web" ~doc
+  Term.info "opam-repo-ci-web" ~doc
 
 let () = Term.(exit @@ eval cmd)

@@ -12,7 +12,6 @@ module Spec = struct
 
   type ty = [
     | `Opam of [ `Build | `Lint of [ `Fmt | `Doc ]] * analysis
-    | `Duniverse
   ] [@@deriving to_yojson]
 
   type t = {
@@ -23,9 +22,6 @@ module Spec = struct
 
   let opam ~label ~platform ~analysis op =
     { label; platform; ty = `Opam (op, analysis) }
-
-  let duniverse ~label ~platform =
-    { label; platform; ty = `Duniverse }
 
   let pp f t = Fmt.string f t.label
   let compare a b = compare a.label b.label
@@ -40,17 +36,15 @@ module Op = struct
   module Key = struct
     type t = {
       commit : Current_git.Commit.t;            (* The source code to build and test *)
-      repo : Current_github.Repo_id.t;          (* Used to choose a build cache *)
       label : string;                           (* A unique ID for this build within the commit *)
       revdep : string option;                   (* The revdep package to test *)
       with_tests : bool;                        (* Triggers the tests or not *)
       pkg : string;                             (* The base package to test *)
     }
 
-    let to_json { commit; label; repo; revdep; with_tests; pkg } =
+    let to_json { commit; label; revdep; with_tests; pkg } =
       `Assoc [
         "commit", `String (fst (Current_git.Commit.hash commit));
-        "repo", `String (Fmt.to_to_string Current_github.Repo_id.pp repo);
         "label", `String label;
         "revdep", Option.fold ~none:`Null ~some:(fun s -> `String s) revdep;
         "with_tests", `Bool with_tests;
@@ -84,7 +78,7 @@ module Op = struct
     | Error (`Msg m) -> raise (Failure m)
 
   let run { Builder.docker_context; pool; build_timeout } job
-      { Key.commit; repo; label = _; revdep; with_tests; pkg } { Value.base; variant; ty } =
+      { Key.commit; label = _; revdep; with_tests; pkg } { Value.base; variant; ty } =
     let make_dockerfile =
       let base = Raw.Image.hash base in
       match ty with
@@ -92,8 +86,6 @@ module Op = struct
         Opam_build.dockerfile ~base ~variant ~revdep ~with_tests ~pkg
       | `Opam (`Lint `Fmt, analysis) -> Lint.fmt_dockerfile ~base ~info:analysis ~variant
       | `Opam (`Lint `Doc, analysis) -> Lint.doc_dockerfile ~base ~info:analysis ~variant
-      | `Duniverse ->
-        Duniverse_build.dockerfile ~base ~repo ~variant
     in
     Current.Job.write job
       (Fmt.strf "@.\
@@ -117,9 +109,8 @@ module Op = struct
     | Error _ as e -> e
     | Ok () -> Bos.OS.File.read iidfile |> Stdlib.Result.map Current_docker.Raw.Image.of_hash
 
-  let pp f ({ Key.repo; commit; label; revdep; with_tests; pkg }, _) =
-    Fmt.pf f "@[<v2>test %a %a (%s) %s %b %s@]"
-      Current_github.Repo_id.pp repo
+  let pp f ({ Key.commit; label; revdep; with_tests; pkg }, _) =
+    Fmt.pf f "@[<v2>test %a (%s) %s %b %s@]"
       Current_git.Commit.pp commit
       label
       (Option.fold ~none:"None" ~some:(fun x -> "(Some "^x^")") revdep)
@@ -143,15 +134,14 @@ let pread ~spec image ~args =
   let> { Spec.platform = {Platform.builder; _}; _ } = spec in
   Builder.pread builder ~args image
 
-let build ~spec ~repo ~base ~revdep ~with_tests ~pkg commit =
+let build ~spec ~base ~revdep ~with_tests ~pkg commit =
   Current.component "build" |>
   let> { Spec.platform; ty; label } = spec
   and> base = base
-  and> commit = commit
-  and> repo = repo in
+  and> commit = commit in
   let { Platform.builder; variant; _ } = platform in
-  BC.run builder { Op.Key.commit; repo; label; revdep; with_tests; pkg } { Op.Value.base; ty; variant }
+  BC.run builder { Op.Key.commit; label; revdep; with_tests; pkg } { Op.Value.base; ty; variant }
 
-let v ~schedule ~repo ~spec ~revdep ~with_tests ~pkg source =
+let v ~schedule ~spec ~revdep ~with_tests ~pkg source =
   let base = pull ~schedule spec in
-  build ~spec ~repo ~base ~revdep ~with_tests ~pkg source
+  build ~spec ~base ~revdep ~with_tests ~pkg source
