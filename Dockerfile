@@ -22,10 +22,10 @@ RUN opam pin add -yn current_ansi.dev "./ocurrent" && \
     opam pin add -yn current_rpc.dev "./ocurrent" && \
     opam pin add -yn current_slack.dev "./ocurrent" && \
     opam pin add -yn current_web.dev "./ocurrent"
-COPY --chown=opam ocaml-ci-service.opam ocaml-ci-api.opam /src/
+COPY --chown=opam opam-repo-ci-service.opam opam-repo-ci-api.opam /src/
 RUN opam install -y --deps-only .
 ADD --chown=opam . .
-RUN opam config exec -- dune build ./_build/install/default/bin/ocaml-ci-service
+RUN opam config exec -- dune build ./_build/install/default/bin/opam-repo-ci-service
 
 FROM debian:10
 RUN apt-get update && apt-get install libev4 openssh-client curl gnupg2 dumb-init git graphviz libsqlite3-dev ca-certificates netbase -y --no-install-recommends
@@ -34,6 +34,6 @@ RUN echo 'deb [arch=amd64] https://download.docker.com/linux/debian buster stabl
 RUN apt-get update && apt-get install docker-ce -y --no-install-recommends
 RUN git config --global user.name "ocaml" && git config --global user.email "ci"
 WORKDIR /var/lib/ocurrent
-ENTRYPOINT ["dumb-init", "/usr/local/bin/ocaml-ci-service"]
+ENTRYPOINT ["dumb-init", "/usr/local/bin/opam-repo-ci-service"]
 ENV OCAMLRUNPARAM=a=2
-COPY --from=build /src/_build/install/default/bin/ocaml-ci-service /usr/local/bin/
+COPY --from=build /src/_build/install/default/bin/opam-repo-ci-service /usr/local/bin/

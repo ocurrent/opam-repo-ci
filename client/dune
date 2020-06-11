@@ -1,9 +1,9 @@
 (executable
- (public_name ocaml-ci)
- (package ocaml-ci-client)
+ (public_name opam-repo-ci)
+ (package opam-repo-ci-client)
  (name main)
  (libraries
-  ocaml-ci-api
+  opam-repo-ci-api
   current_rpc
   capnp-rpc-unix
   logs.fmt

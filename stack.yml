@@ -3,14 +3,14 @@ volumes:
   data:
   capnp-secrets:
 secrets:
-  ocaml-ci-github-key:
+  opam-repo-ci-github-key:
     external: true
-  ocaml-ci-oauth:
+  opam-repo-ci-oauth:
     external: true
 services:
   ci:
-    image: ocaml-ci-service
-    command: --github-app-id 52344 --github-private-key-file /run/secrets/ocaml-ci-github-key --github-account-whitelist "kit-ty-kate" --confirm above-average --confirm-auto-release 120 --capnp-address=tcp:ci:9000 --github-oauth /run/secrets/ocaml-ci-oauth
+    image: opam-repo-ci-service
+    command: --github-app-id 52344 --github-private-key-file /run/secrets/opam-repo-ci-github-key --github-account-whitelist "kit-ty-kate" --confirm above-average --confirm-auto-release 120 --capnp-address=tcp:ci:9000 --github-oauth /run/secrets/opam-repo-ci-oauth
     environment:
       - "CI_PROFILE=production"
       - "DOCKER_BUILDKIT=1"
@@ -22,15 +22,15 @@ services:
       - '/var/run/docker.sock:/var/run/docker.sock'
       - 'capnp-secrets:/capnp-secrets'
     secrets:
-      - 'ocaml-ci-oauth'
-      - 'ocaml-ci-github-key'
+      - 'opam-repo-ci-oauth'
+      - 'opam-repo-ci-github-key'
     sysctls:
       - 'net.ipv4.tcp_keepalive_time=60'
     networks:
       - default
   web:
-    image: ocaml-ci-web
-    command: --backend /capnp-secrets/ocaml-ci-admin.cap --listen-prometheus=9090
+    image: opam-repo-ci-web
+    command: --backend /capnp-secrets/opam-repo-ci-admin.cap --listen-prometheus=9090
     ports:
       - '80:8090'
     volumes:

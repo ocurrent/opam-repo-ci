@@ -1,4 +1,4 @@
-module Index = Ocaml_ci.Index
+module Index = Opam_repo_ci.Index
 
 let jobs =
   let state f (variant, state) = Fmt.pf f "%s:%a" variant Index.pp_job_state state in

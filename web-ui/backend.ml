@@ -15,8 +15,8 @@ module Metrics = struct
 end
 
 type t = {
-  sr : Ocaml_ci_api.Raw.Client.CI.t Sturdy_ref.t;
-  mutable ci : Ocaml_ci_api.Client.CI.t Lwt.t;
+  sr : Opam_repo_ci_api.Raw.Client.CI.t Sturdy_ref.t;
+  mutable ci : Opam_repo_ci_api.Client.CI.t Lwt.t;
   mutable last_failed : float;
 }
 

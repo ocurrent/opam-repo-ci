@@ -1,8 +1,8 @@
 open Lwt.Infix
 
 module Capability = Capnp_rpc_lwt.Capability
-module Client = Ocaml_ci_api.Client
-module Common = Ocaml_ci_api.Common
+module Client = Opam_repo_ci_api.Client
+module Common = Opam_repo_ci_api.Common
 module Server = Cohttp_lwt_unix.Server
 module Response = Cohttp.Response.Make(Server.IO)
 module Transfer_IO = Cohttp__Transfer_io.Make(Server.IO)
@@ -214,7 +214,7 @@ let stream_logs job ~owner ~name ~refs ~hash ~jobs ~variant ~status (data, next)
       aux next
     | Error (`Capnp ex) ->
       Log.warn (fun f -> f "Error fetching logs: %a" Capnp_rpc.Error.pp ex);
-      Transfer_IO.write writer (Fmt.strf "ocaml-ci error: %a@." Capnp_rpc.Error.pp ex)
+      Transfer_IO.write writer (Fmt.strf "opam-repo-ci error: %a@." Capnp_rpc.Error.pp ex)
   in
   aux next
 

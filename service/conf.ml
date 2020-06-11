@@ -14,7 +14,7 @@ module Capnp = struct
     | `Dev -> "./capnp-secrets"
 
   let secret_key = cap_secrets ^ "/secret-key.pem"
-  let cap_file = cap_secrets ^ "/ocaml-ci-admin.cap"
+  let cap_file = cap_secrets ^ "/opam-repo-ci-admin.cap"
   let internal_port = 9000
 end
 
@@ -32,7 +32,7 @@ module Builder = struct
       | `Dev ->
         None, dev_pool
     in
-    { Ocaml_ci.Builder.docker_context; pool; build_timeout }
+    { Opam_repo_ci.Builder.docker_context; pool; build_timeout }
 
   let amd1 = v "default"
 end

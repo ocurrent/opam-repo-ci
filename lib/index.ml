@@ -1,4 +1,4 @@
-let src = Logs.Src.create "ocaml_ci.index" ~doc:"ocaml-ci indexer"
+let src = Logs.Src.create "opam_repo_ci.index" ~doc:"opam-repo-ci indexer"
 module Log = (val Logs.src_log src : Logs.LOG)
 
 module Db = Current.Db

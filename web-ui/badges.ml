@@ -48,7 +48,7 @@ let ( let* ) = Lwt.Infix.( >>= )
 
 open Lwt.Infix
 module Capability = Capnp_rpc_lwt.Capability
-module Client = Ocaml_ci_api.Client
+module Client = Opam_repo_ci_api.Client
 module Server = Cohttp_lwt_unix.Server
 
 let normal_response = Lwt.map (fun x -> `Response x)
@@ -61,7 +61,7 @@ let ( let*! ) x f =
   let respond_error msg =
     Logs.warn (fun m -> m "Failed to retrieve badge state: %s" msg);
     respond_error `Internal_server_error
-      "ocaml-ci error: failed to retrieve badge state."
+      "opam-repo-ci error: failed to retrieve badge state."
   in
   x >>= function
   | Error (`Capnp ex) -> respond_error (Fmt.strf "%a" Capnp_rpc.Error.pp ex)

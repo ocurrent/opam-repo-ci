@@ -1,7 +1,7 @@
 (executable
   (name main)
-  (public_name ocaml-ci-web)
-  (package ocaml-ci-web)
+  (public_name opam-repo-ci-web)
+  (package opam-repo-ci-web)
   (libraries lwt.unix
              logs.fmt
              fmt.tty
@@ -9,7 +9,7 @@
              cohttp-lwt-unix
              tyxml
              prometheus-app.unix
-             ocaml-ci-api
+             opam-repo-ci-api
              capnp-rpc-unix
              yojson
              ppx_deriving_yojson.runtime)

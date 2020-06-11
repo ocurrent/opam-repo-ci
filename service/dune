@@ -1,7 +1,7 @@
 (executables
  (names main local)
- (package ocaml-ci-service)
- (public_names ocaml-ci-service ocaml-ci-local)
+ (package opam-repo-ci-service)
+ (public_names opam-repo-ci-service opam-repo-ci-local)
  (libraries logs.fmt
             fmt.tty
             current
@@ -12,7 +12,7 @@
             current_rpc
             capnp-rpc-unix
             mirage-crypto-rng.unix
-            ocaml_ci
-            ocaml-ci-api
+            opam_repo_ci
+            opam-repo-ci-api
             prometheus)
  (preprocess (pps ppx_deriving_yojson)))

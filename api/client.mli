@@ -38,10 +38,10 @@ end
 
 module Repo : sig
   type t = Raw.Client.Repo.t Capability.t
-  (** A GitHub repository that is tested by ocaml-ci. *)
+  (** A GitHub repository that is tested by opam-repo-ci. *)
 
   val refs : t -> (git_hash Ref_map.t, [> `Capnp of Capnp_rpc.Error.t ]) Lwt_result.t
-  (** [refs t] returns the known Git references (branches and pull requests) that ocaml-ci
+  (** [refs t] returns the known Git references (branches and pull requests) that opam-repo-ci
       is monitoring, along with the current head of each one. *)
 
   val commit_of_hash : t -> git_hash -> Commit.t
@@ -57,18 +57,18 @@ module Org : sig
 
   val repo : t -> string -> Repo.t
   (** [repo t name] is the GitHub organisation at "https://github.com/$owner/$name".
-      It returns an error if ocaml-ci doesn't know about this repository. *)
+      It returns an error if opam-repo-ci doesn't know about this repository. *)
 
   val repos : t -> (string list, [> `Capnp of Capnp_rpc.Error.t ]) Lwt_result.t
 end
 
 module CI : sig
   type t = Raw.Client.CI.t Capability.t
-  (** The top-level object for ocaml-ci. *)
+  (** The top-level object for opam-repo-ci. *)
 
   val org : t -> string -> Org.t
   (** [org t owner] is the GitHub organisation at "https://github.com/$owner".
-      It returns an error if ocaml-ci doesn't know about this organisation. *)
+      It returns an error if opam-repo-ci doesn't know about this organisation. *)
 
   val orgs : t -> (string list, [> `Capnp of Capnp_rpc.Error.t ]) Lwt_result.t
 end

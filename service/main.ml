@@ -75,6 +75,6 @@ let cmd =
   let doc = "Build OCaml projects on GitHub" in
   Term.(const main $ Current.Config.cmdliner $ Current_web.cmdliner $
         Current_github.App.cmdliner $ capnp_address $ Current_github.Auth.cmdliner),
-  Term.info "ocaml-ci" ~doc
+  Term.info "opam-repo-ci" ~doc
 
 let () = Term.(exit @@ eval cmd)
