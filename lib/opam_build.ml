@@ -1,6 +1,7 @@
 let download_cache = "--mount=type=cache,target=/home/opam/.opam/download-cache,uid=1000"
 
-let opam_install ~pin ~with_tests ~pkg =
+let opam_install ~pin ~with_tests ~for_user ~pkg =
+  let download_cache_prefix = if for_user then "" else download_cache ^ " " in
   let open Dockerfile in
   let pin =
     if pin then
@@ -13,7 +14,7 @@ let opam_install ~pin ~with_tests ~pkg =
       empty
   in
   pin @@
-  run "%s opam depext -uivy%s %s" download_cache (if with_tests then "t" else "") pkg
+  run "%sopam depext -uivy%s %s" download_cache_prefix (if with_tests then "t" else "") pkg
 
 let dockerfile ~base ~variant ~revdep ~with_tests ~pkg ~for_user =
   let open Dockerfile in
@@ -35,10 +36,10 @@ let dockerfile ~base ~variant ~revdep ~with_tests ~pkg ~for_user =
   in
   let revdep = match revdep with
     | None -> empty
-    | Some revdep -> opam_install ~pin:false ~with_tests:false ~pkg:revdep
+    | Some revdep -> opam_install ~pin:false ~with_tests:false ~pkg:revdep ~for_user
   and tests = match with_tests, revdep with
-    | true, None -> opam_install ~pin:false ~with_tests:true ~pkg
-    | true, Some revdep -> opam_install ~pin:false ~with_tests:true ~pkg:revdep
+    | true, None -> opam_install ~pin:false ~with_tests:true ~pkg ~for_user
+    | true, Some revdep -> opam_install ~pin:false ~with_tests:true ~pkg:revdep ~for_user
     | false, _ -> empty
   in
   (if for_user then empty
@@ -48,6 +49,6 @@ let dockerfile ~base ~variant ~revdep ~with_tests ~pkg ~for_user =
   opam_extras @@
   copy ~chown:"opam" ~src:["."] ~dst:"/src/" () @@
   run "opam repository set-url --strict default file:///src" @@
-  opam_install ~pin:true ~with_tests:false ~pkg @@
+  opam_install ~pin:true ~with_tests:false ~pkg ~for_user @@
   revdep @@
   tests

@@ -1,6 +1,8 @@
 open Current.Syntax
 open Lwt.Infix
 
+let ( >>!= ) = Lwt_result.bind
+
 module Raw = Current_docker.Raw
 
 module Spec = struct
@@ -44,7 +46,7 @@ module Op = struct
 
     let to_json { commit; label; revdep; with_tests; pkg } =
       `Assoc [
-        "commit", `String (fst (Current_git.Commit.hash commit));
+        "commit", `String (Current_git.Commit.hash commit);
         "label", `String label;
         "revdep", Option.fold ~none:`Null ~some:(fun s -> `String s) revdep;
         "with_tests", `Bool with_tests;
@@ -59,13 +61,15 @@ module Op = struct
       ty : Spec.ty;
       base : Raw.Image.t;                       (* The image with the OCaml compiler to use. *)
       variant : string;                         (* Added as a comment in the Dockerfile *)
+      master : Current_git.Commit.t;
     }
 
-    let to_json { base; ty; variant } =
+    let to_json { base; ty; variant; master } =
       `Assoc [
         "base", `String (Raw.Image.digest base);
         "op", Spec.ty_to_yojson ty;
         "variant", `String variant;
+        "master", `String (Current_git.Commit.hash master);
       ]
 
     let digest t = Yojson.Safe.to_string (to_json t)
@@ -78,7 +82,8 @@ module Op = struct
     | Error (`Msg m) -> raise (Failure m)
 
   let run { Builder.docker_context; pool; build_timeout } job
-      { Key.commit; label = _; revdep; with_tests; pkg } { Value.base; variant; ty } =
+      { Key.commit; label = _; revdep; with_tests; pkg } { Value.base; variant; ty; master } =
+    let master = Current_git.Commit.hash master in
     let make_dockerfile =
       let base = Raw.Image.hash base in
       match ty with
@@ -91,15 +96,22 @@ module Op = struct
       (Fmt.strf "@.\
                  To reproduce locally:@.@.\
                  %a@.\
+                 git fetch origin master@.\
+                 git merge %s@.\
                  cat > Dockerfile <<'END-OF-DOCKERFILE'@.\
                  \o033[34m%a\o033[0m@.\
                  END-OF-DOCKERFILE@.\
                  docker build .@.@."
          Current_git.Commit_id.pp_user_clone (Current_git.Commit.id commit)
+         master
          Dockerfile.pp (make_dockerfile ~for_user:true));
     let dockerfile = Dockerfile.string_of_t (make_dockerfile ~for_user:false) in
     Current.Job.start ~timeout:build_timeout ~pool job ~level:Current.Level.Average >>= fun () ->
-    Current_git.with_checkout ~enable_submodules:false ~job commit @@ fun dir ->
+    Current_git.with_checkout ~job commit @@ fun dir ->
+    (* Merge with master. The merge should work because we already tried this in the analysis step. *)
+    let cmd = "", [| "git"; "merge"; master |] in
+    Current.Process.exec ~cwd:dir ~cancellable:true ~job cmd >>!= fun () ->
+    (* Write Dockerfile *)
     Current.Job.write job (Fmt.strf "Writing BuildKit Dockerfile:@.%s@." dockerfile);
     Bos.OS.File.write Fpath.(dir / "Dockerfile") (dockerfile ^ "\n") |> or_raise;
     let iidfile = Fpath.add_seg dir "docker-iid" in
@@ -134,14 +146,15 @@ let pread ~spec image ~args =
   let> { Spec.platform = {Platform.builder; _}; _ } = spec in
   Builder.pread builder ~args image
 
-let build ~spec ~base ~revdep ~with_tests ~pkg commit =
+let build ~spec ~base ~revdep ~with_tests ~pkg ~master commit =
   Current.component "build" |>
   let> { Spec.platform; ty; label } = spec
   and> base = base
-  and> commit = commit in
+  and> commit = commit
+  and> master = master in
   let { Platform.builder; variant; _ } = platform in
-  BC.run builder { Op.Key.commit; label; revdep; with_tests; pkg } { Op.Value.base; ty; variant }
+  BC.run builder { Op.Key.commit; label; revdep; with_tests; pkg } { Op.Value.base; ty; variant; master }
 
-let v ~schedule ~spec ~revdep ~with_tests ~pkg source =
+let v ~schedule ~spec ~revdep ~with_tests ~pkg ~master source =
   let base = pull ~schedule spec in
-  build ~spec ~base ~revdep ~with_tests ~pkg source
+  build ~spec ~base ~revdep ~with_tests ~pkg ~master source

@@ -32,7 +32,7 @@ let set_active_refs ~repo xs =
     xs |> List.map @@ fun x ->
     let commit = Github.Api.Commit.id x in
     let gref = Git.Commit_id.gref commit in
-    let (hash, _) = Git.Commit_id.hash commit in
+    let hash = Git.Commit_id.hash commit in
     (gref, hash)
   );
   xs
@@ -62,7 +62,7 @@ let once_done x f =
   | Error _ -> Skip
   | Ok x -> f x
 
-let build_with_docker ~analysis source =
+let build_with_docker ~analysis ~master source =
   let pipeline =
     once_done analysis @@ fun analysis ->
     let pkgs = Analyse.Analysis.opam_files analysis in
@@ -74,10 +74,10 @@ let build_with_docker ~analysis source =
       in
       List.map (fun pkg ->
         let prefix = pkg^status_sep^label in
-        let image = Build.v ~spec ~schedule:weekly ~revdep:None ~with_tests:false ~pkg source in
+        let image = Build.v ~spec ~schedule:weekly ~revdep:None ~with_tests:false ~pkg ~master source in
         let tests =
           once_done image @@ fun _ ->
-          Job (prefix^status_sep^"tests", job_id (Build.v ~spec ~schedule:weekly ~revdep:None ~with_tests:true ~pkg source))
+          Job (prefix^status_sep^"tests", job_id (Build.v ~spec ~schedule:weekly ~revdep:None ~with_tests:true ~pkg ~master source))
         in
         let revdeps =
           if revdeps then
@@ -94,10 +94,10 @@ let build_with_docker ~analysis source =
                 List.map (fun revdep ->
                   let prefix = prefix^status_sep^revdep in
                   let revdep = Some revdep in
-                  let image = Build.v ~spec ~schedule:weekly ~revdep ~with_tests:false ~pkg source in
+                  let image = Build.v ~spec ~schedule:weekly ~revdep ~with_tests:false ~pkg ~master source in
                   let tests =
                     once_done image @@ fun _ ->
-                    Job (prefix^status_sep^"tests", job_id (Build.v ~spec ~schedule:weekly ~revdep ~with_tests:true ~pkg source))
+                    Job (prefix^status_sep^"tests", job_id (Build.v ~spec ~schedule:weekly ~revdep ~with_tests:true ~pkg ~master source))
                   in
                   Stage [Job (prefix, job_id image); Dynamic tests]
                 )
@@ -185,16 +185,26 @@ let summarise results =
     | ok, err, _ -> list_errors ~ok err     (* Some errors found - report *)
 
 let get_prs repo =
-  let+ refs =
+  let refs =
     Current.component "Get PRs" |>
     let> (api, repo) = repo in
     Github.Api.refs api repo
   in
+  let master =
+    refs
+    |> Current.map (Github.Api.Ref_map.find (`Ref "refs/heads/master"))
+    |> Current.map Github.Api.Commit.id
+    |> Git.fetch
+  in
+  let prs =
+    let+ refs = refs in
   Github.Api.Ref_map.fold begin fun key head acc ->
     match key with
     | `Ref _ -> acc (* Skip branches, only check PRs *)
     | `PR _ -> head :: acc
   end refs []
+  in
+  master, prs
 
 let rec get_jobs_aux f = function
   | Skip -> Current.return []
@@ -219,10 +229,11 @@ let get_jobs builds =
 
 let local_test repo () =
   let src = Git.Local.head_commit repo in
-  let analysis = Analyse.examine src in
+  let master = Git.Local.commit_of_ref repo "refs/heads/master" in
+  let analysis = Analyse.examine ~master src in
   Current.component "summarise" |>
   let** result =
-    build_with_docker ~analysis src |>
+    build_with_docker ~analysis ~master src |>
     summarise
   in
   Current.of_output result
@@ -231,11 +242,12 @@ let v ~app () =
   Github.App.installations app |> Current.list_iter (module Github.Installation) @@ fun installation ->
   let repos = Github.Installation.repositories installation in
   repos |> Current.list_iter (module Github.Api.Repo) @@ fun repo ->
-  let prs = get_prs repo |> set_active_refs ~repo in
+  let master, prs = get_prs repo in
+  let prs = set_active_refs ~repo prs in
   prs |> Current.list_iter (module Github.Api.Commit) @@ fun head ->
   let src = Git.fetch (Current.map Github.Api.Commit.id head) in
-  let analysis = Analyse.examine src in
-  let builds = build_with_docker ~analysis src in
+  let analysis = Analyse.examine ~master src in
+  let builds = build_with_docker ~analysis ~master src in
   let summary = summarise builds in
   let status =
     let+ summary = summary in
