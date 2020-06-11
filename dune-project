@@ -1,6 +1,6 @@
-(lang dune 1.11)
+(lang dune 2.0)
+
 (name ocaml-ci)
-(using fmt 1.0)
 
 (generate_opam_files true)
 
@@ -67,5 +67,6 @@
   current_rpc
   capnp-rpc-unix
   ocaml-ci-api
-  dockerfile
-))
+  dockerfile))
+
+(formatting disabled)
