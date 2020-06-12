@@ -31,7 +31,6 @@
   current_rpc
   (capnp-rpc-unix (>= 0.5.0))
   opam-repo-ci-api
-  (routes (< 0.8.0))
   (opam-format (>= 2.0.0))
   conf-libev
   (dockerfile (>= 6.3.0))
