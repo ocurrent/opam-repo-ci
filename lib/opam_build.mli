@@ -3,6 +3,6 @@ val dockerfile :
   variant:string ->
   revdep:string option ->
   with_tests:bool ->
-  pkg:string ->
+  pkg:OpamPackage.t ->
   for_user:bool ->
   Dockerfile.t

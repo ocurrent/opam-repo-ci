@@ -65,7 +65,7 @@ let once_done x f =
 let build_with_docker ~analysis ~master source =
   let pipeline =
     once_done analysis @@ fun analysis ->
-    let pkgs = Analyse.Analysis.opam_files analysis in
+    let pkgs = Analyse.Analysis.packages analysis in
     let build ~revdeps label builder variant =
       let spec =
         let platform = {Platform.label; builder; variant} in
@@ -73,7 +73,7 @@ let build_with_docker ~analysis ~master source =
         Current.return
       in
       List.map (fun pkg ->
-        let prefix = pkg^status_sep^label in
+        let prefix = OpamPackage.to_string pkg ^ status_sep ^ label in
         let image = Build.v ~spec ~schedule:weekly ~revdep:None ~with_tests:false ~pkg ~master source in
         let tests =
           once_done image @@ fun _ ->
@@ -84,7 +84,7 @@ let build_with_docker ~analysis ~master source =
             once_done image @@ fun image ->
             let prefix = prefix^status_sep^"revdeps" in
             let revdeps_job =
-              Build.pread ~spec image ~args:["opam";"list";"-s";"--color=never";"--depends-on";pkg;"--installable";"--all-versions";"--depopts"]
+              Build.pread ~spec image ~args:["opam";"list";"-s";"--color=never";"--depends-on"; OpamPackage.to_string pkg;"--installable";"--all-versions";"--depopts"]
             in
             let revdeps =
               once_done revdeps_job @@ fun revdeps ->

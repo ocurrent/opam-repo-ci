@@ -41,7 +41,7 @@ module Op = struct
       label : string;                           (* A unique ID for this build within the commit *)
       revdep : string option;                   (* The revdep package to test *)
       with_tests : bool;                        (* Triggers the tests or not *)
-      pkg : string;                             (* The base package to test *)
+      pkg : OpamPackage.t;                      (* The base package to test *)
     }
 
     let to_json { commit; label; revdep; with_tests; pkg } =
@@ -50,7 +50,7 @@ module Op = struct
         "label", `String label;
         "revdep", Option.fold ~none:`Null ~some:(fun s -> `String s) revdep;
         "with_tests", `Bool with_tests;
-        "pkg", `String pkg;
+        "pkg", `String (OpamPackage.to_string pkg);
       ]
 
     let digest t = Yojson.Safe.to_string (to_json t)
@@ -127,7 +127,7 @@ module Op = struct
       label
       (Option.fold ~none:"None" ~some:(fun x -> "(Some "^x^")") revdep)
       with_tests
-      pkg
+      (OpamPackage.to_string pkg)
 
   let auto_cancel = true
   let latched = true

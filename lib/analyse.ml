@@ -15,9 +15,16 @@ let read_file ~max_len path =
        else Fmt.failwith "File %S too big (%d bytes)" path len
     )
 
+module OpamPackage = struct
+  include OpamPackage
+
+  let to_yojson x = [%derive.to_yojson:string] (OpamPackage.to_string x)
+  let of_yojson x = Result.map OpamPackage.of_string ([%derive.of_yojson:string] x)
+end
+
 module Analysis = struct
   type t = {
-    opam_files : string list;
+    packages : OpamPackage.t list;
   }
   [@@deriving yojson]
 
@@ -28,7 +35,7 @@ module Analysis = struct
     | Ppx_deriving_yojson_runtime.Result.Ok x -> x
     | Ppx_deriving_yojson_runtime.Result.Error _ -> failwith "lol"
 
-  let opam_files t = t.opam_files
+  let packages t = t.packages
 
   let is_duniverse _ = false
 
@@ -51,7 +58,7 @@ module Analysis = struct
     | Ok () ->
       let cmd = "", [| "git"; "diff"; "--name-only"; master; "packages/" |] in
       Current.Process.check_output ~cwd:dir ~cancellable:true ~job cmd >>!= fun output ->
-      let opam_files =
+      let packages =
         String.split_on_char '\n' output
         |> List.filter_map (fun path ->
             match String.split_on_char '/' path with
@@ -86,7 +93,7 @@ module Analysis = struct
               let content = read_file ~max_len:102400 opam_path in
               let opam = OpamFile.OPAM.read_from_string content in
               check_opam_version opam_path opam;
-              Some (OpamPackage.to_string pkg)
+              Some pkg
             | _ ->
               Fmt.failwith "%S is not a directory!" rel_path
             | exception Unix.Unix_error(Unix.ENOENT, _, _) ->
@@ -96,7 +103,7 @@ module Analysis = struct
               None
           )
       in
-      let r = { opam_files } in
+      let r = { packages } in
       Current.Job.log job "@[<v2>Results:@,%a@]" Yojson.Safe.(pretty_print ~std:true) (to_yojson r);
       Lwt.return (Ok r)
 end
