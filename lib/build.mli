@@ -24,7 +24,7 @@ val v :
   spec:Spec.t Current.t ->
   revdep:string option ->
   with_tests:bool ->
-  pkg:string ->
+  pkg:OpamPackage.t ->
   master:Current_git.Commit.t Current.t ->
   Current_git.Commit.t Current.t ->
   Current_docker.Raw.Image.t Current.t

@@ -17,6 +17,7 @@ let opam_install ~pin ~with_tests ~for_user ~pkg =
   run "%sopam depext -uivy%s %s" download_cache_prefix (if with_tests then "t" else "") pkg
 
 let dockerfile ~base ~variant ~revdep ~with_tests ~pkg ~for_user =
+  let pkg = OpamPackage.to_string pkg in
   let open Dockerfile in
   let distro_extras =
     if Astring.String.is_prefix ~affix:"fedora" variant then
