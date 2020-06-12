@@ -25,5 +25,6 @@ val v :
   revdep:string option ->
   with_tests:bool ->
   pkg:string ->
+  master:Current_git.Commit.t Current.t ->
   Current_git.Commit.t Current.t ->
   Current_docker.Raw.Image.t Current.t

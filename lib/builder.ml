@@ -6,7 +6,6 @@ type t = {
 
 let build { docker_context; pool; build_timeout } ~dockerfile source =
   Current_docker.Raw.build (`Git source)
-    ~enable_submodules:false
     ~dockerfile
     ~docker_context
     ~pool
