@@ -45,7 +45,7 @@ module Analysis = struct
     (* TODO: Check if the PR added an opam file in packages/<pkg> instead of packages/<pkg>/<pkg>.<ver> (common mistake) *)
     (* TODO: Split modified vs. added (using git diff --name-status) *)
     let master = Current_git.Commit.hash master in
-    let cmd = "", [| "git"; "merge"; master |] in
+    let cmd = "", [| "git"; "merge"; "-q"; "--"; master |] in
     Current.Process.exec ~cwd:dir ~cancellable:true ~job cmd >>= function
     | Error (`Msg msg) ->
       Current.Job.log job "Merge failed: %s" msg;

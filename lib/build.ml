@@ -109,7 +109,7 @@ module Op = struct
     Current.Job.start ~timeout:build_timeout ~pool job ~level:Current.Level.Average >>= fun () ->
     Current_git.with_checkout ~job commit @@ fun dir ->
     (* Merge with master. The merge should work because we already tried this in the analysis step. *)
-    let cmd = "", [| "git"; "merge"; master |] in
+    let cmd = "", [| "git"; "merge"; "-q"; "--"; master |] in
     Current.Process.exec ~cwd:dir ~cancellable:true ~job cmd >>!= fun () ->
     (* Write Dockerfile *)
     Current.Job.write job (Fmt.strf "Writing BuildKit Dockerfile:@.%s@." dockerfile);
