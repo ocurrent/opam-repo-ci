@@ -68,17 +68,28 @@ module Analysis = struct
               Fmt.failwith "Unexpected path %S in output (expecting 'packages/name/pkg/...')" path
           )
         |> List.sort_uniq OpamPackage.compare
-        |> List.map (fun pkg ->
-            let path =
-              Printf.sprintf "packages/%s/%s/opam"
+        |> List.filter_map (fun pkg ->
+            let rel_path =
+              Printf.sprintf "packages/%s/%s"
                 (OpamPackage.name_to_string pkg)
                 (OpamPackage.to_string pkg)
             in
-            (* Check it exists, parses, and is the right version. *)
-            let content = read_file ~max_len:102400 (Fpath.to_string dir / path) in
-            let opam = OpamFile.OPAM.read_from_string content in
-            check_opam_version path opam;
-            OpamPackage.to_string pkg
+            let full_path = Fpath.to_string dir / rel_path in
+            match Unix.lstat full_path with
+            | Unix.{ st_kind = S_DIR; _ } ->
+              (* Check it exists, parses, and is the right version. *)
+              let opam_path = full_path / "opam" in
+              let content = read_file ~max_len:102400 opam_path in
+              let opam = OpamFile.OPAM.read_from_string content in
+              check_opam_version opam_path opam;
+              Some (OpamPackage.to_string pkg)
+            | _ ->
+              Fmt.failwith "%S is not a directory!" rel_path
+            | exception Unix.Unix_error(Unix.ENOENT, _, _) ->
+              (* Note: we check here (rather than in the diff command) so that
+                 deleting something in a package's files directory still re-checks the package. *)
+              Current.Job.log job "Package %s has been deleted" (OpamPackage.to_string pkg);
+              None
           )
       in
       let r = { opam_files } in
