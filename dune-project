@@ -13,6 +13,7 @@
  (synopsis "Cap'n Proto API for opam-repo-ci")
  (depends
   (dune (>= "1.11"))
+  (ocaml (>= "4.10.0"))
   current_rpc
   (capnp (>= 3.4.0))
   capnp-rpc-lwt
@@ -24,6 +25,7 @@
  (conflicts (ocaml-migrate-parsetree (= "1.7.1")))
  (depends
   (dune (>= "1.11"))
+  (ocaml (>= "4.10.0"))
   current_git
   current_github
   current_docker
@@ -46,6 +48,7 @@
  (conflicts (ocaml-migrate-parsetree (= "1.7.1")))
  (depends
   (dune (>= "1.11"))
+  (ocaml (>= "4.10.0"))
   current_rpc
   current_ansi
   prometheus-app
@@ -65,6 +68,7 @@
  (synopsis "Command-line client for opam-repo-ci")
  (depends
   (dune (>= "1.11"))
+  (ocaml (>= "4.10.0"))
   current_rpc
   capnp-rpc-unix
   opam-repo-ci-api

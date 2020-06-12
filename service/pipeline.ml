@@ -37,110 +37,133 @@ let set_active_refs ~repo xs =
   );
   xs
 
-let status_sep = String.make 1 Common.status_sep
+module OpamPackage = struct
+  include OpamPackage
+  let pp = Fmt.of_to_string to_string
+end
 
-type job = (string * ([`Built | `Checked] Current.t * Current.job_id option Current.t))
-type pipeline =
-  | Skip
-  | Job of job
-  | Dynamic of pipeline Current.t
-  | Stage of pipeline list
+let list_revdeps ~builder ~image ~pkg =
+  Current.component "list revdeps" |>
+  let> pkg = pkg
+  and> image = image in
+  let args = ["opam";"list";"-s";"--color=never";"--depends-on";OpamPackage.to_string pkg;"--installable";"--all-versions";"--depopts"] in
+  Builder.pread builder ~args image
+  |> Current.Primitive.map_result (Result.map (fun output ->
+      String.split_on_char '\n' output |>
+      List.filter_map (function
+          | "" -> None
+          | pkg -> Some (OpamPackage.of_string pkg)
+        )
+    ))
 
-let job_id ?(kind=`Built) build =
-  let job = Current.map (fun _ -> kind) build in
-  let metadata =
-    let+ md = Current.Analysis.metadata build in
-    match md with
-    | Some { Current.Metadata.job_id; _ } -> job_id
-    | None -> None
+let with_label l t =
+  Current.component "%s" l |>
+  let> v = t in
+  Current.Primitive.const v
+
+(* [dep_list_map] is like [Current.list_map], except that the output is fixed to the empty list until
+   the input is successful. You must ensure that the status of the input is reported elsewhere. *)
+let dep_list_map (type a) (module M : Current_term.S.ORDERED with type t = a) ?collapse_key f input =
+  let results = Current.list_map ?collapse_key (module M) f input in
+  let+ state = Current.state ~hidden:true results
+  and+ input = Current.state ~hidden:true input
   in
-  (job, metadata)
+  match input, state with
+  | Error _, _ -> []
+  | Ok _, Ok x -> x
+  (* The results of a [dep_list_map] are nodes, so they should always be ready and successful. *)
+  | Ok _, Error (`Msg m) -> failwith m
+  | Ok _, Error (`Active _) ->
+    Logs.warn (fun f -> f "dep_list_map: input is ready but output is pending!");
+    []
 
-let once_done x f =
-  let+ state = Current.state ~hidden:true x in
-  match state with
-  | Error _ -> Skip
-  | Ok x -> f x
+(* List the revdeps of [pkg] (using [builder] and [image]) and test each one
+   (using [spec] and [base], merging [source] into [master]). *)
+let test_revdeps ~builder ~image ~master ~base ~spec ~pkg source =
+  let revdeps = list_revdeps ~builder ~image ~pkg in
+  let+ list_op = Node.of_job `Checked revdeps ~label:"list revdeps"
+  and+ tests =
+    revdeps
+    |> dep_list_map (module OpamPackage) (fun revdep ->
+        let image = Build.v ~base ~spec ~revdep ~with_tests:false ~pkg ~master source in
+        let tests = Build.v ~base ~spec ~revdep ~with_tests:true ~pkg ~master source in
+        let+ label = Current.map OpamPackage.to_string revdep
+        and+ build = Node.of_job `Built image ~label:"build"
+        and+ tests = Node.of_job `Built tests ~label:"tests"
+        in
+        Node.branch ~label [build; tests]
+      )
+  in
+  [Node.branch ~label:"revdeps" (list_op :: tests)]
 
 let build_with_docker ~analysis ~master source =
-  let pipeline =
-    once_done analysis @@ fun analysis ->
-    let pkgs = Analyse.Analysis.packages analysis in
-    let build ~revdeps label builder variant =
-      let spec =
-        let platform = {Platform.label; builder; variant} in
-        Build.Spec.opam ~label:variant ~platform ~analysis `Build |>
-        Current.return
-      in
-      List.map (fun pkg ->
-        let prefix = OpamPackage.to_string pkg ^ status_sep ^ label in
-        let image = Build.v ~spec ~schedule:weekly ~revdep:None ~with_tests:false ~pkg ~master source in
+  let pkgs = Current.map Analyse.Analysis.packages analysis in
+  let build ~revdeps label builder variant =
+    let analysis = with_label variant analysis in
+    let spec =
+      let platform = {Platform.label; builder; variant} in
+      let+ analysis = analysis in
+      Build.Spec.opam ~label:variant ~platform ~analysis `Build
+    in
+    let pkgs =
+      (* Add fake dependency from pkgs to spec so that the package being tested appears
+         below the platform, to make the diagram look nicer. Ideally, the pulls of the
+         base images should be moved to the top (not be per-package at all). *)
+      let+ _ = spec
+      and+ pkgs = pkgs in
+      pkgs
+    in
+    pkgs |> dep_list_map (module OpamPackage) (fun pkg ->
+        let base = Build.pull ~schedule:weekly spec in
+        let image =
+          Build.v ~base ~spec ~with_tests:false ~pkg ~master source in
         let tests =
-          once_done image @@ fun _ ->
-          Job (prefix^status_sep^"tests", job_id (Build.v ~spec ~schedule:weekly ~revdep:None ~with_tests:true ~pkg ~master source))
+          let pkg = pkg |> Current.gate ~on:(Current.ignore_value image) in
+          Build.v ~base ~spec ~with_tests:true ~pkg ~master source
         in
-        let revdeps =
-          if revdeps then
-            once_done image @@ fun image ->
-            let prefix = prefix^status_sep^"revdeps" in
-            let revdeps_job =
-              Build.pread ~spec image ~args:["opam";"list";"-s";"--color=never";"--depends-on"; OpamPackage.to_string pkg;"--installable";"--all-versions";"--depopts"]
-            in
-            let revdeps =
-              once_done revdeps_job @@ fun revdeps ->
-              Stage (
-                String.split_on_char '\n' revdeps |>
-                List.filter (fun pkg -> not (String.equal pkg "")) |>
-                List.map (fun revdep ->
-                  let prefix = prefix^status_sep^revdep in
-                  let revdep = Some revdep in
-                  let image = Build.v ~spec ~schedule:weekly ~revdep ~with_tests:false ~pkg ~master source in
-                  let tests =
-                    once_done image @@ fun _ ->
-                    Job (prefix^status_sep^"tests", job_id (Build.v ~spec ~schedule:weekly ~revdep ~with_tests:true ~pkg ~master source))
-                  in
-                  Stage [Job (prefix, job_id image); Dynamic tests]
-                )
-              )
-            in
-            Stage [Job (prefix, job_id revdeps_job); Dynamic revdeps]
-          else
-            Current.return Skip
+        let+ label = Current.map OpamPackage.to_string pkg
+        and+ build = Node.of_job `Built image ~label:"build"
+        and+ tests = Node.of_job `Built tests ~label:"tests"
+        and+ revdeps =
+          if revdeps then test_revdeps ~builder ~image ~master ~base ~spec ~pkg source
+          else Current.return []
         in
-        Stage [Job (prefix, job_id image); Dynamic tests; Dynamic revdeps]
-      ) pkgs
-    in
-    let stages =
-      List.concat [
-        (* Compilers *)
-        build ~revdeps:true "4.11" Conf.Builder.amd1 "debian-10-ocaml-4.11";
-        build ~revdeps:true "4.10" Conf.Builder.amd1 "debian-10-ocaml-4.10";
-        build ~revdeps:true "4.09" Conf.Builder.amd1 "debian-10-ocaml-4.09";
-        build ~revdeps:true "4.08" Conf.Builder.amd1 "debian-10-ocaml-4.08";
-        build ~revdeps:true "4.07" Conf.Builder.amd1 "debian-10-ocaml-4.07";
-        build ~revdeps:true "4.06" Conf.Builder.amd1 "debian-10-ocaml-4.06";
-        build ~revdeps:true "4.05" Conf.Builder.amd1 "debian-10-ocaml-4.05";
-        build ~revdeps:true "4.04" Conf.Builder.amd1 "debian-10-ocaml-4.04";
-        build ~revdeps:true "4.03" Conf.Builder.amd1 "debian-10-ocaml-4.03";
-        build ~revdeps:true "4.02" Conf.Builder.amd1 "debian-10-ocaml-4.02";
-        (* Distributions *)
-        build ~revdeps:false ("distributions"^status_sep^"alpine-3.11") Conf.Builder.amd1 ("alpine-3.11-ocaml-"^default_compiler);
-        build ~revdeps:false ("distributions"^status_sep^"debian-testing") Conf.Builder.amd1 ("debian-testing-ocaml-"^default_compiler);
-        build ~revdeps:false ("distributions"^status_sep^"debian-unstable") Conf.Builder.amd1 ("debian-unstable-ocaml-"^default_compiler);
-        build ~revdeps:false ("distributions"^status_sep^"centos-8") Conf.Builder.amd1 ("centos-8-ocaml-"^default_compiler);
-        build ~revdeps:false ("distributions"^status_sep^"fedora-31") Conf.Builder.amd1 ("fedora-31-ocaml-"^default_compiler);
-        build ~revdeps:false ("distributions"^status_sep^"opensuse-15.1") Conf.Builder.amd1 ("opensuse-15.1-ocaml-"^default_compiler);
-        build ~revdeps:false ("distributions"^status_sep^"ubuntu-18.04") Conf.Builder.amd1 ("ubuntu-18.04-ocaml-"^default_compiler);
-        build ~revdeps:false ("distributions"^status_sep^"ubuntu-20.04") Conf.Builder.amd1 ("ubuntu-20.04-ocaml-"^default_compiler);
-        (* Extra checks *)
-        build ~revdeps:false ("extras"^status_sep^"flambda") Conf.Builder.amd1 ("debian-10-ocaml-"^default_compiler^"-flambda");
-      ]
-    in
-    Stage stages
+        Node.branch ~label (build :: tests :: revdeps)
+      )
+    |> Current.map (Node.branch ~label)
   in
-  Stage [
-    Job ("(analysis)", job_id ~kind:`Checked analysis) ;
-    Dynamic pipeline;
+  let+ analysis = Node.of_job `Checked analysis ~label:"(analysis)"
+  and+ compilers = Current.list_seq [
+      build ~revdeps:true "4.11" Conf.Builder.amd1 "debian-10-ocaml-4.11";
+      build ~revdeps:true "4.10" Conf.Builder.amd1 "debian-10-ocaml-4.10";
+      build ~revdeps:true "4.09" Conf.Builder.amd1 "debian-10-ocaml-4.09";
+      build ~revdeps:true "4.08" Conf.Builder.amd1 "debian-10-ocaml-4.08";
+      build ~revdeps:true "4.07" Conf.Builder.amd1 "debian-10-ocaml-4.07";
+      build ~revdeps:true "4.06" Conf.Builder.amd1 "debian-10-ocaml-4.06";
+      build ~revdeps:true "4.05" Conf.Builder.amd1 "debian-10-ocaml-4.05";
+      build ~revdeps:true "4.04" Conf.Builder.amd1 "debian-10-ocaml-4.04";
+      build ~revdeps:true "4.03" Conf.Builder.amd1 "debian-10-ocaml-4.03";
+      build ~revdeps:true "4.02" Conf.Builder.amd1 "debian-10-ocaml-4.02";
+    ]
+  and+ distributions = Current.list_seq [
+      build ~revdeps:false "alpine-3.11" Conf.Builder.amd1 ("alpine-3.11-ocaml-"^default_compiler);
+      build ~revdeps:false "debian-testing" Conf.Builder.amd1 ("debian-testing-ocaml-"^default_compiler);
+      build ~revdeps:false "debian-unstable" Conf.Builder.amd1 ("debian-unstable-ocaml-"^default_compiler);
+      build ~revdeps:false "centos-8" Conf.Builder.amd1 ("centos-8-ocaml-"^default_compiler);
+      build ~revdeps:false "fedora-31" Conf.Builder.amd1 ("fedora-31-ocaml-"^default_compiler);
+      build ~revdeps:false "opensuse-15.1" Conf.Builder.amd1 ("opensuse-15.1-ocaml-"^default_compiler);
+      build ~revdeps:false "ubuntu-18.04" Conf.Builder.amd1 ("ubuntu-18.04-ocaml-"^default_compiler);
+      build ~revdeps:false "ubuntu-20.04" Conf.Builder.amd1 ("ubuntu-20.04-ocaml-"^default_compiler);
+    ]
+  and+ extras = Current.list_seq [
+      build ~revdeps:false "flambda" Conf.Builder.amd1 ("debian-10-ocaml-"^default_compiler^"-flambda");
+    ]
+  in
+  Node.root [
+    analysis;
+    Node.branch ~label:"compilers" compilers;
+    Node.branch ~label:"distributions" distributions;
+    Node.branch ~label:"extras" extras;
   ]
 
 let list_errors ~ok errs =
@@ -164,19 +187,14 @@ let list_errors ~ok errs =
 
 let summarise results =
   results
-  |> List.map (fun (label, build) ->
-    let+ result = Current.state build ~hidden:true in
-    (label, result)
-  )
-  |> Current.list_seq
-  |> Current.map @@ fun results ->
-  results |> List.fold_left (fun (ok, pending, err, skip) -> function
-    | _, Ok `Checked -> (ok, pending, err, skip)  (* Don't count lint checks *)
-    | _, Ok `Built -> (ok + 1, pending, err, skip)
-    | l, Error `Msg m when Astring.String.is_prefix ~affix:"[SKIP]" m -> (ok, pending, err, (m, l) :: skip)
-    | l, Error `Msg m -> (ok, pending, (m, l) :: err, skip)
-    | _, Error `Active _ -> (ok, pending + 1, err, skip)
-  ) (0, 0, [], [])
+  |> Node.flatten (fun ~label ~job_id:_ ~result -> (label, result))
+  |> List.fold_left (fun (ok, pending, err, skip) -> function
+      | _, Ok `Checked -> (ok, pending, err, skip)  (* Don't count lint checks *)
+      | _, Ok `Built -> (ok + 1, pending, err, skip)
+      | l, Error `Msg m when Astring.String.is_prefix ~affix:"[SKIP]" m -> (ok, pending, err, (m, l) :: skip)
+      | l, Error `Msg m -> (ok, pending, (m, l) :: err, skip)
+      | _, Error `Active _ -> (ok, pending + 1, err, skip)
+    ) (0, 0, [], [])
   |> fun (ok, pending, err, skip) ->
   if pending > 0 then Error (`Active `Running)
   else match ok, err, skip with
@@ -198,34 +216,13 @@ let get_prs repo =
   in
   let prs =
     let+ refs = refs in
-  Github.Api.Ref_map.fold begin fun key head acc ->
-    match key with
-    | `Ref _ -> acc (* Skip branches, only check PRs *)
-    | `PR _ -> head :: acc
-  end refs []
+    Github.Api.Ref_map.fold begin fun key head acc ->
+      match key with
+      | `Ref _ -> acc (* Skip branches, only check PRs *)
+      | `PR _ -> head :: acc
+    end refs []
   in
   master, prs
-
-let rec get_jobs_aux f = function
-  | Skip -> Current.return []
-  | Job job -> Current.map (fun job -> [job]) (f job)
-  | Dynamic pipeline -> Current.bind (get_jobs_aux f) pipeline
-  | Stage stages ->
-      List.fold_left (fun acc stage ->
-        let+ stage = get_jobs_aux f stage
-        and+ acc = acc in
-        stage @ acc
-      ) (Current.return []) stages
-
-let summarise builds =
-  let get_job (variant, (build, _job)) = Current.return (variant, build) in
-  Current.component "summarise" |>
-  let** jobs = get_jobs_aux get_job builds in
-  summarise jobs
-
-let get_jobs builds =
-  let get_job (variant, (_build, job)) = Current.map (fun job -> (variant, job)) job in
-  get_jobs_aux get_job builds
 
 let local_test repo () =
   let src = Git.Local.head_commit repo in
@@ -233,8 +230,9 @@ let local_test repo () =
   let analysis = Analyse.examine ~master src in
   Current.component "summarise" |>
   let** result =
-    build_with_docker ~analysis ~master src |>
-    summarise
+    build_with_docker ~analysis ~master src
+    (* |> Current.map (fun x -> Fmt.pr "%a@." Node.dump x; x) *)
+    |> Current.map summarise
   in
   Current.of_output result
 
@@ -248,7 +246,7 @@ let v ~app () =
   let src = Git.fetch (Current.map Github.Api.Commit.id head) in
   let analysis = Analyse.examine ~master src in
   let builds = build_with_docker ~analysis ~master src in
-  let summary = summarise builds in
+  let summary = Current.map summarise builds in
   let status =
     let+ summary = summary in
     match summary with
@@ -258,7 +256,7 @@ let v ~app () =
   in
   let index =
     let+ commit = head
-    and+ jobs = get_jobs builds
+    and+ jobs = Current.map (Node.flatten (fun ~label ~job_id ~result:_ -> (label, job_id))) builds
     and+ status = status in
     let repo = Current_github.Api.Commit.repo_id commit in
     let hash = Current_github.Api.Commit.hash commit in
