@@ -42,8 +42,6 @@ module Analysis = struct
         Fmt.failwith "Package %S uses unsupported opam version %s (need >= 2)" name (OpamVersion.to_string opam_version)
 
   let of_dir ~job ~master dir =
-    (* TODO: Check if the PR added an opam file in packages/<pkg> instead of packages/<pkg>/<pkg>.<ver> (common mistake) *)
-    (* TODO: Split modified vs. added (using git diff --name-status) *)
     let master = Current_git.Commit.hash master in
     let cmd = "", [| "git"; "merge"; "-q"; "--"; master |] in
     Current.Process.exec ~cwd:dir ~cancellable:true ~job cmd >>= function
@@ -59,8 +57,14 @@ module Analysis = struct
             match String.split_on_char '/' path with
             | [] | [""] | ["packages"] | ["packages"; _] -> None
             | "packages" :: name :: package :: _ ->
-              let nme = OpamPackage.Name.of_string name in
-              let pkg = OpamPackage.of_string package in
+              let nme =
+                try OpamPackage.Name.of_string name
+                with Failure msg -> Fmt.failwith "%S is not a valid package name (in %S): %s" name path msg
+              in
+              let pkg =
+                try OpamPackage.of_string package
+                with Failure msg -> Fmt.failwith "%S is not a valid package name.version (in %S): %s" package path msg
+              in
               if OpamPackage.Name.compare nme (OpamPackage.name pkg) <> 0 then
                 Fmt.failwith "Mismatch between package dir name %S and parent directory name %S" package name;
               Some pkg
@@ -128,7 +132,13 @@ module Examine = struct
 
   let run No_context job { Key.src } { Value.master } =
     Current.Job.start job ~pool ~level:Current.Level.Harmless >>= fun () ->
-    Current_git.with_checkout ~job src (Analysis.of_dir ~master ~job)
+    Current_git.with_checkout ~job src @@ fun dir ->
+    Lwt.catch
+      (fun () -> Analysis.of_dir ~master ~job dir)
+      (function
+        | Failure msg -> Lwt_result.fail (`Msg msg)
+        | ex -> Lwt.fail ex
+      )
 
   let pp f _ = Fmt.string f "Analyse"
 
