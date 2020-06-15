@@ -1,6 +1,7 @@
 open Lwt.Infix
 
 let () =
+  Unix.putenv "DOCKER_BUILDKIT" "1";
   Logging.init ();
   Mirage_crypto_rng_unix.initialize ();
   match Conf.profile with
