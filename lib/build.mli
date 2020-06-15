@@ -19,12 +19,17 @@ val pread :
   args:string list ->
   string Current.t
 
-val v :
+val pull :
   schedule:Current_cache.Schedule.t ->
+  Spec.t Current.t ->
+  Current_docker.Raw.Image.t Current.t
+
+val v :
   spec:Spec.t Current.t ->
-  revdep:string option ->
+  base:Current_docker.Raw.Image.t Current.t ->
+  ?revdep:OpamPackage.t Current.t ->
   with_tests:bool ->
-  pkg:OpamPackage.t ->
+  pkg:OpamPackage.t Current.t ->
   master:Current_git.Commit.t Current.t ->
   Current_git.Commit.t Current.t ->
   Current_docker.Raw.Image.t Current.t

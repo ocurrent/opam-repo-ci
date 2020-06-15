@@ -146,15 +146,14 @@ let pread ~spec image ~args =
   let> { Spec.platform = {Platform.builder; _}; _ } = spec in
   Builder.pread builder ~args image
 
-let build ~spec ~base ~revdep ~with_tests ~pkg ~master commit =
-  Current.component "build" |>
+let v ~spec ~base ?revdep ~with_tests ~pkg ~master commit =
+  Current.component (if with_tests then "test" else "build") |>
   let> { Spec.platform; ty; label } = spec
   and> base = base
+  and> pkg = pkg
   and> commit = commit
+  and> revdep = Current.option_seq revdep
   and> master = master in
   let { Platform.builder; variant; _ } = platform in
+  let revdep = Option.map OpamPackage.to_string revdep in
   BC.run builder { Op.Key.commit; label; revdep; with_tests; pkg } { Op.Value.base; ty; variant; master }
-
-let v ~schedule ~spec ~revdep ~with_tests ~pkg ~master source =
-  let base = pull ~schedule spec in
-  build ~spec ~base ~revdep ~with_tests ~pkg ~master source
