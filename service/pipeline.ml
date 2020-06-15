@@ -113,7 +113,7 @@ let build_with_docker ~analysis ~master source =
       and+ pkgs = pkgs in
       pkgs
     in
-    pkgs |> dep_list_map (module OpamPackage) (fun pkg ->
+    pkgs |> dep_list_map ~collapse_key:"pkg" (module OpamPackage) (fun pkg ->
         let base = Build.pull ~schedule:weekly spec in
         let image =
           Build.v ~base ~spec ~with_tests:false ~pkg ~master source in
@@ -131,6 +131,7 @@ let build_with_docker ~analysis ~master source =
         Node.branch ~label (build :: tests :: revdeps)
       )
     |> Current.map (Node.branch ~label)
+    |> Current.collapse ~key:"platform" ~value:label ~input:analysis
   in
   let+ analysis = Node.of_job `Checked analysis ~label:"(analysis)"
   and+ compilers = Current.list_seq [
@@ -212,6 +213,7 @@ let get_prs repo =
     refs
     |> Current.map (Github.Api.Ref_map.find (`Ref "refs/heads/master"))
     |> Current.map Github.Api.Commit.id
+    |> with_label "master"
     |> Git.fetch
   in
   let prs =
@@ -242,7 +244,7 @@ let v ~app () =
   repos |> Current.list_iter (module Github.Api.Repo) @@ fun repo ->
   let master, prs = get_prs repo in
   let prs = set_active_refs ~repo prs in
-  prs |> Current.list_iter (module Github.Api.Commit) @@ fun head ->
+  prs |> Current.list_iter ~collapse_key:"pr" (module Github.Api.Commit) @@ fun head ->
   let src = Git.fetch (Current.map Github.Api.Commit.id head) in
   let analysis = Analyse.examine ~master src in
   let builds = build_with_docker ~analysis ~master src in

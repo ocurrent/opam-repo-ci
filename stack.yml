@@ -13,7 +13,6 @@ services:
     command: --github-app-id 52344 --github-private-key-file /run/secrets/opam-repo-ci-github-key --github-account-whitelist "kit-ty-kate" --confirm above-average --confirm-auto-release 120 --capnp-address=tcp:ci:9000 --github-oauth /run/secrets/opam-repo-ci-oauth
     environment:
       - "CI_PROFILE=production"
-      - "DOCKER_BUILDKIT=1"
       - "PROGRESS_NO_TRUNC=1"
     ports:
       - '8080:8080'
