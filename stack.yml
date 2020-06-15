@@ -10,7 +10,7 @@ secrets:
 services:
   ci:
     image: opam-repo-ci-service
-    command: --github-app-id 52344 --github-private-key-file /run/secrets/opam-repo-ci-github-key --github-account-whitelist "kit-ty-kate" --confirm above-average --confirm-auto-release 120 --capnp-address=tcp:ci:9000 --github-oauth /run/secrets/opam-repo-ci-oauth
+    command: --confirm above-average --confirm-auto-release 120 --capnp-address=tcp:ci:9000 --github-oauth /run/secrets/opam-repo-ci-oauth --repository=ocaml/opam-repository 
     environment:
       - "CI_PROFILE=production"
       - "PROGRESS_NO_TRUNC=1"
@@ -22,7 +22,7 @@ services:
       - 'capnp-secrets:/capnp-secrets'
     secrets:
       - 'opam-repo-ci-oauth'
-      - 'opam-repo-ci-github-key'
+      - 'opam-repo-ci-github-token'
     sysctls:
       - 'net.ipv4.tcp_keepalive_time=60'
     networks:

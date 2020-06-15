@@ -25,8 +25,7 @@ let github_status_of_state ~head result =
   | Error (`Msg _)    -> Github.Api.Status.v ~url `Failure ~description:"Failed"
 
 let set_active_refs ~repo xs =
-  let+ repo = repo
-  and+ xs = xs in
+  let+ xs = xs in
   let repo = Github.Api.Repo.id repo in
   Index.set_active_refs ~repo (
     xs |> List.map @@ fun x ->
@@ -203,10 +202,10 @@ let summarise results =
     | _, [], _ -> Ok ()                     (* No errors and at least one success *)
     | ok, err, _ -> list_errors ~ok err     (* Some errors found - report *)
 
-let get_prs repo =
+let get_prs (api, repo) =
   let refs =
     Current.component "Get PRs" |>
-    let> (api, repo) = repo in
+    let> () = Current.return () in
     Github.Api.refs api repo
   in
   let master =
@@ -238,10 +237,7 @@ let local_test repo () =
   in
   Current.of_output result
 
-let v ~app () =
-  Github.App.installations app |> Current.list_iter (module Github.Installation) @@ fun installation ->
-  let repos = Github.Installation.repositories installation in
-  repos |> Current.list_iter (module Github.Api.Repo) @@ fun repo ->
+let v ~repo () =
   let master, prs = get_prs repo in
   let prs = set_active_refs ~repo prs in
   prs |> Current.list_iter ~collapse_key:"pr" (module Github.Api.Commit) @@ fun head ->

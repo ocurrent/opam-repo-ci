@@ -40,8 +40,9 @@ let has_role user = function
            ) -> true
     | _ -> false
 
-let main config mode app capnp_address github_auth =
-  let engine = Current.Engine.create ~config (Pipeline.v ~app) in
+let main config mode github repo capnp_address github_auth =
+  let repo = (github, repo) in
+  let engine = Current.Engine.create ~config (Pipeline.v ~repo) in
   let authn = Option.map Current_github.Auth.make_login_uri github_auth in
   let has_role =
     if github_auth = None then Current_web.Site.allow_all
@@ -72,10 +73,18 @@ let capnp_address =
     ~docv:"ADDR"
     ["capnp-address"]
 
+let repo =
+  Arg.value @@
+  Arg.opt Current_github.Repo_id.cmdliner { Current_github.Repo_id.owner = "ocaml"; name = "opam-repository" } @@
+  Arg.info
+    ~doc:"The repository to monitor (owner/name)"
+    ~docv:"REPO"
+    ["repository"]
+
 let cmd =
   let doc = "Build OCaml projects on GitHub" in
   Term.(const main $ Current.Config.cmdliner $ Current_web.cmdliner $
-        Current_github.App.cmdliner $ capnp_address $ Current_github.Auth.cmdliner),
+        Current_github.Api.cmdliner $ repo $ capnp_address $ Current_github.Auth.cmdliner),
   Term.info "opam-repo-ci" ~doc
 
 let () = Term.(exit @@ eval cmd)
