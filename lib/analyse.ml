@@ -7,12 +7,16 @@ let ( / ) = Filename.concat
 let ( >>!= ) = Lwt_result.bind
 
 let read_file ~max_len path =
-  let ch = open_in path in
-  Fun.protect ~finally:(fun () -> close_in ch)
-    (fun () ->
-       let len = in_channel_length ch in
-       if len <= max_len then really_input_string ch len
-       else Fmt.failwith "File %S too big (%d bytes)" path len
+  Lwt_io.with_file ~mode:Lwt_io.input path
+    (fun ch ->
+       Lwt_io.length ch >>= fun len ->
+       let len =
+         if len <= Int64.of_int max_len then Int64.to_int len
+         else Fmt.failwith "File %S too big (%Ld bytes)" path len
+       in
+       let buf = Bytes.create len in
+       Lwt_io.read_into_exactly ch buf 0 len >|= fun () ->
+       Bytes.to_string buf
     )
 
 module OpamPackage = struct
@@ -40,7 +44,7 @@ module Analysis = struct
   let is_duniverse _ = false
 
   let ocamlformat_source _ = None
-  
+
   let check_opam_version =
     let version_2 = OpamVersion.of_string "2" in
     fun name opam ->
@@ -58,7 +62,7 @@ module Analysis = struct
     | Ok () ->
       let cmd = "", [| "git"; "diff"; "--name-only"; master; "packages/" |] in
       Current.Process.check_output ~cwd:dir ~cancellable:true ~job cmd >>!= fun output ->
-      let packages =
+      begin
         String.split_on_char '\n' output
         |> List.filter_map (fun path ->
             match String.split_on_char '/' path with
@@ -79,30 +83,36 @@ module Analysis = struct
               Fmt.failwith "Unexpected path %S in output (expecting 'packages/name/pkg/...')" path
           )
         |> List.sort_uniq OpamPackage.compare
-        |> List.filter_map (fun pkg ->
+        |> Lwt_list.filter_map_s (fun pkg ->
             let rel_path =
               Printf.sprintf "packages/%s/%s"
                 (OpamPackage.name_to_string pkg)
                 (OpamPackage.to_string pkg)
             in
             let full_path = Fpath.to_string dir / rel_path in
-            match Unix.lstat full_path with
-            | Unix.{ st_kind = S_DIR; _ } ->
-              (* Check it exists, parses, and is the right version. *)
-              let opam_path = full_path / "opam" in
-              let content = read_file ~max_len:102400 opam_path in
-              let opam = OpamFile.OPAM.read_from_string content in
-              check_opam_version opam_path opam;
-              Some pkg
-            | _ ->
-              Fmt.failwith "%S is not a directory!" rel_path
-            | exception Unix.Unix_error(Unix.ENOENT, _, _) ->
-              (* Note: we check here (rather than in the diff command) so that
-                 deleting something in a package's files directory still re-checks the package. *)
-              Current.Job.log job "Package %s has been deleted" (OpamPackage.to_string pkg);
-              None
-          )
-      in
+            Lwt.try_bind
+              (fun () -> Lwt_unix.lstat full_path)
+              (function
+                | Unix.{ st_kind = S_DIR; _ } ->
+                  (* Check it exists, parses, and is the right version. *)
+                  let opam_path = full_path / "opam" in
+                  read_file ~max_len:102400 opam_path >|= fun content ->
+                  let opam = OpamFile.OPAM.read_from_string content in
+                  check_opam_version opam_path opam;
+                  Some pkg
+                | _ ->
+                  Fmt.failwith "%S is not a directory!" rel_path
+              )
+              (function
+                | Unix.Unix_error(Unix.ENOENT, _, _) ->
+                  (* Note: we check here (rather than in the diff command) so that
+                     deleting something in a package's files directory still re-checks the package. *)
+                  Current.Job.log job "Package %s has been deleted" (OpamPackage.to_string pkg);
+                  Lwt.return None
+                | e -> Lwt.fail e
+              )
+        )
+      end >>= fun packages ->
       let r = { packages } in
       Current.Job.log job "@[<v2>Results:@,%a@]" Yojson.Safe.(pretty_print ~std:true) (to_yojson r);
       Lwt.return (Ok r)
