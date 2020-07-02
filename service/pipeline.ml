@@ -228,7 +228,7 @@ let get_prs repo =
 
 let local_test repo () =
   let src = Git.Local.head_commit repo in
-  let master = Git.Local.commit_of_ref repo "refs/heads/master" in
+  let master = Git.Local.commit_of_ref repo "refs/remotes/origin/master" in
   let analysis = Analyse.examine ~master src in
   Current.component "summarise" |>
   let** result =
