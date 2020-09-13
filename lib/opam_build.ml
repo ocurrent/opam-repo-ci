@@ -26,7 +26,8 @@ let dockerfile ~base ~variant ~revdep ~with_tests ~pkg ~for_user =
       empty
   in
   let opam_extras =
-    if Astring.String.is_suffix ~affix:"-ocaml-4.06" variant ||
+    if Astring.String.is_suffix ~affix:"-ocaml-4.07" variant ||
+       Astring.String.is_suffix ~affix:"-ocaml-4.06" variant ||
        Astring.String.is_suffix ~affix:"-ocaml-4.05" variant ||
        Astring.String.is_suffix ~affix:"-ocaml-4.04" variant ||
        Astring.String.is_suffix ~affix:"-ocaml-4.03" variant ||
