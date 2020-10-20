@@ -84,13 +84,18 @@ module Op = struct
   let run { Builder.docker_context; pool; build_timeout } job
       { Key.commit; label = _; revdep; with_tests; pkg } { Value.base; variant; ty; master } =
     let master = Current_git.Commit.hash master in
-    let make_dockerfile =
+    let spec =
       let base = Raw.Image.hash base in
       match ty with
       | `Opam (`Build, _) ->
         Opam_build.dockerfile ~base ~variant ~revdep ~with_tests ~pkg
       | `Opam (`Lint `Fmt, analysis) -> Lint.fmt_dockerfile ~base ~info:analysis ~variant
       | `Opam (`Lint `Doc, analysis) -> Lint.doc_dockerfile ~base ~info:analysis ~variant
+    in
+    let make_dockerfile ~for_user =
+      let open Dockerfile in
+      (if for_user then empty else Buildkit_syntax.add `X86_64) @@
+      Obuilder_spec.Docker.dockerfile_of_spec ~buildkit:(not for_user) spec
     in
     Current.Job.write job
       (Fmt.strf "@.\

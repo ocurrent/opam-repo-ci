@@ -2,3 +2,6 @@
 	path = ocurrent
 	url = git://github.com/kit-ty-kate/ocurrent.git
 	branch = opam-ci
+[submodule "ocluster"]
+	path = ocluster
+	url = https://github.com/ocurrent/ocluster.git
