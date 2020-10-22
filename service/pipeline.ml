@@ -13,7 +13,7 @@ let weekly = Current_cache.Schedule.v ~valid_for:(Duration.of_day 7) ()
 (* Link for GitHub statuses. *)
 let url ~owner ~name ~hash = Uri.of_string (Printf.sprintf "http://147.75.80.95/github/%s/%s/commit/%s" owner name hash)
 
-let _github_status_of_state ~head result =
+let github_status_of_state ~head result =
   let+ head = head
   and+ result = result in
   let { Github.Repo_id.owner; name } = Github.Api.Commit.repo_id head in
@@ -42,20 +42,6 @@ module OpamPackage = struct
   let pp = Fmt.of_to_string to_string
 end
 
-let list_revdeps ~builder ~image ~pkg =
-  Current.component "list revdeps" |>
-  let> pkg = pkg
-  and> image = image in
-  let args = ["opam";"list";"-s";"--color=never";"--depends-on";OpamPackage.to_string pkg;"--installable";"--all-versions";"--depopts"] in
-  Builder.pread builder ~args image
-  |> Current.Primitive.map_result (Result.map (fun output ->
-      String.split_on_char '\n' output |>
-      List.filter_map (function
-          | "" -> None
-          | pkg -> Some (OpamPackage.of_string pkg)
-        )
-    ))
-
 let with_label l t =
   Current.component "%s" l |>
   let> v = t in
@@ -77,16 +63,35 @@ let dep_list_map (type a) (module M : Current_term.S.ORDERED with type t = a) ?c
     Logs.warn (fun f -> f "dep_list_map: input is ready but output is pending!");
     []
 
+let build_spec ~platform ?revdep pkg =
+  let+ revdep = Current.option_seq revdep
+  and+ pkg = pkg
+  in
+  Build.Spec.opam ~platform ?revdep ~with_tests:false pkg
+
+let test_spec ~platform ~after ?revdep pkg =
+  let+ revdep = Current.option_seq revdep
+  and+ _ = after
+  and+ pkg = pkg
+  in
+  Build.Spec.opam ~platform ?revdep ~with_tests:true pkg
+
 (* List the revdeps of [pkg] (using [builder] and [image]) and test each one
    (using [spec] and [base], merging [source] into [master]). *)
-let test_revdeps ~builder ~image ~master ~base ~spec ~pkg source =
-  let revdeps = list_revdeps ~builder ~image ~pkg in
+let test_revdeps ~ocluster ~master ~base ~platform ~pkg source =
+  let revdeps = Build.list_revdeps ~base ocluster ~platform ~pkg ~master source in
   let+ list_op = Node.of_job `Checked revdeps ~label:"list revdeps"
   and+ tests =
     revdeps
     |> dep_list_map (module OpamPackage) (fun revdep ->
-        let image = Build.v ~base ~spec ~revdep ~with_tests:false ~pkg ~master source in
-        let tests = Build.v ~base ~spec ~revdep ~with_tests:true ~pkg ~master source in
+        let image =
+          let spec = build_spec ~platform ~revdep pkg in
+          Build.v ocluster ~label:"build" ~base ~spec ~master source
+        in
+        let tests =
+          let spec = test_spec ~platform ~revdep pkg ~after:image in
+          Build.v ocluster ~label:"test" ~base ~spec ~master source
+        in
         let+ label = Current.map OpamPackage.to_string revdep
         and+ build = Node.of_job `Built image ~label:"build"
         and+ tests = Node.of_job `Built tests ~label:"tests"
@@ -96,68 +101,70 @@ let test_revdeps ~builder ~image ~master ~base ~spec ~pkg source =
   in
   [Node.branch ~label:"revdeps" (list_op :: tests)]
 
-let build_with_docker ~analysis ~master source =
+let build_with_cluster ~ocluster ~analysis ~master source =
   let pkgs = Current.map Analyse.Analysis.packages analysis in
-  let build ~revdeps label builder variant =
+  let build ~pool ~revdeps label variant =
+    let platform = {Platform.label; pool; variant} in
     let analysis = with_label variant analysis in
-    let spec =
-      let platform = {Platform.label; builder; variant} in
-      let+ analysis = analysis in
-      Build.Spec.opam ~label:variant ~platform ~analysis `Build
-    in
     let pkgs =
-      (* Add fake dependency from pkgs to spec so that the package being tested appears
+      (* Add fake dependency from pkgs to analysis so that the package being tested appears
          below the platform, to make the diagram look nicer. Ideally, the pulls of the
          base images should be moved to the top (not be per-package at all). *)
-      let+ _ = spec
+      let+ _ = analysis
       and+ pkgs = pkgs in
       pkgs
     in
     pkgs |> dep_list_map ~collapse_key:"pkg" (module OpamPackage) (fun pkg ->
-        let base = Build.pull ~schedule:weekly spec in
-        let image =
-          Build.v ~base ~spec ~with_tests:false ~pkg ~master source in
-        let tests =
-          let pkg = pkg |> Current.gate ~on:(Current.ignore_value image) in
-          Build.v ~base ~spec ~with_tests:true ~pkg ~master source
+        let base =
+          let+ repo_id = Docker.peek ~schedule:weekly ~arch:"amd64" ("ocurrent/opam:" ^ variant) in
+          Current_docker.Raw.Image.of_hash repo_id
         in
-        let+ label = Current.map OpamPackage.to_string pkg
+        let image =
+          let spec = build_spec ~platform pkg in
+          Build.v ocluster ~label:"build" ~base ~spec ~master source in
+        let tests =
+          let spec = test_spec ~platform pkg ~after:image in
+          Build.v ocluster ~label:"test" ~base ~spec ~master source
+        in
+        let+ pkg = pkg
         and+ build = Node.of_job `Built image ~label:"build"
         and+ tests = Node.of_job `Built tests ~label:"tests"
         and+ revdeps =
-          if revdeps then test_revdeps ~builder ~image ~master ~base ~spec ~pkg source
+          if revdeps then test_revdeps ~ocluster ~master ~base ~platform ~pkg source
           else Current.return []
         in
+        let label = OpamPackage.to_string pkg in
         Node.branch ~label (build :: tests :: revdeps)
       )
     |> Current.map (Node.branch ~label)
     |> Current.collapse ~key:"platform" ~value:label ~input:analysis
   in
+  let build = build ~pool:"linux-x86_64" in
   let+ analysis = Node.of_job `Checked analysis ~label:"(analysis)"
   and+ compilers = Current.list_seq [
-      build ~revdeps:true "4.11" Conf.Builder.amd1 "debian-10-ocaml-4.11";
-      build ~revdeps:true "4.10" Conf.Builder.amd1 "debian-10-ocaml-4.10";
-      build ~revdeps:true "4.09" Conf.Builder.amd1 "debian-10-ocaml-4.09";
-      build ~revdeps:true "4.08" Conf.Builder.amd1 "debian-10-ocaml-4.08";
-      build ~revdeps:true "4.07" Conf.Builder.amd1 "debian-10-ocaml-4.07";
-      build ~revdeps:true "4.06" Conf.Builder.amd1 "debian-10-ocaml-4.06";
-      build ~revdeps:true "4.05" Conf.Builder.amd1 "debian-10-ocaml-4.05";
-      build ~revdeps:true "4.04" Conf.Builder.amd1 "debian-10-ocaml-4.04";
-      build ~revdeps:true "4.03" Conf.Builder.amd1 "debian-10-ocaml-4.03";
-      build ~revdeps:true "4.02" Conf.Builder.amd1 "debian-10-ocaml-4.02";
+      build ~revdeps:true "4.11" "debian-10-ocaml-4.11";
+      build ~revdeps:true "4.10" "debian-10-ocaml-4.10";
+      build ~revdeps:true "4.09" "debian-10-ocaml-4.09";
+      build ~revdeps:true "4.08" "debian-10-ocaml-4.08";
+      build ~revdeps:true "4.07" "debian-10-ocaml-4.07";
+      build ~revdeps:true "4.06" "debian-10-ocaml-4.06";
+      build ~revdeps:true "4.05" "debian-10-ocaml-4.05";
+      build ~revdeps:true "4.04" "debian-10-ocaml-4.04";
+      build ~revdeps:true "4.03" "debian-10-ocaml-4.03";
+      build ~revdeps:true "4.02" "debian-10-ocaml-4.02";
     ]
   and+ distributions = Current.list_seq [
-      build ~revdeps:false "alpine-3.11" Conf.Builder.amd1 ("alpine-3.11-ocaml-"^default_compiler);
-      build ~revdeps:false "debian-testing" Conf.Builder.amd1 ("debian-testing-ocaml-"^default_compiler);
-      build ~revdeps:false "debian-unstable" Conf.Builder.amd1 ("debian-unstable-ocaml-"^default_compiler);
-      build ~revdeps:false "centos-8" Conf.Builder.amd1 ("centos-8-ocaml-"^default_compiler);
-      build ~revdeps:false "fedora-31" Conf.Builder.amd1 ("fedora-31-ocaml-"^default_compiler);
-      build ~revdeps:false "opensuse-15.1" Conf.Builder.amd1 ("opensuse-15.1-ocaml-"^default_compiler);
-      build ~revdeps:false "ubuntu-18.04" Conf.Builder.amd1 ("ubuntu-18.04-ocaml-"^default_compiler);
-      build ~revdeps:false "ubuntu-20.04" Conf.Builder.amd1 ("ubuntu-20.04-ocaml-"^default_compiler);
+      build ~revdeps:false "alpine-3.11"     @@ "alpine-3.11-ocaml-"^default_compiler;
+      build ~revdeps:false "debian-testing"  @@ "debian-testing-ocaml-"^default_compiler;
+      build ~revdeps:false "debian-unstable" @@ "debian-unstable-ocaml-"^default_compiler;
+      build ~revdeps:false "centos-8"        @@ "centos-8-ocaml-"^default_compiler;
+      build ~revdeps:false "fedora-31"       @@ "fedora-31-ocaml-"^default_compiler;
+      build ~revdeps:false "opensuse-15.1"   @@ "opensuse-15.1-ocaml-"^default_compiler;
+      build ~revdeps:false "ubuntu-18.04"    @@ "ubuntu-18.04-ocaml-"^default_compiler;
+      build ~revdeps:false "ubuntu-20.04"    @@ "ubuntu-20.04-ocaml-"^default_compiler;
     ]
   and+ extras = Current.list_seq [
-      build ~revdeps:false "flambda" Conf.Builder.amd1 ("debian-10-ocaml-"^default_compiler^"-flambda");
+      build ~revdeps:false "flambda" @@ "debian-10-ocaml-"^default_compiler^"-flambda";
     ]
   in
   Node.root [
@@ -226,28 +233,31 @@ let get_prs repo =
   in
   master, prs
 
-let local_test repo () =
+let local_test ~ocluster repo () =
+  let ocluster = Build.config ~timeout:Conf.build_timeout ocluster in
   let src = Git.Local.head_commit repo in
   let master = Git.Local.commit_of_ref repo "refs/remotes/origin/master" in
   let analysis = Analyse.examine ~master src in
   Current.component "summarise" |>
   let** result =
-    build_with_docker ~analysis ~master src
+    build_with_cluster ~ocluster ~analysis ~master (Current.map Git.Commit.id src)
     (* |> Current.map (fun x -> Fmt.pr "%a@." Node.dump x; x) *)
     |> Current.map summarise
   in
   Current.of_output result
 
-let v ~app () =
+let v ~ocluster ~app () =
+  let ocluster = Build.config ~timeout:Conf.build_timeout ocluster in
   Github.App.installations app |> Current.list_iter (module Github.Installation) @@ fun installation ->
   let repos = Github.Installation.repositories installation in
   repos |> Current.list_iter (module Github.Api.Repo) @@ fun repo ->
   let master, prs = get_prs repo in
   let prs = set_active_refs ~repo prs in
   prs |> Current.list_iter ~collapse_key:"pr" (module Github.Api.Commit) @@ fun head ->
-  let src = Git.fetch (Current.map Github.Api.Commit.id head) in
+  let commit_id = Current.map Github.Api.Commit.id head in
+  let src = Git.fetch commit_id in
   let analysis = Analyse.examine ~master src in
-  let builds = build_with_docker ~analysis ~master src in
+  let builds = build_with_cluster ~ocluster ~analysis ~master commit_id in
   let summary = Current.map summarise builds in
   let status =
     let+ summary = summary in
@@ -263,12 +273,10 @@ let v ~app () =
     let repo = Current_github.Api.Commit.repo_id commit in
     let hash = Current_github.Api.Commit.hash commit in
     Index.record ~repo ~hash ~status jobs
-  in index
-    (*
   and set_github_status =
     summary
     |> github_status_of_state ~head
-    |> Github.Api.Commit.set_status head "opam-ci"
+    |> (if Conf.profile = `Production then Github.Api.Commit.set_status head "opam-ci"
+        else Current.ignore_value)
   in
   Current.all [index; set_github_status]
-       *)

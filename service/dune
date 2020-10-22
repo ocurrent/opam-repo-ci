@@ -12,6 +12,7 @@
             current_rpc
             capnp-rpc-unix
             mirage-crypto-rng.unix
+            ocluster-api
             opam_repo_ci
             opam-repo-ci-api
             prometheus)
