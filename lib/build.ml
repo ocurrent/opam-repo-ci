@@ -1,56 +1,97 @@
 open Current.Syntax
+open Capnp_rpc_lwt
 open Lwt.Infix
+
+module Git = Current_git
+module Image = Current_docker.Raw.Image
 
 let ( >>!= ) = Lwt_result.bind
 
-module Raw = Current_docker.Raw
-
 module Spec = struct
-  type analysis = Analyse.Analysis.t
+  type package = OpamPackage.t
 
-  let analysis_to_yojson x =
-    let s = Analyse.Analysis.to_yojson x |> Yojson.Safe.to_string in
-    `String (Digest.string s |> Digest.to_hex)
+  let package_to_yojson x = `String (OpamPackage.to_string x)
+
+  type opam_build = {
+    revdep : package option;
+    with_tests:bool;
+  } [@@deriving to_yojson]
 
   type ty = [
-    | `Opam of [ `Build | `Lint of [ `Fmt | `Doc ]] * analysis
+    | `Opam_fmt of Analyse_ocamlformat.source option
+    | `Opam of [ `Build of opam_build | `List_revdeps ] * package
   ] [@@deriving to_yojson]
 
   type t = {
-    label : string;
     platform : Platform.t;
     ty : ty;
   }
 
-  let opam ~label ~platform ~analysis op =
-    { label; platform; ty = `Opam (op, analysis) }
+  let opam ?revdep ~platform ~with_tests pkg =
+    let ty = `Opam (`Build { revdep; with_tests }, pkg) in
+    { platform; ty }
 
-  let pp f t = Fmt.string f t.label
-  let compare a b = compare a.label b.label
-  let label t = t.label
+  let pp_pkg ?revdep f pkg =
+    match revdep with
+    | Some revdep -> Fmt.pf f "%s with %s" (OpamPackage.to_string revdep) (OpamPackage.to_string pkg)
+    | None -> Fmt.string f (OpamPackage.to_string pkg)
+
+  let pp_ty f = function
+    | `Opam_fmt _ -> Fmt.pf f "ocamlformat"
+    | `Opam (`List_revdeps, pkg) -> Fmt.pf f "list revdeps of %s" (OpamPackage.to_string pkg)
+    | `Opam (`Build { revdep; with_tests }, pkg) ->
+      let action = if with_tests then "test" else "build" in
+      Fmt.pf f "%s %a" action (pp_pkg ?revdep) pkg
 end
 
-module Op = struct
-  type t = Builder.t
+type t = {
+  connection : Current_ocluster.Connection.t;
+  timeout : Duration.t;
+}
 
-  let id = "ci-build"
+let tail ?buffer ~job build_job =
+  let rec aux start =
+    Cluster_api.Job.log build_job start >>= function
+    | Error (`Capnp e) -> Lwt.return @@ Fmt.error_msg "%a" Capnp_rpc.Error.pp e
+    | Ok ("", _) -> Lwt_result.return ()
+    | Ok (data, next) ->
+      Option.iter (fun b -> Buffer.add_string b data) buffer;
+      Current.Job.write job data;
+      aux next
+  in aux 0L
+
+let run_job ?buffer ~job build_job =
+  let on_cancel _ =
+    Cluster_api.Job.cancel build_job >|= function
+    | Ok () -> ()
+    | Error (`Capnp e) -> Current.Job.log job "Cancel failed: %a" Capnp_rpc.Error.pp e
+  in
+  Current.Job.with_handler job ~on_cancel @@ fun () ->
+  let result = Cluster_api.Job.result build_job in
+  tail ?buffer ~job build_job >>!= fun () ->
+  result >>= function
+  | Error (`Capnp e) -> Lwt_result.fail (`Msg (Fmt.to_to_string Capnp_rpc.Error.pp e))
+  | Ok _ as x -> Lwt.return x
+
+module Op = struct
+  type nonrec t = t
+
+  let id = "ci-ocluster-build"
 
   module Key = struct
     type t = {
-      commit : Current_git.Commit.t;            (* The source code to build and test *)
-      label : string;                           (* A unique ID for this build within the commit *)
-      revdep : string option;                   (* The revdep package to test *)
-      with_tests : bool;                        (* Triggers the tests or not *)
-      pkg : OpamPackage.t;                      (* The base package to test *)
+      pool : string;                            (* The build pool to use (e.g. "linux-arm64") *)
+      commit : Current_git.Commit_id.t;         (* The source code to build and test *)
+      variant : string;                         (* Added as a comment in the Dockerfile *)
+      ty : Spec.ty;
     }
 
-    let to_json { commit; label; revdep; with_tests; pkg } =
+    let to_json { pool; commit; variant; ty } =
       `Assoc [
-        "commit", `String (Current_git.Commit.hash commit);
-        "label", `String label;
-        "revdep", Option.fold ~none:`Null ~some:(fun s -> `String s) revdep;
-        "with_tests", `Bool with_tests;
-        "pkg", `String (OpamPackage.to_string pkg);
+        "pool", `String pool;
+        "commit", `String (Current_git.Commit_id.hash commit);
+        "variant", `String variant;
+        "ty", Spec.ty_to_yojson ty;
       ]
 
     let digest t = Yojson.Safe.to_string (to_json t)
@@ -58,44 +99,29 @@ module Op = struct
 
   module Value = struct
     type t = {
-      ty : Spec.ty;
-      base : Raw.Image.t;                       (* The image with the OCaml compiler to use. *)
-      variant : string;                         (* Added as a comment in the Dockerfile *)
+      base : Image.t;                           (* The image with the OCaml compiler to use. *)
       master : Current_git.Commit.t;
     }
 
-    let to_json { base; ty; variant; master } =
+    let to_json { base; master } =
       `Assoc [
-        "base", `String (Raw.Image.digest base);
-        "op", Spec.ty_to_yojson ty;
-        "variant", `String variant;
+        "base", `String (Image.digest base);
         "master", `String (Current_git.Commit.hash master);
       ]
 
     let digest t = Yojson.Safe.to_string (to_json t)
   end
 
-  module Outcome = Current_docker.Raw.Image
+  module Outcome = Current.String
 
-  let or_raise = function
-    | Ok () -> ()
-    | Error (`Msg m) -> raise (Failure m)
-
-  let run { Builder.docker_context; pool; build_timeout } job
-      { Key.commit; label = _; revdep; with_tests; pkg } { Value.base; variant; ty; master } =
+  let run { connection; timeout} job { Key.pool; commit; variant; ty } { Value.base; master } =
     let master = Current_git.Commit.hash master in
-    let spec =
-      let base = Raw.Image.hash base in
+    let build_spec =
+      let base = Image.hash base in
       match ty with
-      | `Opam (`Build, _) ->
-        Opam_build.dockerfile ~base ~variant ~revdep ~with_tests ~pkg
-      | `Opam (`Lint `Fmt, analysis) -> Lint.fmt_dockerfile ~base ~info:analysis ~variant
-      | `Opam (`Lint `Doc, analysis) -> Lint.doc_dockerfile ~base ~info:analysis ~variant
-    in
-    let make_dockerfile ~for_user =
-      let open Dockerfile in
-      (if for_user then empty else Buildkit_syntax.add `X86_64) @@
-      Obuilder_spec.Docker.dockerfile_of_spec ~buildkit:(not for_user) spec
+      | `Opam (`List_revdeps, pkg) -> Opam_build.revdeps ~base ~variant ~pkg
+      | `Opam (`Build { revdep; with_tests }, pkg) -> Opam_build.spec ~base ~variant ~revdep ~with_tests ~pkg
+      | `Opam_fmt ocamlformat_source -> Lint.fmt_dockerfile ~base ~ocamlformat_source ~variant
     in
     Current.Job.write job
       (Fmt.strf "@.\
@@ -107,32 +133,44 @@ module Op = struct
                  \o033[34m%a\o033[0m@.\
                  END-OF-DOCKERFILE@.\
                  docker build .@.@."
-         Current_git.Commit_id.pp_user_clone (Current_git.Commit.id commit)
+         Current_git.Commit_id.pp_user_clone commit
          master
-         Dockerfile.pp (make_dockerfile ~for_user:true));
-    let dockerfile = Dockerfile.string_of_t (make_dockerfile ~for_user:false) in
-    Current.Job.start ~timeout:build_timeout ~pool job ~level:Current.Level.Average >>= fun () ->
-    Current_git.with_checkout ~job commit @@ fun dir ->
-    (* Merge with master. The merge should work because we already tried this in the analysis step. *)
-    let cmd = "", [| "git"; "merge"; "-q"; "--"; master |] in
-    Current.Process.exec ~cwd:dir ~cancellable:true ~job cmd >>!= fun () ->
-    (* Write Dockerfile *)
-    Current.Job.write job (Fmt.strf "Writing BuildKit Dockerfile:@.%s@." dockerfile);
-    Bos.OS.File.write Fpath.(dir / "Dockerfile") (dockerfile ^ "\n") |> or_raise;
-    let iidfile = Fpath.add_seg dir "docker-iid" in
-    let cmd = Raw.Cmd.docker ~docker_context @@ ["build"; "--iidfile"; Fpath.to_string iidfile; "--"; Fpath.to_string dir] in
-    let pp_error_command f = Fmt.string f "Docker build" in
-    Current.Process.exec ~cancellable:true ~pp_error_command ~job cmd >|= function
-    | Error _ as e -> e
-    | Ok () -> Bos.OS.File.read iidfile |> Stdlib.Result.map Current_docker.Raw.Image.of_hash
+         Dockerfile.pp (Obuilder_spec.Docker.dockerfile_of_spec ~buildkit:false build_spec));
+    let spec_sexp = Obuilder_spec.sexp_of_stage build_spec in
+    let action = Cluster_api.Submission.obuilder_build (Sexplib.Sexp.to_string_hum spec_sexp) in
+    let src = (Git.Commit_id.repo commit, [master; Git.Commit_id.hash commit]) in
+    let cache_hint =
+      let pkg =
+        match ty with
+        | `Opam (`List_revdeps, pkg)
+        | `Opam (`Build _, pkg) -> OpamPackage.to_string pkg
+        | `Opam_fmt _ -> "ocamlformat"
+      in
+      Printf.sprintf "%s-%s" (Image.hash base) pkg
+    in
+    Current.Job.log job "Using cache hint %S" cache_hint;
+    Current.Job.log job "Using OBuilder spec:@.%a@." Sexplib.Sexp.pp_hum spec_sexp;
+    let build_pool = Current_ocluster.Connection.pool ~job ~pool ~action ~cache_hint ~src connection in
+    let buffer =
+      match ty with
+      | `Opam (`List_revdeps, _) -> Some (Buffer.create 1024)
+      | _ -> None
+    in
+    Current.Job.start_with ~pool:build_pool job ~timeout ~level:Current.Level.Average >>= fun build_job ->
+    Capability.with_ref build_job (run_job ?buffer ~job) >>!= fun (_ : string) ->
+    match buffer with
+    | None -> Lwt_result.return ""
+    | Some buffer ->
+      match Astring.String.cuts ~sep:"\n@@@OUTPUT\n" (Buffer.contents buffer) with
+      | [_; output; _] -> Lwt_result.return output
+      | [_; rest ] when Astring.String.is_prefix ~affix:"@@@OUTPUT\n" rest -> Lwt_result.return ""
+      | _ -> Lwt_result.fail (`Msg "Missing output from command")
 
-  let pp f ({ Key.commit; label; revdep; with_tests; pkg }, _) =
-    Fmt.pf f "@[<v2>test %a (%s) %s %b %s@]"
-      Current_git.Commit.pp commit
-      label
-      (Option.fold ~none:"None" ~some:(fun x -> "(Some "^x^")") revdep)
-      with_tests
-      (OpamPackage.to_string pkg)
+  let pp f ({ Key.pool = _; commit; variant; ty }, _) =
+    Fmt.pf f "@[<v>%a@,from %a@,on %s@]"
+      Spec.pp_ty ty
+      Current_git.Commit_id.pp commit
+      variant
 
   let auto_cancel = true
   let latched = true
@@ -140,25 +178,35 @@ end
 
 module BC = Current_cache.Generic(Op)
 
-let pull ~schedule spec =
-  Current.component "docker pull" |>
-  let> { Spec.platform; _} = spec in
-  let { Platform.builder; variant; label = _ } = platform in
-  Builder.pull builder ("ocurrent/opam:" ^ variant) ~schedule
+let config ~timeout sr =
+  let connection = Current_ocluster.Connection.create sr in
+  { connection; timeout }
 
-let pread ~spec image ~args =
-  Current.component "pread" |>
-  let> { Spec.platform = {Platform.builder; _}; _ } = spec in
-  Builder.pread builder ~args image
-
-let v ~spec ~base ?revdep ~with_tests ~pkg ~master commit =
-  Current.component (if with_tests then "test" else "build") |>
-  let> { Spec.platform; ty; label } = spec
+let v t ~label ~spec ~base ~master commit =
+  Current.component "%s" label |>
+  let> { Spec.platform; ty } = spec
   and> base = base
-  and> pkg = pkg
   and> commit = commit
-  and> revdep = Current.option_seq revdep
   and> master = master in
-  let { Platform.builder; variant; _ } = platform in
-  let revdep = Option.map OpamPackage.to_string revdep in
-  BC.run builder { Op.Key.commit; label; revdep; with_tests; pkg } { Op.Value.base; ty; variant; master }
+  let { Platform.pool; variant; label = _ } = platform in
+  BC.run t { Op.Key.pool; commit; variant; ty } { Op.Value.base; master }
+  |> Current.Primitive.map_result (Result.map ignore)
+
+let list_revdeps t ~platform ~pkg ~base ~master commit =
+  Current.component "list revdeps" |>
+  let> pkg = pkg
+  and> base = base
+  and> commit = commit
+  and> master = master in
+  let { Platform.pool; variant; label = _ } = platform in
+  let ty = `Opam (`List_revdeps, pkg) in
+  BC.run t
+    { Op.Key.pool; commit; variant; ty }
+    { Op.Value.base; master }
+  |> Current.Primitive.map_result (Result.map (fun output ->
+      String.split_on_char '\n' output |>
+      List.filter_map (function
+          | "" -> None
+          | pkg -> Some (OpamPackage.of_string pkg)
+        )
+    ))

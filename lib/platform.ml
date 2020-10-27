@@ -1,6 +1,6 @@
 type t = {
   label : string;
-  builder : Builder.t;
+  pool : string;        (* OCluster pool *)
   variant : string;
 }
 
