@@ -68,13 +68,16 @@ let spec ~base ~variant ~revdep ~with_tests ~pkg =
 
 let revdeps ~base ~variant ~pkg =
   let open Obuilder_spec in
+  let pkg = Filename.quote (OpamPackage.to_string pkg) in
   { from = base;
     ops =
       setup_repository ~variant
       @ [
         run "echo '@@@OUTPUT' && \
-             opam list -s --color=never --depends-on %s --installable --all-versions --depopts && \
+             (opam list -s --color=never --depends-on %s --coinstallable-with %s --installable --all-versions --depopts && \
+              opam list -s --color=never --depends-on %s --coinstallable-with %s --installable --all-versions --depopts --with-test) \
+             | sort -u && \
              echo '@@@OUTPUT'"
-          (Filename.quote (OpamPackage.to_string pkg))
+          pkg pkg pkg pkg
       ]
   }
