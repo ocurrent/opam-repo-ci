@@ -78,11 +78,12 @@ let test_spec ~platform ~after ?revdep pkg =
 
 (* List the revdeps of [pkg] (using [builder] and [image]) and test each one
    (using [spec] and [base], merging [source] into [master]). *)
-let test_revdeps ~ocluster ~master ~base ~platform ~pkg source =
+let test_revdeps ~ocluster ~master ~base ~platform ~pkg ~after:main_build source =
   let revdeps = Build.list_revdeps ~base ocluster ~platform ~pkg ~master source in
   let+ list_op = Node.of_job `Checked revdeps ~label:"list revdeps"
   and+ tests =
     revdeps
+    |> Current.gate ~on:main_build
     |> dep_list_map (module OpamPackage) (fun revdep ->
         let image =
           let spec = build_spec ~platform ~revdep pkg in
@@ -130,7 +131,7 @@ let build_with_cluster ~ocluster ~analysis ~master source =
         and+ build = Node.of_job `Built image ~label:"build"
         and+ tests = Node.of_job `Built tests ~label:"tests"
         and+ revdeps =
-          if revdeps then test_revdeps ~ocluster ~master ~base ~platform ~pkg source
+          if revdeps then test_revdeps ~ocluster ~master ~base ~platform ~pkg source ~after:image
           else Current.return []
         in
         let label = OpamPackage.to_string pkg in
