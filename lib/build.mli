@@ -24,6 +24,7 @@ val v :
 
 val list_revdeps :
   t ->
+  with_tests:bool ->
   platform:Platform.t ->
   pkg:OpamPackage.t Current.t ->
   base:Current_docker.Raw.Image.t Current.t ->

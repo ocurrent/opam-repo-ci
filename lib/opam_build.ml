@@ -2,7 +2,7 @@ let download_cache = "opam-archives"
 let cache = [ Obuilder_spec.Cache.v download_cache ~target:"/home/opam/.opam/download-cache" ]
 let network = ["host"]
 
-let opam_install ~is_revdeps_tests ~pin ~with_tests ~pkg =
+let opam_install ~pin ~with_tests ~pkg =
   let pkg = OpamPackage.to_string pkg in
   let open Obuilder_spec in
   let pin =
@@ -17,11 +17,7 @@ let opam_install ~is_revdeps_tests ~pin ~with_tests ~pkg =
   in
   pin @ [
     (* TODO: Replace by two calls to opam install + opam install -t using the OPAMDROPINSTALLEDPACKAGES feature *)
-    run ~cache ~network "opam depext -uivy%s %s%s" (if with_tests then "t" else "") pkg
-      (if is_revdeps_tests then " || test \"$?\" -eq 20" else "")
-      (* opam list --depends-on <pkg> --installable --with-test can't distinguish between packages
-         installable with and without tests overall. Revdeps should not fail without tests but might
-         with tests. So we detect this with exit code = 20 which means "no solution to the user request" *)
+    run ~cache ~network "opam depext -uivy%s %s" (if with_tests then "t" else "") pkg
   ]
 
 let setup_repository ~variant =
@@ -52,32 +48,31 @@ let spec ~base ~variant ~revdep ~with_tests ~pkg =
   let open Obuilder_spec in
   let revdep = match revdep with
     | None -> []
-    | Some revdep -> opam_install ~is_revdeps_tests:false ~pin:false ~with_tests:false ~pkg:revdep
+    | Some revdep -> opam_install ~pin:false ~with_tests:false ~pkg:revdep
   and tests = match with_tests, revdep with
-    | true, None -> opam_install ~is_revdeps_tests:false ~pin:false ~with_tests:true ~pkg
-    | true, Some revdep -> opam_install ~is_revdeps_tests:true ~pin:false ~with_tests:true ~pkg:revdep
+    | true, None -> opam_install ~pin:false ~with_tests:true ~pkg
+    | true, Some revdep -> opam_install ~pin:false ~with_tests:true ~pkg:revdep
     | false, _ -> []
   in
   { from = base;
     ops =
       setup_repository ~variant
-      @ opam_install ~is_revdeps_tests:false ~pin:true ~with_tests:false ~pkg
+      @ opam_install ~pin:true ~with_tests:false ~pkg
       @ revdep
       @ tests
   }
 
-let revdeps ~base ~variant ~pkg =
+let revdeps ~with_tests ~base ~variant ~pkg =
   let open Obuilder_spec in
   let pkg = Filename.quote (OpamPackage.to_string pkg) in
+  let with_tests = if with_tests then " --with-test" else "" in
   { from = base;
     ops =
       setup_repository ~variant
       @ [
         run "echo '@@@OUTPUT' && \
-             (opam list -s --color=never --depends-on %s --coinstallable-with %s --installable --all-versions --depopts && \
-              opam list -s --color=never --depends-on %s --coinstallable-with %s --installable --all-versions --depopts --with-test) \
-             | sort -u && \
+             opam list -s --color=never --depends-on %s --coinstallable-with %s --installable --all-versions --depopts%s && \
              echo '@@@OUTPUT'"
-          pkg pkg pkg pkg
+          pkg pkg with_tests
       ]
   }
