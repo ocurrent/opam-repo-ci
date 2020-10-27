@@ -13,7 +13,7 @@ let weekly = Current_cache.Schedule.v ~valid_for:(Duration.of_day 7) ()
 (* Link for GitHub statuses. *)
 let url ~owner ~name ~hash = Uri.of_string (Printf.sprintf "http://147.75.80.95/github/%s/%s/commit/%s" owner name hash)
 
-let github_status_of_state ~head result =
+let _github_status_of_state ~head result =
   let+ head = head
   and+ result = result in
   let { Github.Repo_id.owner; name } = Github.Api.Commit.repo_id head in
@@ -263,9 +263,12 @@ let v ~app () =
     let repo = Current_github.Api.Commit.repo_id commit in
     let hash = Current_github.Api.Commit.hash commit in
     Index.record ~repo ~hash ~status jobs
+  in index
+    (*
   and set_github_status =
     summary
     |> github_status_of_state ~head
     |> Github.Api.Commit.set_status head "opam-ci"
   in
   Current.all [index; set_github_status]
+       *)
