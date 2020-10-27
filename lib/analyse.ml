@@ -52,6 +52,49 @@ module Analysis = struct
       if OpamVersion.compare opam_version version_2 < 0 then
         Fmt.failwith "Package %S uses unsupported opam version %s (need >= 2)" name (OpamVersion.to_string opam_version)
 
+  let find_changed_packages ~job ~master dir =
+    let cmd = "", [| "git"; "diff"; "--name-only"; master; "packages/" |] in
+    Current.Process.check_output ~cwd:dir ~cancellable:true ~job cmd >>!= fun output ->
+    output
+    |> String.split_on_char '\n'
+    |> List.filter_map (fun path ->
+        match String.split_on_char '/' path with
+        | [] | [""] | ["packages"] | ["packages"; _] -> None
+        | "packages" :: name :: package :: _ ->
+          let nme =
+            try OpamPackage.Name.of_string name
+            with Failure msg -> Fmt.failwith "%S is not a valid package name (in %S): %s" name path msg
+          in
+          let pkg =
+            try OpamPackage.of_string package
+            with Failure msg -> Fmt.failwith "%S is not a valid package name.version (in %S): %s" package path msg
+          in
+          if OpamPackage.Name.compare nme (OpamPackage.name pkg) <> 0 then
+            Fmt.failwith "Mismatch between package dir name %S and parent directory name %S" package name;
+          Some pkg
+        | _ ->
+          Fmt.failwith "Unexpected path %S in output (expecting 'packages/name/pkg/...')" path
+      )
+    |> List.sort_uniq OpamPackage.compare
+    |> Lwt_result.return
+
+  let check_dir path =
+    Lwt.try_bind
+      (fun () -> Lwt_unix.lstat path)
+      (function
+        | Unix.{ st_kind = S_DIR; _ } -> Lwt.return `Directory_exists
+        | _ -> Lwt.return `Non_directory
+      )
+      (function
+        | Unix.Unix_error(Unix.ENOENT, _, _) -> Lwt.return `Does_not_exist
+        | e -> Lwt.fail e
+      )
+
+  let path_of_package pkg =
+    Printf.sprintf "packages/%s/%s"
+      (OpamPackage.name_to_string pkg)
+      (OpamPackage.to_string pkg)
+
   let of_dir ~job ~master dir =
     let master = Current_git.Commit.hash master in
     let cmd = "", [| "git"; "merge"; "-q"; "--"; master |] in
@@ -60,59 +103,27 @@ module Analysis = struct
       Current.Job.log job "Merge failed: %s" msg;
       Lwt_result.fail (`Msg "Cannot merge to master - please rebase!")
     | Ok () ->
-      let cmd = "", [| "git"; "diff"; "--name-only"; master; "packages/" |] in
-      Current.Process.check_output ~cwd:dir ~cancellable:true ~job cmd >>!= fun output ->
-      begin
-        String.split_on_char '\n' output
-        |> List.filter_map (fun path ->
-            match String.split_on_char '/' path with
-            | [] | [""] | ["packages"] | ["packages"; _] -> None
-            | "packages" :: name :: package :: _ ->
-              let nme =
-                try OpamPackage.Name.of_string name
-                with Failure msg -> Fmt.failwith "%S is not a valid package name (in %S): %s" name path msg
-              in
-              let pkg =
-                try OpamPackage.of_string package
-                with Failure msg -> Fmt.failwith "%S is not a valid package name.version (in %S): %s" package path msg
-              in
-              if OpamPackage.Name.compare nme (OpamPackage.name pkg) <> 0 then
-                Fmt.failwith "Mismatch between package dir name %S and parent directory name %S" package name;
-              Some pkg
-            | _ ->
-              Fmt.failwith "Unexpected path %S in output (expecting 'packages/name/pkg/...')" path
-          )
-        |> List.sort_uniq OpamPackage.compare
-        |> Lwt_list.filter_map_s (fun pkg ->
-            let rel_path =
-              Printf.sprintf "packages/%s/%s"
-                (OpamPackage.name_to_string pkg)
-                (OpamPackage.to_string pkg)
-            in
-            let full_path = Fpath.to_string dir / rel_path in
-            Lwt.try_bind
-              (fun () -> Lwt_unix.lstat full_path)
-              (function
-                | Unix.{ st_kind = S_DIR; _ } ->
-                  (* Check it exists, parses, and is the right version. *)
-                  let opam_path = full_path / "opam" in
-                  read_file ~max_len:102400 opam_path >|= fun content ->
-                  let opam = OpamFile.OPAM.read_from_string content in
-                  check_opam_version opam_path opam;
-                  Some pkg
-                | _ ->
-                  Fmt.failwith "%S is not a directory!" rel_path
-              )
-              (function
-                | Unix.Unix_error(Unix.ENOENT, _, _) ->
-                  (* Note: we check here (rather than in the diff command) so that
-                     deleting something in a package's files directory still re-checks the package. *)
-                  Current.Job.log job "Package %s has been deleted" (OpamPackage.to_string pkg);
-                  Lwt.return None
-                | e -> Lwt.fail e
-              )
+      find_changed_packages ~job ~master dir >>!= fun changed ->
+      changed
+      |> Lwt_list.filter_map_s (fun pkg ->
+          let rel_path = path_of_package pkg in
+          let full_path = Fpath.to_string dir / rel_path in
+          check_dir full_path >>= function
+          | `Non_directory -> Fmt.failwith "%S is not a directory!" rel_path
+          | `Directory_exists -> 
+            (* Check it exists, parses, and is the right version. *)
+            let opam_path = full_path / "opam" in
+            read_file ~max_len:102400 opam_path >|= fun content ->
+            let opam = OpamFile.OPAM.read_from_string content in
+            check_opam_version opam_path opam;
+            Some pkg
+          | `Does_not_exist ->
+            (* Note: we check here (rather than in the diff command) so that
+               deleting something in a package's files directory still re-checks the package. *)
+            Current.Job.log job "Package %s has been deleted" (OpamPackage.to_string pkg);
+            Lwt.return None
         )
-      end >>= fun packages ->
+      >>= fun packages ->
       let r = { packages } in
       Current.Job.log job "@[<v2>Results:@,%a@]" Yojson.Safe.(pretty_print ~std:true) (to_yojson r);
       Lwt.return (Ok r)
