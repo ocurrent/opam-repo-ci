@@ -76,15 +76,51 @@ let test_spec ~platform ~after ?revdep pkg =
   in
   Build.Spec.opam ~platform ?revdep ~with_tests:true pkg
 
+module Revdep = struct
+  module Map = OpamPackage.Map
+
+  type options = {
+    with_tests : bool;
+  }
+
+  type t = (OpamPackage.t * options)
+
+  let compare (pkg1, {with_tests}) (pkg2, options) =
+    compare ((pkg1, with_tests) : OpamPackage.t * bool) (pkg2, options.with_tests)
+
+  let pp =
+    Fmt.of_to_string (fun (pkg, {with_tests}) ->
+      Fmt.strf "(%s, {with_tests = %b})" (OpamPackage.to_string pkg) with_tests
+    )
+end
+
+let combine_revdeps ~revdeps ~revdeps_with_tests =
+  let+ revdeps = revdeps
+  and+ revdeps_with_tests = revdeps_with_tests in
+  let map =
+    List.fold_left (fun map pkg -> Revdep.Map.add pkg {Revdep.with_tests = false} map)
+      Revdep.Map.empty revdeps
+  in
+  let map =
+    List.fold_left (fun map pkg -> Revdep.Map.add pkg {Revdep.with_tests = true} map)
+      map revdeps_with_tests
+  in
+  Revdep.Map.bindings map
+
 (* List the revdeps of [pkg] (using [builder] and [image]) and test each one
    (using [spec] and [base], merging [source] into [master]). *)
 let test_revdeps ~ocluster ~master ~base ~platform ~pkg ~after:main_build source =
-  let revdeps = Build.list_revdeps ~base ocluster ~platform ~pkg ~master source in
+  let revdeps = Build.list_revdeps ~base ocluster ~with_tests:false ~platform ~pkg ~master source in
+  let revdeps_with_tests = Build.list_revdeps ~base ocluster ~with_tests:true ~platform ~pkg ~master source in
   let+ list_op = Node.of_job `Checked revdeps ~label:"list revdeps"
+  and+ list_with_tests_op = Node.of_job `Checked revdeps_with_tests ~label:"list revdeps with tests"
   and+ tests =
+    let revdeps = combine_revdeps ~revdeps ~revdeps_with_tests in
     revdeps
     |> Current.gate ~on:main_build
-    |> dep_list_map (module OpamPackage) (fun revdep ->
+    |> dep_list_map (module Revdep) (fun revdep ->
+        let with_tests = Current.map (fun (_, {Revdep.with_tests}) -> with_tests) revdep in
+        let revdep = Current.map (fun (pkg, _) -> pkg) revdep in
         let image =
           let spec = build_spec ~platform ~revdep pkg in
           Build.v ocluster ~label:"build" ~base ~spec ~master source
@@ -96,11 +132,15 @@ let test_revdeps ~ocluster ~master ~base ~platform ~pkg ~after:main_build source
         let+ label = Current.map OpamPackage.to_string revdep
         and+ build = Node.of_job `Built image ~label:"build"
         and+ tests = Node.of_job `Built tests ~label:"tests"
+        and+ with_tests = with_tests
         in
-        Node.branch ~label [build; tests]
+        if with_tests then
+          Node.branch ~label [build; tests]
+        else
+          Node.branch ~label [build]
       )
   in
-  [Node.branch ~label:"revdeps" (list_op :: tests)]
+  [Node.branch ~label:"revdeps" (list_op :: list_with_tests_op :: tests)]
 
 let build_with_cluster ~ocluster ~analysis ~master source =
   let pkgs = Current.map Analyse.Analysis.packages analysis in

@@ -7,6 +7,7 @@ val spec :
   Obuilder_spec.stage
 
 val revdeps :
+  with_tests:bool ->
   base:string ->
   variant:string ->
   pkg:OpamPackage.t ->
