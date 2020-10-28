@@ -6,7 +6,7 @@ module Github = Current_github
 module Docker = Current_docker.Default
 module Common = Opam_repo_ci_api.Common
 
-let default_compiler = "4.10"
+let default_compiler = "4.11"
 
 let weekly = Current_cache.Schedule.v ~valid_for:(Duration.of_day 7) ()
 
@@ -183,6 +183,7 @@ let build_with_cluster ~ocluster ~analysis ~master source =
   let build = build ~pool:"linux-x86_64" in
   let+ analysis = Node.of_job `Checked analysis ~label:"(analysis)"
   and+ compilers = Current.list_seq [
+      build ~revdeps:true "4.12" "debian-10-ocaml-4.12";
       build ~revdeps:true "4.11" "debian-10-ocaml-4.11";
       build ~revdeps:true "4.10" "debian-10-ocaml-4.10";
       build ~revdeps:true "4.09" "debian-10-ocaml-4.09";
