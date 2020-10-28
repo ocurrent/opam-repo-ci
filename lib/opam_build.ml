@@ -39,6 +39,10 @@ let setup_repository ~variant =
     else
       []
   in
+  env "OPAMDOWNLOADJOBS" "1" :: (* Try to avoid github spam detection *)
+  env "OPAMERRLOGLEN" "0" :: (* Show the whole log if it fails *)
+  env "OPAMSOLVERTIMEOUT" "500" :: (* Increase timeout. Poor mccs is doing its best *)
+  env "OPAMPRECISETRACKING" "1" :: (* Mitigate https://github.com/ocaml/opam/issues/3997 *)
   user ~uid:1000 ~gid:1000 :: distro_extras @ opam_extras @ [
     copy ["."] ~dst:"/src/";
     run "opam repository set-url --strict default file:///src";
