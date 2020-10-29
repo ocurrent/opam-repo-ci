@@ -156,7 +156,8 @@ module Op = struct
     in
     Current.Job.log job "Using cache hint %S" cache_hint;
     Current.Job.log job "Using OBuilder spec:@.%a@." Sexplib.Sexp.pp_hum spec_sexp;
-    let build_pool = Current_ocluster.Connection.pool ~job ~pool ~action ~cache_hint ~src connection in
+    let urgent _ = false in (* Make everything low priority while we're setting things up. *)
+    let build_pool = Current_ocluster.Connection.pool ~job ~pool ~action ~cache_hint ~src ~urgent connection in
     let buffer =
       match ty with
       | `Opam (`List_revdeps _, _) -> Some (Buffer.create 1024)
