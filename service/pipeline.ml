@@ -89,8 +89,8 @@ module Revdep = struct
     compare ((pkg1, with_tests) : OpamPackage.t * bool) (pkg2, options.with_tests)
 
   let pp =
-    Fmt.of_to_string (fun (pkg, {with_tests}) ->
-      Fmt.strf "(%s, {with_tests = %b})" (OpamPackage.to_string pkg) with_tests
+    Fmt.of_to_string (fun (pkg, {with_tests = _}) ->
+      Fmt.strf "%s" (OpamPackage.to_string pkg)
     )
 end
 
