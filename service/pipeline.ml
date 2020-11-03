@@ -183,17 +183,17 @@ let build_with_cluster ~ocluster ~analysis ~master source =
   let build = build ~pool:"linux-x86_64" in
   let+ analysis = Node.of_job `Checked analysis ~label:"(analysis)"
   and+ compilers = Current.list_seq [
-      build ~revdeps:true "4.12" "debian-10-ocaml-4.12";
+      build ~revdeps:false "4.12" "debian-10-ocaml-4.12";
       build ~revdeps:true "4.11" "debian-10-ocaml-4.11";
-      build ~revdeps:true "4.10" "debian-10-ocaml-4.10";
-      build ~revdeps:true "4.09" "debian-10-ocaml-4.09";
-      build ~revdeps:true "4.08" "debian-10-ocaml-4.08";
-      build ~revdeps:true "4.07" "debian-10-ocaml-4.07";
-      build ~revdeps:true "4.06" "debian-10-ocaml-4.06";
-      build ~revdeps:true "4.05" "debian-10-ocaml-4.05";
-      build ~revdeps:true "4.04" "debian-10-ocaml-4.04";
-      build ~revdeps:true "4.03" "debian-10-ocaml-4.03";
-      build ~revdeps:true "4.02" "debian-10-ocaml-4.02";
+      build ~revdeps:false "4.10" "debian-10-ocaml-4.10";
+      build ~revdeps:false "4.09" "debian-10-ocaml-4.09";
+      build ~revdeps:false "4.08" "debian-10-ocaml-4.08";
+      build ~revdeps:false "4.07" "debian-10-ocaml-4.07";
+      build ~revdeps:false "4.06" "debian-10-ocaml-4.06";
+      build ~revdeps:false "4.05" "debian-10-ocaml-4.05";
+      build ~revdeps:false "4.04" "debian-10-ocaml-4.04";
+      build ~revdeps:false "4.03" "debian-10-ocaml-4.03";
+      build ~revdeps:false "4.02" "debian-10-ocaml-4.02";
     ]
   and+ distributions = Current.list_seq [
       build ~revdeps:false "alpine-3.11"     @@ "alpine-3.11-ocaml-"^default_compiler;
