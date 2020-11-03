@@ -120,7 +120,10 @@ module Op = struct
 
   module Outcome = Current.String
 
+  let lwt_pool = Lwt_pool.create 125 (fun () -> Lwt.return_unit)
+
   let run { connection; timeout} job { Key.pool; commit; variant; ty } { Value.base; master } =
+    Lwt_pool.use lwt_pool @@ fun () ->
     let master = Current_git.Commit.hash master in
     let build_spec =
       let base = Image.hash base in
