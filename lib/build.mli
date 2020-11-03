@@ -19,6 +19,7 @@ val v :
   spec:Spec.t Current.t ->
   base:Current_docker.Raw.Image.t Current.t ->
   master:Current_git.Commit.t Current.t ->
+  urgent:bool ->
   Current_git.Commit_id.t Current.t ->
   unit Current.t
 
@@ -29,5 +30,6 @@ val list_revdeps :
   pkg:OpamPackage.t Current.t ->
   base:Current_docker.Raw.Image.t Current.t ->
   master:Current_git.Commit.t Current.t ->
+  urgent:bool ->
   Current_git.Commit_id.t Current.t ->
   OpamPackage.t list Current.t

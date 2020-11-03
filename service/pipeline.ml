@@ -110,8 +110,8 @@ let combine_revdeps ~revdeps ~revdeps_with_tests =
 (* List the revdeps of [pkg] (using [builder] and [image]) and test each one
    (using [spec] and [base], merging [source] into [master]). *)
 let test_revdeps ~ocluster ~master ~base ~platform ~pkg ~after:main_build source =
-  let revdeps = Build.list_revdeps ~base ocluster ~with_tests:false ~platform ~pkg ~master source in
-  let revdeps_with_tests = Build.list_revdeps ~base ocluster ~with_tests:true ~platform ~pkg ~master source in
+  let revdeps = Build.list_revdeps ~base ocluster ~with_tests:false ~platform ~pkg ~master ~urgent:false source in
+  let revdeps_with_tests = Build.list_revdeps ~base ocluster ~with_tests:true ~platform ~pkg ~master ~urgent:false source in
   let+ list_op = Node.of_job `Checked revdeps ~label:"list revdeps"
   and+ list_with_tests_op = Node.of_job `Checked revdeps_with_tests ~label:"list revdeps with tests"
   and+ tests =
@@ -123,11 +123,11 @@ let test_revdeps ~ocluster ~master ~base ~platform ~pkg ~after:main_build source
         let revdep = Current.map (fun (pkg, _) -> pkg) revdep in
         let image =
           let spec = build_spec ~platform ~revdep pkg in
-          Build.v ocluster ~label:"build" ~base ~spec ~master source
+          Build.v ocluster ~label:"build" ~base ~spec ~master ~urgent:false source
         in
         let tests =
           let spec = test_spec ~platform ~revdep pkg ~after:image in
-          Build.v ocluster ~label:"test" ~base ~spec ~master source
+          Build.v ocluster ~label:"test" ~base ~spec ~master ~urgent:false source
         in
         let+ label = Current.map OpamPackage.to_string revdep
         and+ build = Node.of_job `Built image ~label:"build"
@@ -162,10 +162,10 @@ let build_with_cluster ~ocluster ~analysis ~master source =
         in
         let image =
           let spec = build_spec ~platform pkg in
-          Build.v ocluster ~label:"build" ~base ~spec ~master source in
+          Build.v ocluster ~label:"build" ~base ~spec ~master ~urgent:true source in
         let tests =
           let spec = test_spec ~platform pkg ~after:image in
-          Build.v ocluster ~label:"test" ~base ~spec ~master source
+          Build.v ocluster ~label:"test" ~base ~spec ~master ~urgent:true source
         in
         let+ pkg = pkg
         and+ build = Node.of_job `Built image ~label:"build"

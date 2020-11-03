@@ -107,12 +107,14 @@ module Op = struct
     type t = {
       base : Image.t;                           (* The image with the OCaml compiler to use. *)
       master : Current_git.Commit.t;
+      urgent : bool;
     }
 
-    let to_json { base; master } =
+    let to_json { base; master; urgent } =
       `Assoc [
         "base", `String (Image.digest base);
         "master", `String (Current_git.Commit.hash master);
+        "urgent", `Bool urgent;
       ]
 
     let digest t = Yojson.Safe.to_string (to_json t)
@@ -120,7 +122,7 @@ module Op = struct
 
   module Outcome = Current.String
 
-  let run { connection; timeout} job { Key.pool; commit; variant; ty } { Value.base; master } =
+  let run { connection; timeout} job { Key.pool; commit; variant; ty } { Value.base; master; urgent } =
     let master = Current_git.Commit.hash master in
     let build_spec =
       let base = Image.hash base in
@@ -156,7 +158,7 @@ module Op = struct
     in
     Current.Job.log job "Using cache hint %S" cache_hint;
     Current.Job.log job "Using OBuilder spec:@.%a@." Sexplib.Sexp.pp_hum spec_sexp;
-    let build_pool = Current_ocluster.Connection.pool ~job ~pool ~action ~cache_hint ~src connection in
+    let build_pool = Current_ocluster.Connection.pool ~job ~pool ~action ~cache_hint ~src ~urgent:(fun _ -> urgent) connection in
     let buffer =
       match ty with
       | `Opam (`List_revdeps _, _) -> Some (Buffer.create 1024)
@@ -188,17 +190,17 @@ let config ~timeout sr =
   let connection = Current_ocluster.Connection.create sr in
   { connection; timeout }
 
-let v t ~label ~spec ~base ~master commit =
+let v t ~label ~spec ~base ~master ~urgent commit =
   Current.component "%s" label |>
   let> { Spec.platform; ty } = spec
   and> base = base
   and> commit = commit
   and> master = master in
   let { Platform.pool; variant; label = _ } = platform in
-  BC.run t { Op.Key.pool; commit; variant; ty } { Op.Value.base; master }
+  BC.run t { Op.Key.pool; commit; variant; ty } { Op.Value.base; master; urgent }
   |> Current.Primitive.map_result (Result.map ignore)
 
-let list_revdeps t ~with_tests ~platform ~pkg ~base ~master commit =
+let list_revdeps t ~with_tests ~platform ~pkg ~base ~master ~urgent commit =
   Current.component "list revdeps" |>
   let> pkg = pkg
   and> base = base
@@ -208,7 +210,7 @@ let list_revdeps t ~with_tests ~platform ~pkg ~base ~master commit =
   let ty = `Opam (`List_revdeps {Spec.list_with_tests = with_tests}, pkg) in
   BC.run t
     { Op.Key.pool; commit; variant; ty }
-    { Op.Value.base; master }
+    { Op.Value.base; master; urgent }
   |> Current.Primitive.map_result (Result.map (fun output ->
       String.split_on_char '\n' output |>
       List.filter_map (function
