@@ -1,14 +1,13 @@
 open Current.Syntax
 
+type action = {
+  job_id : Current.job_id option;
+  result : [`Built | `Checked] Current_term.Output.t;
+}
+
 type t =
   | Root of t list
-  | Branch of { label : string; children : t list }
-  | Leaf of
-      {
-        label : string;
-        job_id : Current.job_id option;
-        result : [`Built | `Checked] Current_term.Output.t;
-      }
+  | Branch of { label : string; action : action option; children : t list }
 
 let status_sep = String.make 1 Opam_repo_ci_api.Common.status_sep
 
@@ -19,24 +18,26 @@ let job_id job =
   | None -> None
 
 let root children = Root children
-let branch ~label children = Branch { label; children }
-let leaf ~label ~job_id result = Leaf { label; job_id; result }
+let branch ~label children = Branch { label; action = None; children }
+let actioned_branch ~label action children = Branch { label; action = Some action; children }
+let leaf ~label action = Branch { label; action = Some action; children = [] }
 
-let of_job ~label kind job =
+let action kind job =
   let+ job_id = job_id job
   and+ result = job |> Current.map (fun _ -> kind) |> Current.state ~hidden:true
   in
-  leaf ~label ~job_id result
+  { job_id; result }
 
 let rec flatten ~prefix f = function
   | Root children ->
     List.concat_map (flatten ~prefix f) children
-  | Branch { label; children } ->
+  | Branch { label; action = None; children } ->
     let prefix = prefix ^ label ^ status_sep in
     List.concat_map (flatten ~prefix f) children
-  | Leaf { label; job_id; result } ->
+  | Branch { label; action = Some { job_id; result }; children } ->
     let label = prefix ^ label in
-    [f ~label ~job_id ~result]
+    let prefix = prefix ^ label ^ status_sep in
+    f ~label ~job_id ~result :: List.concat_map (flatten ~prefix f) children
 
 let flatten f t = flatten f t ~prefix:""
 
@@ -50,9 +51,12 @@ let rec dump f = function
   | Root children ->
     Fmt.pf f "@[<v>%a@]"
       (Fmt.(list ~sep:cut) dump) children
-  | Branch { label; children } ->
+  | Branch { label; action = None; children } ->
     Fmt.pf f "@[<v2>%s%a@]"
       label
       Fmt.(list ~sep:nop (cut ++ dump)) children
-  | Leaf { label; job_id = _; result } ->
-    Fmt.pf f "%s (%a)" label pp_result result
+  | Branch { label; action = Some { job_id = _; result }; children } ->
+    Fmt.pf f "@[<v2>%s (%a)%a@]"
+      label
+      pp_result result
+      Fmt.(list ~sep:nop (cut ++ dump)) children
