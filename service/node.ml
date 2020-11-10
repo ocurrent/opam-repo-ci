@@ -35,9 +35,9 @@ let rec flatten ~prefix f = function
     let prefix = prefix ^ label ^ status_sep in
     List.concat_map (flatten ~prefix f) children
   | Branch { label; action = Some { job_id; result }; children } ->
+    let prefix_children = prefix ^ label ^ status_sep in
     let label = prefix ^ label in
-    let prefix = prefix ^ label ^ status_sep in
-    f ~label ~job_id ~result :: List.concat_map (flatten ~prefix f) children
+    f ~label ~job_id ~result :: List.concat_map (flatten ~prefix:prefix_children f) children
 
 let flatten f t = flatten f t ~prefix:""
 
