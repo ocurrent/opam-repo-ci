@@ -157,7 +157,7 @@ let build_with_cluster ~ocluster ~analysis ~master source =
     in
     pkgs |> dep_list_map ~collapse_key:"pkg" (module OpamPackage) (fun pkg ->
         let base =
-          let+ repo_id = Docker.peek ~schedule:weekly ~arch:"amd64" ("ocurrent/opam:" ^ variant) in
+          let+ repo_id = Docker.peek ~schedule:weekly ~arch:"amd64" ("ocaml/opam:" ^ variant) in
           Current_docker.Raw.Image.of_hash repo_id
         in
         let image =
