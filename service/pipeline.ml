@@ -112,9 +112,7 @@ let combine_revdeps ~revdeps ~revdeps_with_tests =
 let test_revdeps ~ocluster ~master ~base ~platform ~pkg ~after:main_build source =
   let revdeps = Build.list_revdeps ~base ocluster ~with_tests:false ~platform ~pkg ~master source in
   let revdeps_with_tests = Build.list_revdeps ~base ocluster ~with_tests:true ~platform ~pkg ~master source in
-  let+ list_op = Node.of_job `Checked revdeps ~label:"list revdeps"
-  and+ list_with_tests_op = Node.of_job `Checked revdeps_with_tests ~label:"list revdeps with tests"
-  and+ tests =
+  let+ tests =
     let revdeps = combine_revdeps ~revdeps ~revdeps_with_tests in
     revdeps
     |> Current.gate ~on:main_build
@@ -130,17 +128,17 @@ let test_revdeps ~ocluster ~master ~base ~platform ~pkg ~after:main_build source
           Build.v ocluster ~label:"test" ~base ~spec ~master source
         in
         let+ label = Current.map OpamPackage.to_string revdep
-        and+ build = Node.of_job `Built image ~label:"build"
-        and+ tests = Node.of_job `Built tests ~label:"tests"
+        and+ build = Node.action `Built image
+        and+ tests = Node.action `Built tests
         and+ with_tests = with_tests
         in
         if with_tests then
-          Node.branch ~label [build; tests]
+          Node.actioned_branch ~label build [Node.leaf ~label:"tests" tests]
         else
-          Node.branch ~label [build]
+          Node.leaf ~label build
       )
   in
-  [Node.branch ~label:"revdeps" (list_op :: list_with_tests_op :: tests)]
+  [Node.branch ~label:"revdeps" tests]
 
 let build_with_cluster ~ocluster ~analysis ~master source =
   let pkgs = Current.map Analyse.Analysis.packages analysis in
@@ -168,20 +166,20 @@ let build_with_cluster ~ocluster ~analysis ~master source =
           Build.v ocluster ~label:"test" ~base ~spec ~master source
         in
         let+ pkg = pkg
-        and+ build = Node.of_job `Built image ~label:"build"
-        and+ tests = Node.of_job `Built tests ~label:"tests"
+        and+ build = Node.action `Built image
+        and+ tests = Node.action `Built tests
         and+ revdeps =
           if revdeps then test_revdeps ~ocluster ~master ~base ~platform ~pkg source ~after:image
           else Current.return []
         in
         let label = OpamPackage.to_string pkg in
-        Node.branch ~label (build :: tests :: revdeps)
+        Node.actioned_branch ~label build (Node.leaf ~label:"tests" tests :: revdeps)
       )
     |> Current.map (Node.branch ~label)
     |> Current.collapse ~key:"platform" ~value:label ~input:analysis
   in
   let build = build ~pool:"linux-x86_64" in
-  let+ analysis = Node.of_job `Checked analysis ~label:"(analysis)"
+  let+ analysis = Node.action `Checked analysis
   and+ compilers = Current.list_seq [
       build ~revdeps:false "4.12" "debian-10-ocaml-4.12";
       build ~revdeps:true "4.11" "debian-10-ocaml-4.11";
@@ -210,7 +208,7 @@ let build_with_cluster ~ocluster ~analysis ~master source =
     ]
   in
   Node.root [
-    analysis;
+    Node.leaf ~label:"(analysis)" analysis;
     Node.branch ~label:"compilers" compilers;
     Node.branch ~label:"distributions" distributions;
     Node.branch ~label:"extras" extras;

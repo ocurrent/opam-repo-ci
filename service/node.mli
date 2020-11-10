@@ -1,5 +1,12 @@
+type action
+(** A result *)
+
 type t
 (** A node in the tree of results. *)
+
+val actioned_branch : label:string -> action -> t list -> t
+(** [actioned_branch ~label action children] is a branch node with an
+    action directly attached to the node itself. *)
 
 val branch : label:string -> t list -> t
 (** [branch ~label children] is a branch node. *)
@@ -7,8 +14,11 @@ val branch : label:string -> t list -> t
 val root : t list -> t
 (** [root children] is a branch with no label, used for the root node. *)
 
-val of_job : label:string -> [ `Built | `Checked ] -> _ Current.t -> t Current.t
-(** [of_job kind job ~label] is a leaf node whose status is the state of [job]
+val leaf : label:string -> action -> t
+(** [leaf ~label action] is a leaf node. *)
+
+val action : [ `Built | `Checked ] -> _ Current.t -> action Current.t
+(** [action kind job] is a result whose status is the state of [job]
     but with the value replaced with [kind]. The job ID is extracted from the
     job (so [job] must be a primitive). Although the result is a [Current.t] it
     is always successful and immediately available. *)
