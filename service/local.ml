@@ -1,15 +1,21 @@
-(* Utility program for testing the CI pipeline on a local repository. *)
+(* Utility program for testing the CI pipeline locally. *)
+
+open Capnp_rpc_lwt
+open Lwt.Infix
+
+module Github = Current_github
 
 let () =
   Unix.putenv "DOCKER_BUILDKIT" "1";
   Logging.init ()
 
-let main config mode submission_uri repo =
+let main config mode capnp_address submission_uri api repo_id =
   Logging.run begin
-    let vat = Capnp_rpc_unix.client_only_vat () in
+    Capnp_setup.run capnp_address >>= fun (vat, rpc_engine_resolver) ->
+    let repo = (api, repo_id) in
     let ocluster = Capnp_rpc_unix.Vat.import_exn vat submission_uri in
-    let repo = Current_git.Local.v (Fpath.v repo) in
     let engine = Current.Engine.create ~config (Pipeline.local_test ~ocluster repo) in
+    rpc_engine_resolver |> Option.iter (fun r -> Capability.resolve_ok r (Api_impl.make_ci ~engine));
     let routes = Current_web.routes engine in
     let site = Current_web.Site.(v ~has_role:allow_all) ~name:"opam-repo-ci-local" routes in
     Lwt.choose [
@@ -20,15 +26,17 @@ let main config mode submission_uri repo =
 
 (* Command-line parsing *)
 
+let opam_repository = { Github.Repo_id.owner = "ocaml"; name = "opam-repository" }
+
 open Cmdliner
 
 let repo =
-  Arg.required @@
-  Arg.pos 0 Arg.(some dir) None @@
+  Arg.value @@
+  Arg.opt Github.Repo_id.cmdliner opam_repository @@
   Arg.info
-    ~doc:"The directory containing the .git subdirectory."
-    ~docv:"DIR"
-    []
+    ~doc:"The GitHub repository (owner/name) to monitor."
+    ~docv:"REPO"
+    ["repo"]
 
 let submission_service =
   Arg.required @@
@@ -40,7 +48,7 @@ let submission_service =
 
 let cmd =
   let doc = "Test opam-repo-ci on a local Git clone" in
-  Term.(const main $ Current.Config.cmdliner $ Current_web.cmdliner $ submission_service $ repo),
+  Term.(const main $ Current.Config.cmdliner $ Current_web.cmdliner $ Capnp_setup.cmdliner $ submission_service $ Current_github.Api.cmdliner $ repo),
   Term.info "opam-repo-ci-local" ~doc
 
 let () = Term.(exit @@ eval cmd)

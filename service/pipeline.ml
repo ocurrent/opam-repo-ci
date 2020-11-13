@@ -273,24 +273,7 @@ let get_prs repo =
   in
   master, prs
 
-let local_test ~ocluster repo () =
-  let ocluster = Build.config ~timeout:Conf.build_timeout ocluster in
-  let src = Git.Local.head_commit repo in
-  let master = Git.Local.commit_of_ref repo "refs/remotes/origin/master" in
-  let analysis = Analyse.examine ~master src in
-  Current.component "summarise" |>
-  let** result =
-    build_with_cluster ~ocluster ~analysis ~master (Current.map Git.Commit.id src)
-    (* |> Current.map (fun x -> Fmt.pr "%a@." Node.dump x; x) *)
-    |> Current.map summarise
-  in
-  Current.of_output result
-
-let v ~ocluster ~app () =
-  let ocluster = Build.config ~timeout:Conf.build_timeout ocluster in
-  Github.App.installations app |> Current.list_iter (module Github.Installation) @@ fun installation ->
-  let repos = Github.Installation.repositories installation in
-  repos |> Current.list_iter (module Github.Api.Repo) @@ fun repo ->
+let test_repo ~ocluster ~push_status repo =
   let master, prs = get_prs repo in
   let prs = set_active_refs ~repo prs in
   prs |> Current.list_iter ~collapse_key:"pr" (module Github.Api.Commit) @@ fun head ->
@@ -316,7 +299,18 @@ let v ~ocluster ~app () =
   and set_github_status =
     summary
     |> github_status_of_state ~head
-    |> (if Conf.profile = `Production then Github.Api.Commit.set_status head "opam-ci"
+    |> (if push_status then Github.Api.Commit.set_status head "opam-ci"
         else Current.ignore_value)
   in
   Current.all [index; set_github_status]
+
+let local_test ~ocluster repo () =
+  let ocluster = Build.config ~timeout:Conf.build_timeout ocluster in
+  test_repo ~ocluster ~push_status:false (Current.return repo)
+
+let v ~ocluster ~app () =
+  let ocluster = Build.config ~timeout:Conf.build_timeout ocluster in
+  Github.App.installations app |> Current.list_iter (module Github.Installation) @@ fun installation ->
+  let repos = Github.Installation.repositories installation in
+  repos |> Current.list_iter (module Github.Api.Repo) @@ fun repo ->
+  test_repo ~ocluster ~push_status:(Conf.profile = `Production) repo

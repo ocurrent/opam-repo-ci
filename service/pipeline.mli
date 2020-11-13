@@ -1,7 +1,7 @@
 val local_test :
   ocluster:Cluster_api.Raw.Client.Submission.t Capnp_rpc_lwt.Sturdy_ref.t ->
-  Current_git.Local.t -> unit -> unit Current.t
-(** [local_test ~ocluster repo] is a pipeline that tests local repository [repo] as the CI would. *)
+  Current_github.Api.Repo.t -> unit -> unit Current.t
+(** [local_test ~ocluster repo] is a pipeline that tests GitHub repository [repo] as the CI would. *)
 
 val v :
   ocluster:Cluster_api.Raw.Client.Submission.t Capnp_rpc_lwt.Sturdy_ref.t ->
