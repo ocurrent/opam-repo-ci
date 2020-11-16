@@ -15,5 +15,6 @@
             ocluster-api
             opam_repo_ci
             opam-repo-ci-api
+            dockerfile-opam
             prometheus)
  (preprocess (pps ppx_deriving_yojson)))

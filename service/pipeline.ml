@@ -6,6 +6,7 @@ module Github = Current_github
 module Docker = Current_docker.Default
 module Common = Opam_repo_ci_api.Common
 
+let master_distro = Dockerfile_distro.master_distro
 let default_compiler = "4.11"
 
 let weekly = Current_cache.Schedule.v ~valid_for:(Duration.of_day 7) ()
@@ -180,29 +181,32 @@ let build_with_cluster ~ocluster ~analysis ~master source =
   in
   let build = build ~pool:"linux-x86_64" in
   let+ analysis = Node.action `Checked analysis
-  and+ compilers = Current.list_seq [
-      build ~revdeps:false "4.12" "debian-10-ocaml-4.12";
-      build ~revdeps:true "4.11" "debian-10-ocaml-4.11";
-      build ~revdeps:false "4.10" "debian-10-ocaml-4.10";
-      build ~revdeps:false "4.09" "debian-10-ocaml-4.09";
-      build ~revdeps:false "4.08" "debian-10-ocaml-4.08";
-      build ~revdeps:false "4.07" "debian-10-ocaml-4.07";
-      build ~revdeps:false "4.06" "debian-10-ocaml-4.06";
-      build ~revdeps:false "4.05" "debian-10-ocaml-4.05";
-      build ~revdeps:false "4.04" "debian-10-ocaml-4.04";
-      build ~revdeps:false "4.03" "debian-10-ocaml-4.03";
-      build ~revdeps:false "4.02" "debian-10-ocaml-4.02";
+  and+ compilers =
+    let master_distro = Dockerfile_distro.tag_of_distro (Dockerfile_distro.resolve_alias master_distro) in
+    Current.list_seq [
+      build ~revdeps:false "4.12" @@ master_distro^"-ocaml-4.12";
+      build ~revdeps:true  "4.11" @@ master_distro^"-ocaml-4.11";
+      build ~revdeps:false "4.10" @@ master_distro^"-ocaml-4.10";
+      build ~revdeps:false "4.09" @@ master_distro^"-ocaml-4.09";
+      build ~revdeps:false "4.08" @@ master_distro^"-ocaml-4.08";
+      build ~revdeps:false "4.07" @@ master_distro^"-ocaml-4.07";
+      build ~revdeps:false "4.06" @@ master_distro^"-ocaml-4.06";
+      build ~revdeps:false "4.05" @@ master_distro^"-ocaml-4.05";
+      build ~revdeps:false "4.04" @@ master_distro^"-ocaml-4.04";
+      build ~revdeps:false "4.03" @@ master_distro^"-ocaml-4.03";
+      build ~revdeps:false "4.02" @@ master_distro^"-ocaml-4.02";
     ]
-  and+ distributions = Current.list_seq [
-      build ~revdeps:false "alpine-3.11"     @@ "alpine-3.11-ocaml-"^default_compiler;
-      build ~revdeps:false "debian-testing"  @@ "debian-testing-ocaml-"^default_compiler;
-      build ~revdeps:false "debian-unstable" @@ "debian-unstable-ocaml-"^default_compiler;
-      build ~revdeps:false "centos-8"        @@ "centos-8-ocaml-"^default_compiler;
-      build ~revdeps:false "fedora-31"       @@ "fedora-31-ocaml-"^default_compiler;
-      build ~revdeps:false "opensuse-15.1"   @@ "opensuse-15.1-ocaml-"^default_compiler;
-      build ~revdeps:false "ubuntu-18.04"    @@ "ubuntu-18.04-ocaml-"^default_compiler;
-      build ~revdeps:false "ubuntu-20.04"    @@ "ubuntu-20.04-ocaml-"^default_compiler;
-    ]
+  and+ distributions = Current.list_seq begin
+      (Dockerfile_distro.active_tier2_distros `X86_64 @
+       Dockerfile_distro.active_tier1_distros `X86_64) |>
+      List.fold_left (fun acc distro ->
+        if Dockerfile_distro.compare distro master_distro = 0 then
+          acc
+        else
+          let distro = Dockerfile_distro.tag_of_distro (Dockerfile_distro.resolve_alias distro) in
+          build ~revdeps:false distro (distro^"-ocaml-"^default_compiler) :: acc
+      ) []
+    end
   and+ extras = Current.list_seq [
       build ~revdeps:false "flambda" @@ "debian-10-ocaml-"^default_compiler^"-flambda";
     ]
