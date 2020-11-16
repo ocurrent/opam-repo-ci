@@ -4,26 +4,22 @@ Status: **experimental**
 
 This is an [OCurrent][] pipeline that tests submissions to [opam-repository][].
 
-To test locally, set up a clone of opam-repository with
-a branch representing the PR you want it to test. e.g.
+To test locally you will need:
 
-```
-git clone https://github.com/ocaml/opam-repository ~/opam-repository
-cd ~/opam-repository
-mkdir -p packages/foo/foo.1
-...
-git commit -a -m 'My test release'
-```
+1. A [personal access token][] from GitHub.
+2. A `submission.cap` for an [OCluster][] build cluster.
 
-Then run the CI (you might need to increase the limit on the number of open files):
+Run the `opam-repo-ci-local` command
+(you might need to increase the limit on the number of open files):
 
 ```
 ulimit -n 102400
-dune exec -- opam-repo-ci-local ~/opam-repository/ --confirm harmless
+dune exec -- opam-repo-ci-local \
+  --confirm harmless \
+  --submission-service submission.cap \
+  --github-token-file token \
+  --capnp-address tcp:127.0.0.1:5001
 ```
-
-The CI will treat the HEAD commit of the repository as a PR to be merged against
-the `remotes/origin/master` branch.
 
 Browse to http://localhost:8080 to see the web UI.
 You can either set the confirm threshold (at the bottom of the web page) to allow all builds to start,
@@ -34,6 +30,21 @@ Then, for each supported platform it will try to install the package.
 If that succeeds, it will run the package's tests, and in parallel it will find other packages that
 depend on this one and test them too.
 
+### Web UI
 
+The public web front-end is a separate process.
+It needs a `.cap` file to connect to the engine.
+If you have the file for the real service, you can use that.
+If you're testing the engine locally (as shown above), you can use the `./capnp-secrets/opam-repo-ci-admin.cap`
+that it writes out.
+
+```
+dune exec -- opam-repo-ci-web --backend ./capnp-secrets/opam-repo-ci-admin.cap
+```
+
+Then browse to http://localhost:8090/github to see the public UI.
+
+[personal access token]: https://github.com/settings/tokens
 [OCurrent]: https://github.com/ocurrent/ocurrent
+[OCluster]: https://github.com/ocurrent/ocluster
 [opam-repository]: https://github.com/ocaml/opam-repository

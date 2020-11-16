@@ -10,27 +10,6 @@ let () =
   | `Staging -> Logs.info (fun f -> f "Using staging configuration")
   | `Dev -> Logs.info (fun f -> f "Using dev configuration")
 
-let or_die = function
-  | Ok x -> x
-  | Error `Msg m -> failwith m
-
-let run_capnp = function
-  | None -> Lwt.return (Capnp_rpc_unix.client_only_vat (), None)
-  | Some public_address ->
-    let config =
-      Capnp_rpc_unix.Vat_config.create
-        ~public_address
-        ~secret_key:(`File Conf.Capnp.secret_key)
-        (Capnp_rpc_unix.Network.Location.tcp ~host:"0.0.0.0" ~port:Conf.Capnp.internal_port)
-    in
-    let rpc_engine, rpc_engine_resolver = Capability.promise () in
-    let service_id = Capnp_rpc_unix.Vat_config.derived_id config "ci" in
-    let restore = Capnp_rpc_net.Restorer.single service_id rpc_engine in
-    Capnp_rpc_unix.serve config ~restore >>= fun vat ->
-    Capnp_rpc_unix.Cap_file.save_service vat service_id Conf.Capnp.cap_file |> or_die;
-    Logs.app (fun f -> f "Wrote capability reference to %S" Conf.Capnp.cap_file);
-    Lwt.return (vat, Some rpc_engine_resolver)
-
 (* Access control policy. *)
 let has_role user = function
   | `Viewer | `Monitor -> true
@@ -45,7 +24,8 @@ let has_role user = function
 
 let main config mode app capnp_address github_auth submission_uri =
   Logging.run begin
-    run_capnp capnp_address >>= fun (vat, rpc_engine_resolver) ->
+    let listen_address = Capnp_rpc_unix.Network.Location.tcp ~host:"0.0.0.0" ~port:Conf.Capnp.internal_port in
+    Capnp_setup.run ~listen_address capnp_address >>= fun (vat, rpc_engine_resolver) ->
     let ocluster = Capnp_rpc_unix.Vat.import_exn vat submission_uri in
     let engine = Current.Engine.create ~config (Pipeline.v ~ocluster ~app) in
     rpc_engine_resolver |> Option.iter (fun r -> Capability.resolve_ok r (Api_impl.make_ci ~engine));
@@ -69,14 +49,6 @@ let main config mode app capnp_address github_auth submission_uri =
 
 open Cmdliner
 
-let capnp_address =
-  Arg.value @@
-  Arg.opt (Arg.some Capnp_rpc_unix.Network.Location.cmdliner_conv) None @@
-  Arg.info
-    ~doc:"Public address (SCHEME:HOST:PORT) for Cap'n Proto RPC (default: no RPC)"
-    ~docv:"ADDR"
-    ["capnp-address"]
-
 let submission_service =
   Arg.required @@
   Arg.opt Arg.(some Capnp_rpc_unix.sturdy_uri) None @@
@@ -88,7 +60,7 @@ let submission_service =
 let cmd =
   let doc = "Build OCaml projects on GitHub" in
   Term.(const main $ Current.Config.cmdliner $ Current_web.cmdliner $
-        Current_github.App.cmdliner $ capnp_address $ Current_github.Auth.cmdliner $ submission_service),
+        Current_github.App.cmdliner $ Capnp_setup.cmdliner $ Current_github.Auth.cmdliner $ submission_service),
   Term.info "opam-repo-ci" ~doc
 
 let () = Term.(exit @@ eval cmd)
