@@ -6,7 +6,8 @@ module Github = Current_github
 module Docker = Current_docker.Default
 module Common = Opam_repo_ci_api.Common
 
-let default_compiler = "4.11"
+let master_distro = Dockerfile_distro.resolve_alias Dockerfile_distro.master_distro
+let default_compiler = Ocaml_version.with_just_major_and_minor Ocaml_version.Releases.latest
 
 let weekly = Current_cache.Schedule.v ~valid_for:(Duration.of_day 7) ()
 
@@ -180,31 +181,34 @@ let build_with_cluster ~ocluster ~analysis ~master source =
   in
   let build = build ~pool:"linux-x86_64" in
   let+ analysis = Node.action `Checked analysis
-  and+ compilers = Current.list_seq [
-      build ~revdeps:false "4.12" "debian-10-ocaml-4.12";
-      build ~revdeps:true "4.11" "debian-10-ocaml-4.11";
-      build ~revdeps:false "4.10" "debian-10-ocaml-4.10";
-      build ~revdeps:false "4.09" "debian-10-ocaml-4.09";
-      build ~revdeps:false "4.08" "debian-10-ocaml-4.08";
-      build ~revdeps:false "4.07" "debian-10-ocaml-4.07";
-      build ~revdeps:false "4.06" "debian-10-ocaml-4.06";
-      build ~revdeps:false "4.05" "debian-10-ocaml-4.05";
-      build ~revdeps:false "4.04" "debian-10-ocaml-4.04";
-      build ~revdeps:false "4.03" "debian-10-ocaml-4.03";
-      build ~revdeps:false "4.02" "debian-10-ocaml-4.02";
-    ]
-  and+ distributions = Current.list_seq [
-      build ~revdeps:false "alpine-3.11"     @@ "alpine-3.11-ocaml-"^default_compiler;
-      build ~revdeps:false "debian-testing"  @@ "debian-testing-ocaml-"^default_compiler;
-      build ~revdeps:false "debian-unstable" @@ "debian-unstable-ocaml-"^default_compiler;
-      build ~revdeps:false "centos-8"        @@ "centos-8-ocaml-"^default_compiler;
-      build ~revdeps:false "fedora-31"       @@ "fedora-31-ocaml-"^default_compiler;
-      build ~revdeps:false "opensuse-15.1"   @@ "opensuse-15.1-ocaml-"^default_compiler;
-      build ~revdeps:false "ubuntu-18.04"    @@ "ubuntu-18.04-ocaml-"^default_compiler;
-      build ~revdeps:false "ubuntu-20.04"    @@ "ubuntu-20.04-ocaml-"^default_compiler;
-    ]
-  and+ extras = Current.list_seq [
-      build ~revdeps:false "flambda" @@ "debian-10-ocaml-"^default_compiler^"-flambda";
+  and+ compilers =
+    Current.list_seq begin
+      let master_distro = Dockerfile_distro.tag_of_distro master_distro in
+      (Ocaml_version.Releases.recent @ Ocaml_version.Releases.unreleased_betas) |>
+      List.map (fun v ->
+        let v = Ocaml_version.with_just_major_and_minor v in
+        let revdeps = Ocaml_version.equal v default_compiler in (* TODO: Remove this when the cluster is ready *)
+        let v = Ocaml_version.to_string v in
+        build ~revdeps v @@ master_distro^"-ocaml-"^v
+      )
+    end
+  and+ distributions =
+    Current.list_seq begin
+      let default_compiler = Ocaml_version.to_string default_compiler in
+      (Dockerfile_distro.active_tier1_distros `X86_64 @ Dockerfile_distro.active_tier2_distros `X86_64) |>
+      List.fold_left (fun acc distro ->
+        if Dockerfile_distro.compare distro master_distro = 0 then (* TODO: Add Dockerfile_distro.equal *)
+          acc
+        else
+          let distro = Dockerfile_distro.tag_of_distro distro in
+          build ~revdeps:false distro (distro^"-ocaml-"^default_compiler) :: acc
+      ) []
+    end
+  and+ extras =
+    let master_distro = Dockerfile_distro.tag_of_distro master_distro in
+    let default_compiler = Ocaml_version.to_string default_compiler in
+    Current.list_seq [
+      build ~revdeps:false "flambda" @@ master_distro^"-ocaml-"^default_compiler^"-flambda";
     ]
   in
   Node.root [
