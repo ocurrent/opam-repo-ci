@@ -6,14 +6,8 @@ module Github = Current_github
 module Docker = Current_docker.Default
 module Common = Opam_repo_ci_api.Common
 
-let master_distro = Dockerfile_distro.master_distro
-let default_compiler = Ocaml_version.Releases.latest
-
-let distro_to_string distro =
-  Dockerfile_distro.tag_of_distro (Dockerfile_distro.resolve_alias distro)
-
-let compiler_to_string v =
-  Ocaml_version.to_string (Ocaml_version.with_just_major_and_minor v)
+let master_distro = Dockerfile_distro.resolve_alias Dockerfile_distro.master_distro
+let default_compiler = Ocaml_version.with_just_major_and_minor Ocaml_version.Releases.latest
 
 let weekly = Current_cache.Schedule.v ~valid_for:(Duration.of_day 7) ()
 
@@ -189,29 +183,30 @@ let build_with_cluster ~ocluster ~analysis ~master source =
   let+ analysis = Node.action `Checked analysis
   and+ compilers =
     Current.list_seq begin
-      let master_distro = distro_to_string master_distro in
+      let master_distro = Dockerfile_distro.tag_of_distro master_distro in
       (Ocaml_version.Releases.recent @ Ocaml_version.Releases.unreleased_betas) |>
       List.map (fun v ->
+        let v = Ocaml_version.with_just_major_and_minor v in
         let revdeps = Ocaml_version.equal v default_compiler in (* TODO: Remove this when the cluster is ready *)
-        let v = compiler_to_string v in
+        let v = Ocaml_version.to_string v in
         build ~revdeps v @@ master_distro^"-ocaml-"^v
       )
     end
   and+ distributions =
     Current.list_seq begin
-      let default_compiler = compiler_to_string default_compiler in
+      let default_compiler = Ocaml_version.to_string default_compiler in
       (Dockerfile_distro.active_tier1_distros `X86_64 @ Dockerfile_distro.active_tier2_distros `X86_64) |>
       List.fold_left (fun acc distro ->
         if Dockerfile_distro.compare distro master_distro = 0 then (* TODO: Add Dockerfile_distro.equal *)
           acc
         else
-          let distro = distro_to_string distro in
+          let distro = Dockerfile_distro.tag_of_distro distro in
           build ~revdeps:false distro (distro^"-ocaml-"^default_compiler) :: acc
       ) []
     end
   and+ extras =
-    let master_distro = distro_to_string master_distro in
-    let default_compiler = compiler_to_string default_compiler in
+    let master_distro = Dockerfile_distro.tag_of_distro master_distro in
+    let default_compiler = Ocaml_version.to_string default_compiler in
     Current.list_seq [
       build ~revdeps:false "flambda" @@ master_distro^"-ocaml-"^default_compiler^"-flambda";
     ]
