@@ -7,7 +7,13 @@ module Docker = Current_docker.Default
 module Common = Opam_repo_ci_api.Common
 
 let master_distro = Dockerfile_distro.master_distro
-let default_compiler = "4.11"
+let default_compiler = Ocaml_version.Releases.latest
+
+let distro_to_string distro =
+  Dockerfile_distro.tag_of_distro (Dockerfile_distro.resolve_alias distro)
+
+let compiler_to_string v =
+  Ocaml_version.to_string (Ocaml_version.with_just_major_and_minor v)
 
 let weekly = Current_cache.Schedule.v ~valid_for:(Duration.of_day 7) ()
 
@@ -182,33 +188,32 @@ let build_with_cluster ~ocluster ~analysis ~master source =
   let build = build ~pool:"linux-x86_64" in
   let+ analysis = Node.action `Checked analysis
   and+ compilers =
-    let master_distro = Dockerfile_distro.tag_of_distro (Dockerfile_distro.resolve_alias master_distro) in
-    Current.list_seq [
-      build ~revdeps:false "4.12" @@ master_distro^"-ocaml-4.12";
-      build ~revdeps:true  "4.11" @@ master_distro^"-ocaml-4.11";
-      build ~revdeps:false "4.10" @@ master_distro^"-ocaml-4.10";
-      build ~revdeps:false "4.09" @@ master_distro^"-ocaml-4.09";
-      build ~revdeps:false "4.08" @@ master_distro^"-ocaml-4.08";
-      build ~revdeps:false "4.07" @@ master_distro^"-ocaml-4.07";
-      build ~revdeps:false "4.06" @@ master_distro^"-ocaml-4.06";
-      build ~revdeps:false "4.05" @@ master_distro^"-ocaml-4.05";
-      build ~revdeps:false "4.04" @@ master_distro^"-ocaml-4.04";
-      build ~revdeps:false "4.03" @@ master_distro^"-ocaml-4.03";
-      build ~revdeps:false "4.02" @@ master_distro^"-ocaml-4.02";
-    ]
-  and+ distributions = Current.list_seq begin
-      (Dockerfile_distro.active_tier2_distros `X86_64 @
-       Dockerfile_distro.active_tier1_distros `X86_64) |>
+    Current.list_seq begin
+      let master_distro = distro_to_string master_distro in
+      (Ocaml_version.Releases.recent @ Ocaml_version.Releases.unreleased_betas) |>
+      List.map (fun v ->
+        let revdeps = Ocaml_version.equal v default_compiler in (* TODO: Remove this when the cluster is ready *)
+        let v = compiler_to_string v in
+        build ~revdeps v @@ master_distro^"-ocaml-"^v
+      )
+    end
+  and+ distributions =
+    Current.list_seq begin
+      let default_compiler = compiler_to_string default_compiler in
+      (Dockerfile_distro.active_tier1_distros `X86_64 @ Dockerfile_distro.active_tier2_distros `X86_64) |>
       List.fold_left (fun acc distro ->
-        if Dockerfile_distro.compare distro master_distro = 0 then
+        if Dockerfile_distro.compare distro master_distro = 0 then (* TODO: Add Dockerfile_distro.equal *)
           acc
         else
-          let distro = Dockerfile_distro.tag_of_distro (Dockerfile_distro.resolve_alias distro) in
+          let distro = distro_to_string distro in
           build ~revdeps:false distro (distro^"-ocaml-"^default_compiler) :: acc
       ) []
     end
-  and+ extras = Current.list_seq [
-      build ~revdeps:false "flambda" @@ "debian-10-ocaml-"^default_compiler^"-flambda";
+  and+ extras =
+    let master_distro = distro_to_string master_distro in
+    let default_compiler = compiler_to_string default_compiler in
+    Current.list_seq [
+      build ~revdeps:false "flambda" @@ master_distro^"-ocaml-"^default_compiler^"-flambda";
     ]
   in
   Node.root [
