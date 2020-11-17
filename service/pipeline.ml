@@ -12,7 +12,7 @@ let default_compiler = Ocaml_version.with_just_major_and_minor Ocaml_version.Rel
 let weekly = Current_cache.Schedule.v ~valid_for:(Duration.of_day 7) ()
 
 (* Link for GitHub statuses. *)
-let url ~owner ~name ~hash = Uri.of_string (Printf.sprintf "http://147.75.80.95/github/%s/%s/commit/%s" owner name hash)
+let url ~owner ~name ~hash = Uri.of_string (Printf.sprintf "https://opam.ci.ocaml.org/github/%s/%s/commit/%s" owner name hash)
 
 let github_status_of_state ~head result =
   let+ head = head
