@@ -108,15 +108,26 @@ let combine_revdeps ~revdeps ~revdeps_with_tests =
   in
   Revdep.Map.bindings map
 
+let build_tests ~revdep ~ocluster ~master ~base ~platform ~pkg ~after source =
+  let tests =
+    let spec = test_spec ~platform ?revdep pkg ~after in
+    Build.v ocluster ~label:"test" ~base ~spec ~master source
+  in
+  let+ state = Current.state ~hidden:true after
+  and+ tests = Node.action `Built tests in
+  match state with
+  | Error _ -> []
+  | Ok _ -> [Node.leaf ~label:"tests" tests]
+
 (* List the revdeps of [pkg] (using [builder] and [image]) and test each one
    (using [spec] and [base], merging [source] into [master]). *)
 let test_revdeps ~ocluster ~master ~base ~platform ~pkg ~after:main_build source =
   let revdeps = Build.list_revdeps ~base ocluster ~with_tests:false ~platform ~pkg ~master source in
   let revdeps_with_tests = Build.list_revdeps ~base ocluster ~with_tests:true ~platform ~pkg ~master source in
-  let+ tests =
+  let+ state = Current.state ~hidden:true main_build
+  and+ tests =
     let revdeps = combine_revdeps ~revdeps ~revdeps_with_tests in
     revdeps
-    |> Current.gate ~on:main_build
     |> dep_list_map (module Revdep) (fun revdep ->
         let with_tests = Current.map (fun (_, {Revdep.with_tests}) -> with_tests) revdep in
         let revdep = Current.map (fun (pkg, _) -> pkg) revdep in
@@ -124,22 +135,20 @@ let test_revdeps ~ocluster ~master ~base ~platform ~pkg ~after:main_build source
           let spec = build_spec ~platform ~revdep pkg in
           Build.v ocluster ~label:"build" ~base ~spec ~master source
         in
-        let tests =
-          let spec = test_spec ~platform ~revdep pkg ~after:image in
-          Build.v ocluster ~label:"test" ~base ~spec ~master source
-        in
         let+ label = Current.map OpamPackage.to_string revdep
         and+ build = Node.action `Built image
-        and+ tests = Node.action `Built tests
+        and+ tests = build_tests ~revdep:(Some revdep) ~ocluster ~master ~base ~platform ~pkg ~after:image source
         and+ with_tests = with_tests
         in
         if with_tests then
-          Node.actioned_branch ~label build [Node.leaf ~label:"tests" tests]
+          Node.actioned_branch ~label build tests
         else
           Node.leaf ~label build
       )
   in
-  [Node.branch ~label:"revdeps" tests]
+  match state with
+  | Error _ -> []
+  | Ok _ -> [Node.branch ~label:"revdeps" tests]
 
 let build_with_cluster ~ocluster ~analysis ~master source =
   let pkgs = Current.map Analyse.Analysis.packages analysis in
@@ -162,19 +171,15 @@ let build_with_cluster ~ocluster ~analysis ~master source =
         let image =
           let spec = build_spec ~platform pkg in
           Build.v ocluster ~label:"build" ~base ~spec ~master source in
-        let tests =
-          let spec = test_spec ~platform pkg ~after:image in
-          Build.v ocluster ~label:"test" ~base ~spec ~master source
-        in
         let+ pkg = pkg
         and+ build = Node.action `Built image
-        and+ tests = Node.action `Built tests
+        and+ tests = build_tests ~revdep:None ~ocluster ~master ~base ~platform ~pkg ~after:image source
         and+ revdeps =
           if revdeps then test_revdeps ~ocluster ~master ~base ~platform ~pkg source ~after:image
           else Current.return []
         in
         let label = OpamPackage.to_string pkg in
-        Node.actioned_branch ~label build (Node.leaf ~label:"tests" tests :: revdeps)
+        Node.actioned_branch ~label build (tests @ revdeps)
       )
     |> Current.map (Node.branch ~label)
     |> Current.collapse ~key:"platform" ~value:label ~input:analysis
