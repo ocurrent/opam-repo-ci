@@ -180,7 +180,7 @@ let link_jobs ~owner ~name ~hash ?selected jobs =
 
 let short_hash = Astring.String.with_range ~len:6
 
-let stream_logs job ~owner ~name ~refs ~hash ~jobs ~variant ~status (data, next) writer =
+let stream_logs job ~owner ~name ~refs ~hash ~variant ~status (data, next) writer =
   let header, footer =
     let can_rebuild = status.Current_rpc.Job.can_rebuild in
     let buttons =
@@ -197,7 +197,6 @@ let stream_logs job ~owner ~name ~refs ~hash ~jobs ~variant ~status (data, next)
                      short_hash hash, "commit/" ^ hash;
                     ] variant;
         link_github_refs ~owner ~name refs;
-        link_jobs ~owner ~name ~hash ~selected:variant jobs;
         div buttons;
         pre [txt "@@@"]
       ] in
@@ -244,13 +243,11 @@ let repo_handle ~meth ~owner ~name ~repo path =
   | `GET, ["commit"; hash; "variant"; variant] ->
     Capability.with_ref (Client.Repo.commit_of_hash repo hash) @@ fun commit ->
     let refs = Client.Commit.refs commit in
-    let jobs = Client.Commit.jobs commit in
     Capability.with_ref (Client.Commit.job_of_variant commit variant) @@ fun job ->
     let status = Current_rpc.Job.status job in
     Current_rpc.Job.log job ~start:0L >>!= fun chunk ->
     (* (these will have resolved by now) *)
     refs >>!= fun refs ->
-    jobs >>!= fun jobs ->
     status >>!= fun status ->
     let headers =
       (* Otherwise, an nginx reverse proxy will wait for the whole log before sending anything. *)
@@ -262,7 +259,7 @@ let repo_handle ~meth ~owner ~name ~repo path =
       let writer = Transfer_IO.make_writer ~flush Cohttp.Transfer.Chunked oc in
       Lwt.finalize
         (fun () ->
-           stream_logs job ~owner ~name ~refs ~hash ~jobs ~variant ~status chunk writer >>= fun () ->
+           stream_logs job ~owner ~name ~refs ~hash ~variant ~status chunk writer >>= fun () ->
            Server.IO.write oc "0\r\n\r\n"
         )
         (fun () ->
