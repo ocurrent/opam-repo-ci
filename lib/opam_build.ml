@@ -16,6 +16,7 @@ let opam_install ~pin ~with_tests ~pkg =
       []
   in
   pin @ [
+    run ~cache "opam remove -y %s" pkg;
     (* TODO: Replace by two calls to opam install + opam install -t using the OPAMDROPINSTALLEDPACKAGES feature *)
     run ~cache ~network "opam depext -uivy%s %s" (if with_tests then "t" else "") pkg
   ]
