@@ -80,7 +80,10 @@ let run_job ?buffer ~job build_job =
   | Ok _ as x -> Lwt.return x
 
 module Op = struct
-  type nonrec t = t
+  type nonrec t = {
+    config : t;
+    master : Current_git.Commit.t;
+  }
 
   let id = "ci-ocluster-build"
 
@@ -106,13 +109,11 @@ module Op = struct
   module Value = struct
     type t = {
       base : Image.t;                           (* The image with the OCaml compiler to use. *)
-      master : Current_git.Commit.t;
     }
 
-    let to_json { base; master } =
+    let to_json { base } =
       `Assoc [
         "base", `String (Image.digest base);
-        "master", `String (Current_git.Commit.hash master);
       ]
 
     let digest t = Yojson.Safe.to_string (to_json t)
@@ -120,7 +121,7 @@ module Op = struct
 
   module Outcome = Current.String
 
-  let run { connection; timeout} job { Key.pool; commit; variant; ty } { Value.base; master } =
+  let run { config = { connection; timeout }; master } job { Key.pool; commit; variant; ty } { Value.base } =
     let master = Current_git.Commit.hash master in
     let build_spec =
       let base = Image.hash base in
@@ -194,8 +195,9 @@ let v t ~label ~spec ~base ~master commit =
   and> base = base
   and> commit = commit
   and> master = master in
+  let t = { Op.config = t; master } in
   let { Platform.pool; variant; label = _ } = platform in
-  BC.run t { Op.Key.pool; commit; variant; ty } { Op.Value.base; master }
+  BC.run t { Op.Key.pool; commit; variant; ty } { Op.Value.base }
   |> Current.Primitive.map_result (Result.map ignore)
 
 let list_revdeps t ~with_tests ~platform ~pkg ~base ~master commit =
@@ -204,11 +206,12 @@ let list_revdeps t ~with_tests ~platform ~pkg ~base ~master commit =
   and> base = base
   and> commit = commit
   and> master = master in
+  let t = { Op.config = t; master } in
   let { Platform.pool; variant; label = _ } = platform in
   let ty = `Opam (`List_revdeps {Spec.list_with_tests = with_tests}, pkg) in
   BC.run t
     { Op.Key.pool; commit; variant; ty }
-    { Op.Value.base; master }
+    { Op.Value.base }
   |> Current.Primitive.map_result (Result.map (fun output ->
       String.split_on_char '\n' output |>
       List.filter_map (function
