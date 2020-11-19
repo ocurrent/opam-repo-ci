@@ -150,7 +150,7 @@ let test_revdeps ~ocluster ~master ~base ~platform ~pkg ~after:main_build source
 
 let build_with_cluster ~ocluster ~analysis ~master source =
   let pkgs = Current.map Analyse.Analysis.packages analysis in
-  let build ~pool ~revdeps label variant =
+  let build ~pool ~arch ~revdeps label variant =
     let platform = {Platform.label; pool; variant} in
     let analysis = with_label variant analysis in
     let pkgs =
@@ -163,7 +163,10 @@ let build_with_cluster ~ocluster ~analysis ~master source =
     in
     pkgs |> dep_list_map ~collapse_key:"pkg" (module OpamPackage) (fun pkg ->
         let base =
-          let+ repo_id = Docker.peek ~schedule:weekly ~arch:"amd64" ("ocaml/opam:" ^ variant) in
+          let+ repo_id =
+            Docker.peek ~schedule:weekly ~arch:(Ocaml_version.to_docker_arch arch)
+              ("ocaml/opam:" ^ variant)
+          in
           Current_docker.Raw.Image.of_hash repo_id
         in
         let image =
@@ -186,7 +189,7 @@ let build_with_cluster ~ocluster ~analysis ~master source =
     |> Current.map (Node.branch ~label)
     |> Current.collapse ~key:"platform" ~value:label ~input:analysis
   in
-  let build = build ~pool:"linux-x86_64" in
+  let build ~arch = build ~pool:("linux-"^Ocaml_version.to_opam_arch arch) ~arch in
   let+ analysis = Node.action `Checked analysis
   and+ compilers =
     Current.list_seq begin
@@ -196,7 +199,7 @@ let build_with_cluster ~ocluster ~analysis ~master source =
         let v = Ocaml_version.with_just_major_and_minor v in
         let revdeps = Ocaml_version.equal v default_compiler in (* TODO: Remove this when the cluster is ready *)
         let v = Ocaml_version.to_string v in
-        build ~revdeps v @@ master_distro^"-ocaml-"^v
+        build ~arch:`X86_64 ~revdeps v @@ master_distro^"-ocaml-"^v
       )
     end
   and+ distributions =
@@ -208,14 +211,16 @@ let build_with_cluster ~ocluster ~analysis ~master source =
           acc
         else
           let distro = Dockerfile_distro.tag_of_distro distro in
-          build ~revdeps:false distro (distro^"-ocaml-"^default_compiler) :: acc
+          build ~arch:`X86_64 ~revdeps:false distro (distro^"-ocaml-"^default_compiler) :: acc
       ) []
     end
   and+ extras =
     let master_distro = Dockerfile_distro.tag_of_distro master_distro in
     let default_compiler = Ocaml_version.to_string default_compiler in
     Current.list_seq [
-      build ~revdeps:false "flambda" @@ master_distro^"-ocaml-"^default_compiler^"-flambda";
+      build ~arch:`X86_64 ~revdeps:false "flambda" @@ master_distro^"-ocaml-"^default_compiler^"-flambda";
+      build ~arch:`Aarch64 ~revdeps:false "arm64" @@ master_distro^"-ocaml-"^default_compiler;
+      build ~arch:`Ppc64le ~revdeps:false "ppc64" @@ master_distro^"-ocaml-"^default_compiler;
     ]
   in
   Node.root [
