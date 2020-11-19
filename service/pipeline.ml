@@ -25,6 +25,13 @@ let github_status_of_state ~head result =
   | Error (`Active _) -> Github.Api.Status.v ~url `Pending
   | Error (`Msg _)    -> Github.Api.Status.v ~url `Failure ~description:"Failed"
 
+let set_active_installations installations =
+  let+ installations = installations in
+  installations
+  |> List.fold_left (fun acc i -> Index.Account_set.add (Github.Installation.account i) acc) Index.Account_set.empty
+  |> Index.set_active_accounts;
+  installations
+
 let set_active_refs ~repo xs =
   let+ repo = repo
   and+ xs = xs in
@@ -309,12 +316,15 @@ let test_repo ~ocluster ~push_status repo =
   Current.all [index; set_github_status]
 
 let local_test ~ocluster repo () =
+  let { Github.Repo_id.owner; name = _ } = Github.Api.Repo.id repo in
+  Index.set_active_accounts @@ Index.Account_set.singleton owner;
   let ocluster = Build.config ~timeout:Conf.build_timeout ocluster in
   test_repo ~ocluster ~push_status:false (Current.return repo)
 
 let v ~ocluster ~app () =
   let ocluster = Build.config ~timeout:Conf.build_timeout ocluster in
-  Github.App.installations app |> Current.list_iter (module Github.Installation) @@ fun installation ->
+  let installations = Github.App.installations app |> set_active_installations in
+  installations |> Current.list_iter (module Github.Installation) @@ fun installation ->
   let repos = Github.Installation.repositories installation in
   repos |> Current.list_iter (module Github.Api.Repo) @@ fun repo ->
   test_repo ~ocluster ~push_status:(Conf.profile = `Production) repo
