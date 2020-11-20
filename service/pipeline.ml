@@ -220,6 +220,7 @@ let build_with_cluster ~ocluster ~analysis ~master source =
     Current.list_seq [
       build ~arch:`X86_64 ~revdeps:false "flambda" @@ master_distro^"-ocaml-"^default_compiler^"-flambda";
       build ~arch:`Aarch64 ~revdeps:false "arm64" @@ master_distro^"-ocaml-"^default_compiler;
+      build ~arch:`Aarch32 ~revdeps:false "arm32" @@ master_distro^"-ocaml-"^default_compiler;
       build ~arch:`Ppc64le ~revdeps:false "ppc64" @@ master_distro^"-ocaml-"^default_compiler;
     ]
   in
