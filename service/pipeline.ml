@@ -217,11 +217,16 @@ let build_with_cluster ~ocluster ~analysis ~master source =
   and+ extras =
     let master_distro = Dockerfile_distro.tag_of_distro master_distro in
     let default_compiler = Ocaml_version.to_string default_compiler in
-    Current.list_seq [
-      build ~arch:`X86_64 ~revdeps:false "flambda" @@ master_distro^"-ocaml-"^default_compiler^"-flambda";
-      build ~arch:`Aarch64 ~revdeps:false "arm64" @@ master_distro^"-ocaml-"^default_compiler;
-      build ~arch:`Ppc64le ~revdeps:false "ppc64" @@ master_distro^"-ocaml-"^default_compiler;
-    ]
+    Current.list_seq (
+      build ~arch:`X86_64 ~revdeps:false "flambda" (master_distro^"-ocaml-"^default_compiler^"-flambda") ::
+      List.fold_left (fun acc arch ->
+        if arch = `X86_64 then
+          acc
+        else
+          let label = Ocaml_version.to_opam_arch arch in
+          build ~arch ~revdeps:false label (master_distro^"-ocaml-"^default_compiler) :: acc
+      ) [] Ocaml_version.arches
+    )
   in
   Node.root [
     Node.leaf ~label:"(analysis)" analysis;
