@@ -23,7 +23,7 @@ module Spec = struct
 
   type ty = [
     | `Opam_fmt of Analyse_ocamlformat.source option
-    | `Opam of [ `Build of opam_build | `List_revdeps of opam_list ] * package
+    | `Opam of [ `Build of opam_build | `List_revdeps of opam_list ] * package * Platform.compiler
   ] [@@deriving to_yojson]
 
   type t = {
@@ -31,8 +31,8 @@ module Spec = struct
     ty : ty;
   }
 
-  let opam ?revdep ~platform ~with_tests pkg =
-    let ty = `Opam (`Build { revdep; with_tests }, pkg) in
+  let opam ?revdep ~platform ~compiler ~with_tests pkg =
+    let ty = `Opam (`Build { revdep; with_tests }, pkg, compiler) in
     { platform; ty }
 
   let pp_pkg ?revdep f pkg =
@@ -42,10 +42,10 @@ module Spec = struct
 
   let pp_ty f = function
     | `Opam_fmt _ -> Fmt.pf f "ocamlformat"
-    | `Opam (`List_revdeps { list_with_tests }, pkg) ->
+    | `Opam (`List_revdeps { list_with_tests }, pkg, _compiler) ->
         let with_tests = if list_with_tests then "with tests" else "without tests" in
         Fmt.pf f "list revdeps of %s %s" (OpamPackage.to_string pkg) with_tests
-    | `Opam (`Build { revdep; with_tests }, pkg) ->
+    | `Opam (`Build { revdep; with_tests }, pkg, _compiler) ->
       let action = if with_tests then "test" else "build" in
       Fmt.pf f "%s %a" action (pp_pkg ?revdep) pkg
 end
@@ -126,8 +126,8 @@ module Op = struct
     let build_spec =
       let base = Image.hash base in
       match ty with
-      | `Opam (`List_revdeps { list_with_tests = with_tests }, pkg) -> Opam_build.revdeps ~with_tests ~base ~variant ~pkg
-      | `Opam (`Build { revdep; with_tests }, pkg) -> Opam_build.spec ~base ~variant ~revdep ~with_tests ~pkg
+      | `Opam (`List_revdeps { list_with_tests = with_tests }, pkg, compiler) -> Opam_build.revdeps ~with_tests ~base ~variant ~compiler ~pkg
+      | `Opam (`Build { revdep; with_tests }, pkg, compiler) -> Opam_build.spec ~base ~variant ~compiler ~revdep ~with_tests ~pkg
       | `Opam_fmt ocamlformat_source -> Lint.fmt_dockerfile ~base ~ocamlformat_source ~variant
     in
     Current.Job.write job
@@ -149,8 +149,8 @@ module Op = struct
     let cache_hint =
       let pkg =
         match ty with
-        | `Opam (`List_revdeps _, pkg)
-        | `Opam (`Build _, pkg) -> OpamPackage.to_string pkg
+        | `Opam (`List_revdeps _, pkg, _)
+        | `Opam (`Build _, pkg, _) -> OpamPackage.to_string pkg
         | `Opam_fmt _ -> "ocamlformat"
       in
       Printf.sprintf "%s-%s" (Image.hash base) pkg
@@ -160,7 +160,7 @@ module Op = struct
     let build_pool = Current_ocluster.Connection.pool ~job ~pool ~action ~cache_hint ~src connection in
     let buffer =
       match ty with
-      | `Opam (`List_revdeps _, _) -> Some (Buffer.create 1024)
+      | `Opam (`List_revdeps _, _, _) -> Some (Buffer.create 1024)
       | _ -> None
     in
     Current.Job.start_with ~pool:build_pool job ~timeout ~level:Current.Level.Average >>= fun build_job ->
@@ -200,7 +200,7 @@ let v t ~label ~spec ~base ~master commit =
   BC.run t { Op.Key.pool; commit; variant; ty } { Op.Value.base }
   |> Current.Primitive.map_result (Result.map ignore)
 
-let list_revdeps t ~with_tests ~platform ~pkg ~base ~master commit =
+let list_revdeps t ~with_tests ~platform ~compiler ~pkg ~base ~master commit =
   Current.component "list revdeps" |>
   let> pkg = pkg
   and> base = base
@@ -208,7 +208,7 @@ let list_revdeps t ~with_tests ~platform ~pkg ~base ~master commit =
   and> master = master in
   let t = { Op.config = t; master } in
   let { Platform.pool; variant; label = _ } = platform in
-  let ty = `Opam (`List_revdeps {Spec.list_with_tests = with_tests}, pkg) in
+  let ty = `Opam (`List_revdeps {Spec.list_with_tests = with_tests}, pkg, compiler) in
   BC.run t
     { Op.Key.pool; commit; variant; ty }
     { Op.Value.base }

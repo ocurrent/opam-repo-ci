@@ -21,15 +21,28 @@ let opam_install ~pin ~with_tests ~pkg =
     run ~cache ~network "opam depext -uivy%s %s" (if with_tests then "t" else "") pkg
   ]
 
-let setup_repository ~variant =
+let setup_repository ~variant ~compiler =
   let open Obuilder_spec in
+  let switch_setup =
+    match compiler.Platform.compiler_option with
+    | `System ->
+        let maj_min_v = Ocaml_version.to_string compiler.Platform.compiler_version in
+        let full_v = Ocaml_version.to_string compiler.Platform.compiler_full_version in
+        [
+          run "curl -L http://caml.inria.fr/pub/distrib/ocaml-%s/ocaml-%s.tar.gz | tar -xzf - \
+               cd 'ocaml-%s' && \
+               ./configure -prefix /usr/local --with-debug-runtime && \
+               make world.opt && \
+               sudo make install && \
+               rm -rf 'ocaml-%s'"
+            maj_min_v full_v full_v full_v;
+          run "opam switch create ocaml-system";
+        ]
+    | `Default | `Flambda ->
+        []
+  in
   let opam_extras =
-    if Astring.String.is_suffix ~affix:"-ocaml-4.07" variant ||
-       Astring.String.is_suffix ~affix:"-ocaml-4.06" variant ||
-       Astring.String.is_suffix ~affix:"-ocaml-4.05" variant ||
-       Astring.String.is_suffix ~affix:"-ocaml-4.04" variant ||
-       Astring.String.is_suffix ~affix:"-ocaml-4.03" variant ||
-       Astring.String.is_suffix ~affix:"-ocaml-4.02" variant then
+    if Ocaml_version.compare compiler.Platform.compiler_version Ocaml_version.Releases.v4_08 < 0 then
       [ run ~cache ~network "opam install -y ocaml-secondary-compiler" ] (* Speed up builds for dune >= 2.0 *)
     else
       []
@@ -44,12 +57,12 @@ let setup_repository ~variant =
   env "OPAMERRLOGLEN" "0" :: (* Show the whole log if it fails *)
   env "OPAMSOLVERTIMEOUT" "500" :: (* Increase timeout. Poor mccs is doing its best *)
   env "OPAMPRECISETRACKING" "1" :: (* Mitigate https://github.com/ocaml/opam/issues/3997 *)
-  user ~uid:1000 ~gid:1000 :: distro_extras @ opam_extras @ [
+  user ~uid:1000 ~gid:1000 :: switch_setup @ distro_extras @ opam_extras @ [
     copy ["."] ~dst:"/src/";
     run "opam repository set-url --strict default file:///src";
   ]
 
-let spec ~base ~variant ~revdep ~with_tests ~pkg =
+let spec ~base ~variant ~revdep ~compiler ~with_tests ~pkg =
   let open Obuilder_spec in
   let revdep = match revdep with
     | None -> []
@@ -61,19 +74,19 @@ let spec ~base ~variant ~revdep ~with_tests ~pkg =
   in
   { from = base;
     ops =
-      setup_repository ~variant
+      setup_repository ~variant ~compiler
       @ opam_install ~pin:true ~with_tests:false ~pkg
       @ revdep
       @ tests
   }
 
-let revdeps ~with_tests ~base ~variant ~pkg =
+let revdeps ~with_tests ~base ~variant ~compiler ~pkg =
   let open Obuilder_spec in
   let pkg = Filename.quote (OpamPackage.to_string pkg) in
   let with_tests = if with_tests then " --with-test" else "" in
   { from = base;
     ops =
-      setup_repository ~variant
+      setup_repository ~variant ~compiler
       @ [
         run "echo '@@@OUTPUT' && \
              opam list -s --color=never --depends-on %s --coinstallable-with %s --installable --all-versions --depopts%s && \

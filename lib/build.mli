@@ -4,6 +4,7 @@ module Spec : sig
   val opam :
     ?revdep:OpamPackage.t ->
     platform:Platform.t ->
+    compiler:Platform.compiler ->
     with_tests:bool ->
     OpamPackage.t ->
     t
@@ -26,6 +27,7 @@ val list_revdeps :
   t ->
   with_tests:bool ->
   platform:Platform.t ->
+  compiler:Platform.compiler ->
   pkg:OpamPackage.t Current.t ->
   base:Current_docker.Raw.Image.t Current.t ->
   master:Current_git.Commit.t Current.t ->
