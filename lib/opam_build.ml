@@ -41,14 +41,8 @@ let setup_repository ~variant ~compiler =
     | `Default | `Flambda ->
         []
   in
-  let opam_extras =
-    if Ocaml_version.compare compiler.Platform.compiler_version Ocaml_version.Releases.v4_08 < 0 then
-      [ run ~cache ~network "opam install -y ocaml-secondary-compiler" ] (* Speed up builds for dune >= 2.0 *)
-    else
-      []
-  in
   let distro_extras =
-    if Astring.String.is_prefix ~affix:"fedora" variant then
+    if Astring.String.is_prefix ~affix:"fedora" variant then (* TODO: Replace by match distro with `Fedora _ -> ... *)
       [ run ~network "sudo dnf install -y findutils" ] (* (we need xargs) *)
     else
       []
@@ -57,7 +51,7 @@ let setup_repository ~variant ~compiler =
   env "OPAMERRLOGLEN" "0" :: (* Show the whole log if it fails *)
   env "OPAMSOLVERTIMEOUT" "500" :: (* Increase timeout. Poor mccs is doing its best *)
   env "OPAMPRECISETRACKING" "1" :: (* Mitigate https://github.com/ocaml/opam/issues/3997 *)
-  user ~uid:1000 ~gid:1000 :: switch_setup @ distro_extras @ opam_extras @ [
+  user ~uid:1000 ~gid:1000 :: switch_setup @ distro_extras @ [
     copy ["."] ~dst:"/src/";
     run "opam repository set-url --strict default file:///src";
   ]
