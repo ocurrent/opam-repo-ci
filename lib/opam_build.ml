@@ -26,16 +26,16 @@ let setup_repository ~variant ~compiler =
   let switch_setup =
     match compiler.Platform.compiler_option with
     | `System ->
-        let maj_min_v = Ocaml_version.to_string compiler.Platform.compiler_version in
         let full_v = Ocaml_version.to_string compiler.Platform.compiler_full_version in
         [
-          run "curl -L http://caml.inria.fr/pub/distrib/ocaml-%s/ocaml-%s.tar.gz | tar -xzf - \
-               cd 'ocaml-%s' && \
+          run "opam source 'ocaml-base-compiler.%s' && \
+               cd 'ocaml-base-compiler.%s' && \
                ./configure -prefix /usr/local --with-debug-runtime && \
                make world.opt && \
                sudo make install && \
-               rm -rf 'ocaml-%s'"
-            maj_min_v full_v full_v full_v;
+               cd .. && \
+               rm -rf 'ocaml-base-compiler.%s'"
+            full_v full_v full_v;
           run "opam switch create ocaml-system";
         ]
     | `Default | `Flambda ->
