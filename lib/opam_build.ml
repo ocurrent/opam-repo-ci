@@ -23,6 +23,7 @@ let opam_install ~pin ~with_tests ~pkg =
 
 let setup_repository ~variant =
   let open Obuilder_spec in
+  let variant = Variant.docker_tag variant in
   let opam_extras =
     if Astring.String.is_suffix ~affix:"-ocaml-4.07" variant ||
        Astring.String.is_suffix ~affix:"-ocaml-4.06" variant ||
@@ -49,6 +50,12 @@ let setup_repository ~variant =
     run "opam repository set-url --strict default file:///src";
   ]
 
+let set_personality ~variant =
+  if Variant.arch variant |> Ocaml_version.arch_is_32bit then
+    [Obuilder_spec.shell ["/usr/bin/linux32"; "/bin/sh"; "-c"]]
+  else
+    []
+
 let spec ~base ~variant ~revdep ~with_tests ~pkg =
   let open Obuilder_spec in
   let revdep = match revdep with
@@ -61,7 +68,8 @@ let spec ~base ~variant ~revdep ~with_tests ~pkg =
   in
   { from = base;
     ops =
-      setup_repository ~variant
+      set_personality ~variant
+      @ setup_repository ~variant
       @ opam_install ~pin:true ~with_tests:false ~pkg
       @ revdep
       @ tests

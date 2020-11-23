@@ -150,9 +150,11 @@ let test_revdeps ~ocluster ~master ~base ~platform ~pkg ~after:main_build source
 
 let build_with_cluster ~ocluster ~analysis ~master source =
   let pkgs = Current.map Analyse.Analysis.packages analysis in
-  let build ~pool ~arch ~revdeps label variant =
+  let build ~revdeps label variant =
+    let arch = Variant.arch variant in
+    let pool = Conf.pool_of_arch arch in
     let platform = {Platform.label; pool; variant} in
-    let analysis = with_label variant analysis in
+    let analysis = with_label label analysis in
     let pkgs =
       (* Add fake dependency from pkgs to analysis so that the package being tested appears
          below the platform, to make the diagram look nicer. Ideally, the pulls of the
@@ -165,7 +167,7 @@ let build_with_cluster ~ocluster ~analysis ~master source =
         let base =
           let+ repo_id =
             Docker.peek ~schedule:weekly ~arch:(Ocaml_version.to_docker_arch arch)
-              ("ocaml/opam:" ^ variant)
+              ("ocaml/opam:" ^ Variant.docker_tag variant)
           in
           Current_docker.Raw.Image.of_hash repo_id
         in
@@ -189,7 +191,6 @@ let build_with_cluster ~ocluster ~analysis ~master source =
     |> Current.map (Node.branch ~label)
     |> Current.collapse ~key:"platform" ~value:label ~input:analysis
   in
-  let build ~arch = build ~pool:("linux-"^Ocaml_version.to_opam_arch arch) ~arch in
   let+ analysis = Node.action `Checked analysis
   and+ compilers =
     Current.list_seq begin
@@ -199,7 +200,8 @@ let build_with_cluster ~ocluster ~analysis ~master source =
         let v = Ocaml_version.with_just_major_and_minor v in
         let revdeps = Ocaml_version.equal v default_compiler in (* TODO: Remove this when the cluster is ready *)
         let v = Ocaml_version.to_string v in
-        build ~arch:`X86_64 ~revdeps v @@ master_distro^"-ocaml-"^v
+        let variant = Variant.v ~arch:`X86_64 @@ master_distro^"-ocaml-"^v in
+        build ~revdeps v variant
       )
     end
   and+ distributions =
@@ -211,20 +213,23 @@ let build_with_cluster ~ocluster ~analysis ~master source =
           acc
         else
           let distro = Dockerfile_distro.tag_of_distro distro in
-          build ~arch:`X86_64 ~revdeps:false distro (distro^"-ocaml-"^default_compiler) :: acc
+          let variant = Variant.v ~arch:`X86_64 @@ distro^"-ocaml-"^default_compiler in
+          build ~revdeps:false distro variant :: acc
       ) []
     end
   and+ extras =
     let master_distro = Dockerfile_distro.tag_of_distro master_distro in
     let default_compiler = Ocaml_version.to_string default_compiler in
+    let flambda = Variant.v ~arch:`X86_64 (master_distro^"-ocaml-"^default_compiler^"-flambda") in
     Current.list_seq (
-      build ~arch:`X86_64 ~revdeps:false "flambda" (master_distro^"-ocaml-"^default_compiler^"-flambda") ::
+      build ~revdeps:false "flambda" flambda ::
       List.fold_left (fun acc arch ->
         if arch = `X86_64 then
           acc
         else
           let label = Ocaml_version.to_opam_arch arch in
-          build ~arch ~revdeps:false label (master_distro^"-ocaml-"^default_compiler) :: acc
+          let variant = Variant.v ~arch (master_distro^"-ocaml-"^default_compiler) in
+          build ~revdeps:false label variant :: acc
       ) [] Ocaml_version.arches
     )
   in

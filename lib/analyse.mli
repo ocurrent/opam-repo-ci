@@ -3,7 +3,6 @@ module Analysis : sig
 
   val packages : t -> OpamPackage.t list
   val is_duniverse : t -> bool
-  val ocamlformat_source : t -> Analyse_ocamlformat.source option
 end
 
 val examine :

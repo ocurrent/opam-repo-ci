@@ -22,7 +22,6 @@ module Spec = struct
   } [@@deriving to_yojson]
 
   type ty = [
-    | `Opam_fmt of Analyse_ocamlformat.source option
     | `Opam of [ `Build of opam_build | `List_revdeps of opam_list ] * package
   ] [@@deriving to_yojson]
 
@@ -41,7 +40,6 @@ module Spec = struct
     | None -> Fmt.string f (OpamPackage.to_string pkg)
 
   let pp_ty f = function
-    | `Opam_fmt _ -> Fmt.pf f "ocamlformat"
     | `Opam (`List_revdeps { list_with_tests }, pkg) ->
         let with_tests = if list_with_tests then "with tests" else "without tests" in
         Fmt.pf f "list revdeps of %s %s" (OpamPackage.to_string pkg) with_tests
@@ -91,7 +89,7 @@ module Op = struct
     type t = {
       pool : string;                            (* The build pool to use (e.g. "linux-arm64") *)
       commit : Current_git.Commit_id.t;         (* The source code to build and test *)
-      variant : string;                         (* Added as a comment in the Dockerfile *)
+      variant : Variant.t;                      (* Added as a comment in the Dockerfile and selects personality *)
       ty : Spec.ty;
     }
 
@@ -99,7 +97,7 @@ module Op = struct
       `Assoc [
         "pool", `String pool;
         "commit", `String (Current_git.Commit_id.hash commit);
-        "variant", `String variant;
+        "variant", Variant.to_yojson variant;
         "ty", Spec.ty_to_yojson ty;
       ]
 
@@ -128,7 +126,6 @@ module Op = struct
       match ty with
       | `Opam (`List_revdeps { list_with_tests = with_tests }, pkg) -> Opam_build.revdeps ~with_tests ~base ~variant ~pkg
       | `Opam (`Build { revdep; with_tests }, pkg) -> Opam_build.spec ~base ~variant ~revdep ~with_tests ~pkg
-      | `Opam_fmt ocamlformat_source -> Lint.fmt_dockerfile ~base ~ocamlformat_source ~variant
     in
     Current.Job.write job
       (Fmt.strf "@.\
@@ -151,7 +148,6 @@ module Op = struct
         match ty with
         | `Opam (`List_revdeps _, pkg)
         | `Opam (`Build _, pkg) -> OpamPackage.to_string pkg
-        | `Opam_fmt _ -> "ocamlformat"
       in
       Printf.sprintf "%s-%s" (Image.hash base) pkg
     in
@@ -174,10 +170,10 @@ module Op = struct
       | _ -> Lwt_result.fail (`Msg "Missing output from command")
 
   let pp f ({ Key.pool = _; commit; variant; ty }, _) =
-    Fmt.pf f "@[<v>%a@,from %a@,on %s@]"
+    Fmt.pf f "@[<v>%a@,from %a@,on %a@]"
       Spec.pp_ty ty
       Current_git.Commit_id.pp commit
-      variant
+      Variant.pp variant
 
   let auto_cancel = true
   let latched = true
