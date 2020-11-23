@@ -1,6 +1,6 @@
 val spec :
   base:string ->
-  variant:string ->
+  variant:Variant.t ->
   revdep:OpamPackage.t option ->
   with_tests:bool ->
   pkg:OpamPackage.t ->
@@ -9,6 +9,6 @@ val spec :
 val revdeps :
   with_tests:bool ->
   base:string ->
-  variant:string ->
+  variant:Variant.t ->
   pkg:OpamPackage.t ->
   Obuilder_spec.stage

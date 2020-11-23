@@ -1,7 +1,7 @@
 type t = {
   label : string;
   pool : string;        (* OCluster pool *)
-  variant : string;
+  variant : Variant.t;
 }
 
 let pp f t = Fmt.string f t.label

@@ -89,7 +89,7 @@ module Op = struct
     type t = {
       pool : string;                            (* The build pool to use (e.g. "linux-arm64") *)
       commit : Current_git.Commit_id.t;         (* The source code to build and test *)
-      variant : string;                         (* Added as a comment in the Dockerfile *)
+      variant : Variant.t;                      (* Added as a comment in the Dockerfile and selects personality *)
       ty : Spec.ty;
     }
 
@@ -97,7 +97,7 @@ module Op = struct
       `Assoc [
         "pool", `String pool;
         "commit", `String (Current_git.Commit_id.hash commit);
-        "variant", `String variant;
+        "variant", Variant.to_yojson variant;
         "ty", Spec.ty_to_yojson ty;
       ]
 
@@ -170,10 +170,10 @@ module Op = struct
       | _ -> Lwt_result.fail (`Msg "Missing output from command")
 
   let pp f ({ Key.pool = _; commit; variant; ty }, _) =
-    Fmt.pf f "@[<v>%a@,from %a@,on %s@]"
+    Fmt.pf f "@[<v>%a@,from %a@,on %a@]"
       Spec.pp_ty ty
       Current_git.Commit_id.pp commit
-      variant
+      Variant.pp variant
 
   let auto_cancel = true
   let latched = true

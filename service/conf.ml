@@ -21,3 +21,8 @@ end
 
 (** Maximum time for one build. *)
 let build_timeout = Duration.of_hour 1
+
+let pool_of_arch = function
+  | `X86_64 | `I386 -> "linux-x86_64"
+  | `Aarch32 | `Aarch64 -> "linux-arm64"
+  | `Ppc64le -> "linux-ppc64"
