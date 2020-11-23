@@ -43,8 +43,6 @@ module Analysis = struct
 
   let is_duniverse _ = false
 
-  let ocamlformat_source _ = None
-
   let check_opam_version =
     let version_2 = OpamVersion.of_string "2" in
     fun name opam ->
