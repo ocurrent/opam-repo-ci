@@ -84,7 +84,7 @@ let revdeps ~with_tests ~base ~variant ~pkg =
       setup_repository ~variant
       @ [
         run "echo '@@@OUTPUT' && \
-             opam list -s --color=never --depends-on %s --coinstallable-with %s --installable --all-versions --depopts%s && \
+             opam list -s --color=never --depends-on %s --coinstallable-with %s --installable --all-versions --recursive --depopts%s && \
              echo '@@@OUTPUT'"
           pkg pkg with_tests
       ]
