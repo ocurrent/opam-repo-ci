@@ -152,7 +152,7 @@ let build_with_cluster ~ocluster ~analysis ~master source =
   let pkgs = Current.map Analyse.Analysis.packages analysis in
   let build ~pool ~arch ~revdeps label variant =
     let platform = {Platform.label; pool; variant} in
-    let analysis = with_label variant analysis in
+    let analysis = with_label label analysis in
     let pkgs =
       (* Add fake dependency from pkgs to analysis so that the package being tested appears
          below the platform, to make the diagram look nicer. Ideally, the pulls of the
