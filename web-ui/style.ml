@@ -4,6 +4,7 @@ let css = {|
   body {
     margin: 0;
     padding: 0;
+    background: white;
   }
 
   nav {
@@ -75,6 +76,15 @@ let css = {|
 
   ol.breadcrumbs li+li:before {
     content: "\00a0›\00a0";
+  }
+
+  p.ok {
+    color: black;
+    border: 1px solid black;
+    background: #0f0;
+    padding: 0.1em;
+    text-align: center;
+    font-weight: bold;
   }
 
 |} ^ Current_ansi.css ^ Github.css
