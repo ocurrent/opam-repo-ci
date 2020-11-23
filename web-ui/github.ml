@@ -17,6 +17,7 @@ let respond_error status body =
 let (>>!=) x f =
   x >>= function
   | Error `Capnp ex -> respond_error `Internal_server_error (Fmt.to_to_string Capnp_rpc.Error.pp ex)
+  | Error `Msg msg -> respond_error `Internal_server_error msg
   | Ok y -> f y
 
 let org_url owner =
@@ -163,8 +164,21 @@ let link_github_refs ~owner ~name =
       [txt ")"]
     )
 
+let is_error = function
+  | { Client.outcome = Failed msg; _ } -> not (Astring.String.is_prefix ~affix:"[SKIP]" msg)
+  | _ -> false
+
+let show_status =
+  let open Tyxml.Html in
+  function
+  | `Not_started -> [p [txt "Job not yet started"]]
+  | `Pending -> [p [txt "Testing in progress..."]]
+  | `Passed -> [p ~a:[a_class ["ok"]] [txt "Passed"]] 
+  | `Failed -> []
+
 let link_jobs ~owner ~name ~hash ?selected jobs =
   let open Tyxml.Html in
+  let errors = List.filter is_error jobs in
   let render_job trees { Client.variant; outcome } =
     let uri = job_url ~owner ~name ~hash variant in
     let k = String.split_on_char Common.status_sep variant in
@@ -176,7 +190,18 @@ let link_jobs ~owner ~name ~hash ?selected jobs =
     in
     StatusTree.add k x trees
   in
-  statuses (List.fold_left render_job [] jobs)
+  let full_tree = statuses (List.fold_left render_job [] jobs) in
+  let error_tree =
+    if errors = [] then []
+    else [
+      h2 [txt "Summary of errors"];
+      statuses (List.fold_left render_job [] errors);
+    ]
+  in
+  error_tree @ [
+    h2 [txt "Full results"];
+    full_tree
+  ]
 
 let short_hash = Astring.String.with_range ~len:6
 
@@ -188,7 +213,7 @@ let stream_logs job ~owner ~name ~refs ~hash ~variant ~status (data, next) write
           form ~a:[a_action (variant ^ "/rebuild"); a_method `Post] [
             input ~a:[a_input_type `Submit; a_value "Rebuild"] ()
           ]
-      ] else []
+        ] else []
     in
     let body = Template.instance Tyxml.Html.[
         breadcrumbs ["github", "github";
@@ -220,25 +245,27 @@ let stream_logs job ~owner ~name ~refs ~hash ~variant ~status (data, next) write
 let repo_handle ~meth ~owner ~name ~repo path =
   match meth, path with
   | `GET, [] ->
-      Client.Repo.refs repo >>!= fun refs ->
-      let body = Template.instance [
-          breadcrumbs ["github", "github";
-                       owner, owner] name;
-          format_refs ~owner ~name refs
-        ] in
-      Server.respond_string ~status:`OK ~body () |> normal_response
+    Client.Repo.refs repo >>!= fun refs ->
+    let body = Template.instance [
+        breadcrumbs ["github", "github";
+                     owner, owner] name;
+        format_refs ~owner ~name refs
+      ] in
+    Server.respond_string ~status:`OK ~body () |> normal_response
   | `GET, ["commit"; hash] ->
     Capability.with_ref (Client.Repo.commit_of_hash repo hash) @@ fun commit ->
     let refs = Client.Commit.refs commit in
+    let commit_status = Client.Commit.status commit in
     Client.Commit.jobs commit >>!= fun jobs ->
     refs >>!= fun refs ->
-    let body = Template.instance [
+    commit_status >>!= fun commit_status ->
+    let body = Template.instance ([
         breadcrumbs ["github", "github";
                      owner, owner;
                      name, name] (short_hash hash);
         link_github_refs ~owner ~name refs;
-        link_jobs ~owner ~name ~hash jobs;
-      ] in
+      ] @ show_status commit_status @ link_jobs ~owner ~name ~hash jobs)
+    in
     Server.respond_string ~status:`OK ~body () |> normal_response
   | `GET, ["commit"; hash; "variant"; variant] ->
     Capability.with_ref (Client.Repo.commit_of_hash repo hash) @@ fun commit ->
