@@ -213,6 +213,11 @@ let list_revdeps t ~with_tests ~platform ~pkg ~base ~master commit =
       String.split_on_char '\n' output |>
       List.filter_map (function
           | "" -> None
-          | pkg -> Some (OpamPackage.of_string pkg)
+          | revdep ->
+              let revdep = OpamPackage.of_string revdep in
+              if OpamPackage.equal pkg revdep then
+                None (* NOTE: opam list --recursive --depends-on <pkg> also returns <pkg> itself *)
+              else
+                Some revdep
         )
     ))
