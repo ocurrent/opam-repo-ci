@@ -2,6 +2,7 @@ open Capnp_rpc_lwt
 open Lwt.Infix
 
 let () =
+  Memtrace.trace_if_requested ~context:"opam-repo-ci" ();
   Unix.putenv "DOCKER_BUILDKIT" "1";
   Logging.init ();
   Mirage_crypto_rng_unix.initialize ();
