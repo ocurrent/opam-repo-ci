@@ -140,8 +140,8 @@ module Op = struct
          Current_git.Commit_id.pp_user_clone commit
          master
          Dockerfile.pp (Obuilder_spec.Docker.dockerfile_of_spec ~buildkit:false build_spec));
-    let spec_sexp = Obuilder_spec.sexp_of_stage build_spec in
-    let action = Cluster_api.Submission.obuilder_build (Sexplib.Sexp.to_string_hum spec_sexp) in
+    let spec_str = Fmt.to_to_string Obuilder_spec.pp_stage build_spec in
+    let action = Cluster_api.Submission.obuilder_build spec_str in
     let src = (Git.Commit_id.repo commit, [master; Git.Commit_id.hash commit]) in
     let cache_hint =
       let pkg =
@@ -153,7 +153,7 @@ module Op = struct
       Printf.sprintf "%s-%s" (Image.hash base) pkg
     in
     Current.Job.log job "Using cache hint %S" cache_hint;
-    Current.Job.log job "Using OBuilder spec:@.%a@." Sexplib.Sexp.pp_hum spec_sexp;
+    Current.Job.log job "Using OBuilder spec:@.%s@." spec_str;
     let build_pool = Current_ocluster.Connection.pool ~job ~pool ~action ~cache_hint ~src connection in
     let buffer =
       match ty with
