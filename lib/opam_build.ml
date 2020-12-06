@@ -2,7 +2,7 @@ let download_cache = "opam-archives"
 let cache = [ Obuilder_spec.Cache.v download_cache ~target:"/home/opam/.opam/download-cache" ]
 let network = ["host"]
 
-let opam_install ~pin ~with_tests ~pkg =
+let opam_install ~upgrade_opam ~pin ~with_tests ~pkg =
   let pkg = OpamPackage.to_string pkg in
   let open Obuilder_spec in
   let pin =
@@ -18,10 +18,13 @@ let opam_install ~pin ~with_tests ~pkg =
   pin @ [
     run ~cache "opam remove -y %s" pkg;
     (* TODO: Replace by two calls to opam install + opam install -t using the OPAMDROPINSTALLEDPACKAGES feature *)
-    run ~cache ~network "opam depext -uivy%s %s" (if with_tests then "t" else "") pkg
+    if upgrade_opam then
+      run ~cache ~network "opam install -y%s %s" (if with_tests then "t" else "") pkg
+    else
+      run ~cache ~network "opam depext -uivy%s %s" (if with_tests then "t" else "") pkg
   ]
 
-let setup_repository ~variant =
+let setup_repository ~upgrade_opam ~variant =
   let open Obuilder_spec in
   let variant = Variant.docker_tag variant in
   let opam_extras =
@@ -41,6 +44,9 @@ let setup_repository ~variant =
     else
       []
   in
+  (if upgrade_opam then [
+    run "sudo mv /usr/bin/opam-2.1 /usr/bin/opam";
+    env "OPAMDEPEXTYES" "1"] else []) @
   env "OPAMDOWNLOADJOBS" "1" :: (* Try to avoid github spam detection *)
   env "OPAMERRLOGLEN" "0" :: (* Show the whole log if it fails *)
   env "OPAMSOLVERTIMEOUT" "500" :: (* Increase timeout. Poor mccs is doing its best *)
@@ -56,21 +62,21 @@ let set_personality ~variant =
   else
     []
 
-let spec ~base ~variant ~revdep ~with_tests ~pkg =
+let spec ~upgrade_opam ~base ~variant ~revdep ~with_tests ~pkg =
   let open Obuilder_spec in
   let revdep = match revdep with
     | None -> []
-    | Some revdep -> opam_install ~pin:false ~with_tests:false ~pkg:revdep
+    | Some revdep -> opam_install ~upgrade_opam ~pin:false ~with_tests:false ~pkg:revdep
   and tests = match with_tests, revdep with
-    | true, None -> opam_install ~pin:false ~with_tests:true ~pkg
-    | true, Some revdep -> opam_install ~pin:false ~with_tests:true ~pkg:revdep
+    | true, None -> opam_install ~upgrade_opam ~pin:false ~with_tests:true ~pkg
+    | true, Some revdep -> opam_install ~upgrade_opam ~pin:false ~with_tests:true ~pkg:revdep
     | false, _ -> []
   in
   { from = base;
     ops =
       set_personality ~variant
-      @ setup_repository ~variant
-      @ opam_install ~pin:true ~with_tests:false ~pkg
+      @ setup_repository ~upgrade_opam ~variant
+      @ opam_install ~upgrade_opam ~pin:true ~with_tests:false ~pkg
       @ revdep
       @ tests
   }
@@ -81,7 +87,7 @@ let revdeps ~with_tests ~base ~variant ~pkg =
   let with_tests = if with_tests then " --with-test" else "" in
   { from = base;
     ops =
-      setup_repository ~variant
+      setup_repository ~upgrade_opam:false ~variant
       @ [
         run "echo '@@@OUTPUT' && \
              opam list -s --color=never --depends-on %s --coinstallable-with %s --installable --all-versions --recursive --depopts%s && \

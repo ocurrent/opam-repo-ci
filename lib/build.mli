@@ -5,6 +5,7 @@ module Spec : sig
     ?revdep:OpamPackage.t ->
     platform:Platform.t ->
     with_tests:bool ->
+    upgrade_opam:bool ->
     OpamPackage.t ->
     t
 end

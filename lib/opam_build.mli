@@ -1,4 +1,5 @@
 val spec :
+  upgrade_opam:bool ->
   base:string ->
   variant:Variant.t ->
   revdep:OpamPackage.t option ->
