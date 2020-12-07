@@ -14,7 +14,8 @@ module Spec = struct
 
   type opam_build = {
     revdep : package option;
-    with_tests:bool;
+    with_tests : bool;
+    upgrade_opam : bool [@default false];
   } [@@deriving to_yojson]
 
   type opam_list = {
@@ -30,8 +31,8 @@ module Spec = struct
     ty : ty;
   }
 
-  let opam ?revdep ~platform ~with_tests pkg =
-    let ty = `Opam (`Build { revdep; with_tests }, pkg) in
+  let opam ?revdep ~platform ~with_tests ~upgrade_opam pkg =
+    let ty = `Opam (`Build { revdep; with_tests; upgrade_opam }, pkg) in
     { platform; ty }
 
   let pp_pkg ?revdep f pkg =
@@ -43,9 +44,10 @@ module Spec = struct
     | `Opam (`List_revdeps { list_with_tests }, pkg) ->
         let with_tests = if list_with_tests then "with tests" else "without tests" in
         Fmt.pf f "list revdeps of %s %s" (OpamPackage.to_string pkg) with_tests
-    | `Opam (`Build { revdep; with_tests }, pkg) ->
+    | `Opam (`Build { revdep; with_tests; upgrade_opam }, pkg) ->
       let action = if with_tests then "test" else "build" in
-      Fmt.pf f "%s %a" action (pp_pkg ?revdep) pkg
+      Fmt.pf f "%s %a%s" action (pp_pkg ?revdep) pkg
+        (if upgrade_opam then ", using opam 2.1" else "")
 end
 
 type t = {
@@ -125,7 +127,7 @@ module Op = struct
       let base = Image.hash base in
       match ty with
       | `Opam (`List_revdeps { list_with_tests = with_tests }, pkg) -> Opam_build.revdeps ~with_tests ~base ~variant ~pkg
-      | `Opam (`Build { revdep; with_tests }, pkg) -> Opam_build.spec ~base ~variant ~revdep ~with_tests ~pkg
+      | `Opam (`Build { revdep; with_tests; upgrade_opam }, pkg) -> Opam_build.spec ~upgrade_opam ~base ~variant ~revdep ~with_tests ~pkg
     in
     Current.Job.write job
       (Fmt.strf "@.\

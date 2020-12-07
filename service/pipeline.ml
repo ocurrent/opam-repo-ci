@@ -71,18 +71,18 @@ let dep_list_map (type a) (module M : Current_term.S.ORDERED with type t = a) ?c
     Logs.warn (fun f -> f "dep_list_map: input is ready but output is pending!");
     []
 
-let build_spec ~platform ?revdep pkg =
+let build_spec ~platform ~upgrade_opam ?revdep pkg =
   let+ revdep = Current.option_seq revdep
   and+ pkg = pkg
   in
-  Build.Spec.opam ~platform ?revdep ~with_tests:false pkg
+  Build.Spec.opam ~platform ?revdep ~with_tests:false ~upgrade_opam pkg
 
-let test_spec ~platform ~after ?revdep pkg =
+let test_spec ~platform ~upgrade_opam ~after ?revdep pkg =
   let+ revdep = Current.option_seq revdep
   and+ _ = after
   and+ pkg = pkg
   in
-  Build.Spec.opam ~platform ?revdep ~with_tests:true pkg
+  Build.Spec.opam ~platform ?revdep ~with_tests:true ~upgrade_opam pkg
 
 module Revdep = struct
   module Map = OpamPackage.Map
@@ -128,11 +128,11 @@ let test_revdeps ~ocluster ~master ~base ~platform ~pkg ~after:main_build source
         let with_tests = Current.map (fun (_, {Revdep.with_tests}) -> with_tests) revdep in
         let revdep = Current.map (fun (pkg, _) -> pkg) revdep in
         let image =
-          let spec = build_spec ~platform ~revdep pkg in
+          let spec = build_spec ~platform ~upgrade_opam:false ~revdep pkg in
           Build.v ocluster ~label:"build" ~base ~spec ~master source
         in
         let tests =
-          let spec = test_spec ~platform ~revdep pkg ~after:image in
+          let spec = test_spec ~platform ~upgrade_opam:false ~revdep pkg ~after:image in
           Build.v ocluster ~label:"test" ~base ~spec ~master source
         in
         let+ label = Current.map OpamPackage.to_string revdep
@@ -150,7 +150,7 @@ let test_revdeps ~ocluster ~master ~base ~platform ~pkg ~after:main_build source
 
 let build_with_cluster ~ocluster ~analysis ~master source =
   let pkgs = Current.map Analyse.Analysis.packages analysis in
-  let build ~revdeps label variant =
+  let build ?(upgrade_opam=false) ~revdeps label variant =
     let arch = Variant.arch variant in
     let pool = Conf.pool_of_arch arch in
     let platform = {Platform.label; pool; variant} in
@@ -172,10 +172,10 @@ let build_with_cluster ~ocluster ~analysis ~master source =
           Current_docker.Raw.Image.of_hash repo_id
         in
         let image =
-          let spec = build_spec ~platform pkg in
+          let spec = build_spec ~platform ~upgrade_opam pkg in
           Build.v ocluster ~label:"build" ~base ~spec ~master source in
         let tests =
-          let spec = test_spec ~platform pkg ~after:image in
+          let spec = test_spec ~platform ~upgrade_opam pkg ~after:image in
           Build.v ocluster ~label:"test" ~base ~spec ~master source
         in
         let+ pkg = pkg
@@ -222,14 +222,14 @@ let build_with_cluster ~ocluster ~analysis ~master source =
     let default_compiler = Ocaml_version.to_string default_compiler in
     let flambda = Variant.v ~arch:`X86_64 (master_distro^"-ocaml-"^default_compiler^"-flambda") in
     Current.list_seq (
-      build ~revdeps:false "flambda" flambda ::
+      build ~upgrade_opam:true ~revdeps:false "flambda" flambda ::
       List.fold_left (fun acc arch ->
         if arch = `X86_64 then
           acc
         else
           let label = Ocaml_version.to_opam_arch arch in
           let variant = Variant.v ~arch (master_distro^"-ocaml-"^default_compiler) in
-          build ~revdeps:false label variant :: acc
+          build ~upgrade_opam:true ~revdeps:false label variant :: acc
       ) [] Ocaml_version.arches
     )
   in
