@@ -112,7 +112,8 @@ module Analysis = struct
             (* Check it exists, parses, and is the right version. *)
             let opam_path = full_path / "opam" in
             read_file ~max_len:102400 opam_path >|= fun content ->
-            let opam = OpamFile.OPAM.read_from_string content in
+            let filename = OpamFile.make (OpamFilename.raw (rel_path / "opam")) in
+            let opam = OpamFile.OPAM.read_from_string ~filename content in
             check_opam_version opam_path opam;
             Some pkg
           | `Does_not_exist ->
