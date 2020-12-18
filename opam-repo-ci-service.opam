@@ -6,6 +6,13 @@ authors: ["talex5@gmail.com"]
 homepage: "https://github.com/ocurrent/opam-repo-ci"
 bug-reports: "https://github.com/ocurrent/opam-repo-ci/issues"
 depends: [
+  "prometheus" {>= "0.7"}
+  "ppx_sexp_conv"
+  "ppx_deriving_yojson"
+  "ppx_deriving"
+  "mirage-crypto-rng" {>= "0.8.0"}
+  "logs"
+  "fmt" {>= "0.8.0"}
   "dune" {>= "1.11"}
   "ocaml" {>= "4.11.0"}
   "current_git"
@@ -14,7 +21,8 @@ depends: [
   "current_web"
   "current_rpc"
   "memtrace"
-  "capnp-rpc-unix" {>= "0.5.0"}
+  "capnp-rpc-lwt" {>= "0.8.0"}
+  "capnp-rpc-unix" {>= "0.8.0"}
   "opam-repo-ci-api"
   "opam-format" {>= "2.0.0"}
   "conf-libev"
