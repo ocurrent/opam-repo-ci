@@ -276,6 +276,14 @@ let summarise results =
     | _, [], _ -> Ok ()                     (* No errors and at least one success *)
     | ok, err, _ -> list_errors ~ok err     (* Some errors found - report *)
 
+(* An in-memory-only latch of the last successful value. *)
+let latch ~label x =
+  let prev = ref (Error (`Active `Ready), None) in
+  Current.component "latch %s" label |>
+  let> x = Current.state ~hidden:true x in
+  Result.iter (fun x -> prev := Ok x, None) x;
+  Current_incr.const !prev
+
 let get_prs repo =
   let refs =
     Current.component "Get PRs" |>
@@ -286,7 +294,6 @@ let get_prs repo =
     refs
     |> Current.map (Github.Api.Ref_map.find (`Ref "refs/heads/master"))
     |> Current.map Github.Api.Commit.id
-    |> with_label "master"
     |> Git.fetch
   in
   let prs =
@@ -301,6 +308,7 @@ let get_prs repo =
 
 let test_repo ~ocluster ~push_status repo =
   let master, prs = get_prs repo in
+  let master = latch ~label:"master" master in  (* Don't cancel builds while fetching updates to this *)
   let prs = set_active_refs ~repo prs in
   prs |> Current.list_iter ~collapse_key:"pr" (module Github.Api.Commit) @@ fun head ->
   let commit_id = Current.map Github.Api.Commit.id head in
