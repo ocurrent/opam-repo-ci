@@ -4,7 +4,7 @@ open Lwt.Infix
 let () =
   Memtrace.trace_if_requested ~context:"opam-repo-ci" ();
   Unix.putenv "DOCKER_BUILDKIT" "1";
-  Logging.init ();
+  Prometheus_unix.Logging.init ();
   Mirage_crypto_rng_unix.initialize ();
   match Conf.profile with
   | `Production -> Logs.info (fun f -> f "Using production configuration")
@@ -24,7 +24,7 @@ let has_role user = function
     | _ -> false
 
 let main config mode app capnp_address github_auth submission_uri =
-  Logging.run begin
+  Lwt_main.run begin
     let listen_address = Capnp_rpc_unix.Network.Location.tcp ~host:"0.0.0.0" ~port:Conf.Capnp.internal_port in
     Capnp_setup.run ~listen_address capnp_address >>= fun (vat, rpc_engine_resolver) ->
     let ocluster = Capnp_rpc_unix.Vat.import_exn vat submission_uri in
@@ -60,8 +60,8 @@ let submission_service =
 
 let cmd =
   let doc = "Build OCaml projects on GitHub" in
-  Term.(const main $ Current.Config.cmdliner $ Current_web.cmdliner $
-        Current_github.App.cmdliner $ Capnp_setup.cmdliner $ Current_github.Auth.cmdliner $ submission_service),
+  Term.(term_result (const main $ Current.Config.cmdliner $ Current_web.cmdliner $
+                     Current_github.App.cmdliner $ Capnp_setup.cmdliner $ Current_github.Auth.cmdliner $ submission_service)),
   Term.info "opam-repo-ci" ~doc
 
 let () = Term.(exit @@ eval cmd)

@@ -8,10 +8,10 @@ module Github = Current_github
 let () =
   Memtrace.trace_if_requested ~context:"opam-repo-ci-local" ();
   Unix.putenv "DOCKER_BUILDKIT" "1";
-  Logging.init ()
+  Prometheus_unix.Logging.init ()
 
 let main config mode capnp_address submission_uri api repo_id =
-  Logging.run begin
+  Lwt_main.run begin
     Capnp_setup.run capnp_address >>= fun (vat, rpc_engine_resolver) ->
     let repo = (api, repo_id) in
     let ocluster = Capnp_rpc_unix.Vat.import_exn vat submission_uri in
@@ -49,7 +49,7 @@ let submission_service =
 
 let cmd =
   let doc = "Test opam-repo-ci on a local Git clone" in
-  Term.(const main $ Current.Config.cmdliner $ Current_web.cmdliner $ Capnp_setup.cmdliner $ submission_service $ Current_github.Api.cmdliner $ repo),
+  Term.(term_result (const main $ Current.Config.cmdliner $ Current_web.cmdliner $ Capnp_setup.cmdliner $ submission_service $ Current_github.Api.cmdliner $ repo)),
   Term.info "opam-repo-ci-local" ~doc
 
 let () = Term.(exit @@ eval cmd)

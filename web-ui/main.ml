@@ -2,12 +2,9 @@ open Lwt.Infix
 open Astring
 
 let () =
-  Logging.init ()
+  Prometheus_unix.Logging.init ()
 
 module Server = Cohttp_lwt_unix.Server
-
-let errorf fmt =
-  fmt |> Fmt.kstrf @@ fun msg -> Error (`Msg msg)
 
 let normal_response x =
   x >|= fun x -> `Response x
@@ -73,7 +70,7 @@ let backend_cap =
     ~docv:"CAP"
     ["backend"]
 
-let cmd =
+let cmd : unit Term.t * Term.info =
   let doc = "A web front-end for opam-repo-ci" in
   Term.(const main $ port $ backend_cap $ Prometheus_unix.opts),
   Term.info "opam-repo-ci-web" ~doc
