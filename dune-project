@@ -19,6 +19,7 @@
  (synopsis "Test OCaml projects on GitHub")
  (conflicts (ocaml-migrate-parsetree (= "1.7.1")))
  (depends
+  (prometheus-app (>= 1.0))
   (prometheus (>= 0.7))
   ppx_sexp_conv
   ppx_deriving_yojson

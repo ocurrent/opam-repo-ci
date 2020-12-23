@@ -2,9 +2,7 @@
  (names main local)
  (package opam-repo-ci-service)
  (public_names opam-repo-ci-service opam-repo-ci-local)
- (libraries logs.fmt
-            fmt.tty
-            current
+ (libraries current
             current_web
             current_docker
             current_git
@@ -17,5 +15,5 @@
             opam_repo_ci
             opam-repo-ci-api
             dockerfile-opam
-            prometheus)
+            prometheus-app.unix)
  (preprocess (pps ppx_deriving_yojson)))
