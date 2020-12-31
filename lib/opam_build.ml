@@ -17,10 +17,25 @@ let opam_install ~upgrade_opam ~pin ~with_tests ~pkg =
   in
   pin @ [
     (* TODO: Replace by two calls to opam install + opam install -t using the OPAMDROPINSTALLEDPACKAGES feature *)
-    if upgrade_opam then
-      run ~cache ~network "opam remove -y %s && opam install -y%s %s" pkg (if with_tests then "t" else "") pkg
-    else
-      run ~cache ~network "opam remove -y %s && opam depext -uivy%s %s" pkg (if with_tests then "t" else "") pkg
+    run ~cache ~network {|
+        opam remove -y %s && opam %s%s %s
+        res=$?
+        test "$res" = 0 && exit 0
+        test "$res" != 31 && exit 1
+        export OPAMCLI=2.0
+        build_dir=$(opam var prefix)/.opam-switch/build
+        failed=$(ls "$build_dir")
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"$(opam var os-distribution)-$(opam var os-version)\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."
+          fi
+        done
+        exit 1
+      |}
+      pkg
+      (if upgrade_opam then "install -y" else "depext -uivy")
+      (if with_tests then "t" else "")
+      pkg
   ]
 
 let setup_repository ~upgrade_opam ~variant =
