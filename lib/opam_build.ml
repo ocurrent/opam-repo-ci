@@ -16,12 +16,11 @@ let opam_install ~upgrade_opam ~pin ~with_tests ~pkg =
       []
   in
   pin @ [
-    run ~cache "opam remove -y %s" pkg;
     (* TODO: Replace by two calls to opam install + opam install -t using the OPAMDROPINSTALLEDPACKAGES feature *)
     if upgrade_opam then
-      run ~cache ~network "opam install -y%s %s" (if with_tests then "t" else "") pkg
+      run ~cache ~network "opam remove -y %s && opam install -y%s %s" pkg (if with_tests then "t" else "") pkg
     else
-      run ~cache ~network "opam depext -uivy%s %s" (if with_tests then "t" else "") pkg
+      run ~cache ~network "opam remove -y %s && opam depext -uivy%s %s" pkg (if with_tests then "t" else "") pkg
   ]
 
 let setup_repository ~upgrade_opam ~variant =
