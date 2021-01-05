@@ -200,7 +200,7 @@ let build_with_cluster ~ocluster ~analysis ~master source =
         let v = Ocaml_version.with_just_major_and_minor v in
         let revdeps = Ocaml_version.equal v default_compiler in (* TODO: Remove this when the cluster is ready *)
         let v = Ocaml_version.to_string v in
-        let variant = Variant.v ~arch:`X86_64 @@ master_distro^"-ocaml-"^v in
+        let variant = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(v, None) in
         build ~revdeps v variant
       )
     end
@@ -213,14 +213,14 @@ let build_with_cluster ~ocluster ~analysis ~master source =
           acc
         else
           let distro = Dockerfile_distro.tag_of_distro distro in
-          let variant = Variant.v ~arch:`X86_64 @@ distro^"-ocaml-"^default_compiler in
+          let variant = Variant.v ~arch:`X86_64 ~distro ~compiler:(default_compiler, None) in
           build ~revdeps:false distro variant :: acc
       ) []
     end
   and+ extras =
     let master_distro = Dockerfile_distro.tag_of_distro master_distro in
     let default_compiler = Ocaml_version.to_string default_compiler in
-    let flambda = Variant.v ~arch:`X86_64 (master_distro^"-ocaml-"^default_compiler^"-flambda") in
+    let flambda = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(default_compiler, Some "flambda") in
     Current.list_seq (
       build ~upgrade_opam:true ~revdeps:false "flambda" flambda ::
       List.fold_left (fun acc arch ->
@@ -228,7 +228,7 @@ let build_with_cluster ~ocluster ~analysis ~master source =
           acc
         else
           let label = Ocaml_version.to_opam_arch arch in
-          let variant = Variant.v ~arch (master_distro^"-ocaml-"^default_compiler) in
+          let variant = Variant.v ~arch ~distro:master_distro ~compiler:(default_compiler, None) in
           build ~upgrade_opam:true ~revdeps:false label variant :: acc
       ) [] Ocaml_version.arches
     )
