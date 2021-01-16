@@ -24,7 +24,7 @@
   ppx_sexp_conv
   ppx_deriving_yojson
   ppx_deriving
-  (mirage-crypto-rng (>= 0.8.0))
+  (mirage-crypto-rng (>= 0.8.8))
   logs
   (fmt (>= 0.8.0))
   (dune (>= "1.11"))
@@ -60,6 +60,7 @@
   cmdliner
   lwt
   (cohttp-lwt-unix (>= 2.2.0))
+  (mirage-crypto-rng (>= 0.8.8))
   tyxml
   capnp-rpc-unix
   opam-repo-ci-api

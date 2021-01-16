@@ -1,6 +1,6 @@
 FROM ocaml/opam:debian-10-ocaml-4.11 AS build
 RUN sudo apt-get update && sudo apt-get install libev-dev capnproto m4 pkg-config libgmp-dev -y --no-install-recommends
-RUN cd ~/opam-repository && git pull origin master && git reset --hard 9bbd0b24881972dc797346d711598d22e54edf0b && opam update
+RUN cd ~/opam-repository && git pull origin master && git reset --hard df43578ae336c14c63a6d491d406bb8da762395d && opam update
 COPY --chown=opam \
 	ocurrent/current_rpc.opam \
 	ocurrent/current_ansi.opam \
