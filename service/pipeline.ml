@@ -128,11 +128,11 @@ let test_revdeps ~ocluster ~master ~base ~platform ~pkg ~after:main_build source
         let with_tests = Current.map (fun (_, {Revdep.with_tests}) -> with_tests) revdep in
         let revdep = Current.map (fun (pkg, _) -> pkg) revdep in
         let image =
-          let spec = build_spec ~platform ~upgrade_opam:false ~revdep pkg in
+          let spec = build_spec ~platform ~upgrade_opam:true ~revdep pkg in
           Build.v ocluster ~label:"build" ~base ~spec ~master source
         in
         let tests =
-          let spec = test_spec ~platform ~upgrade_opam:false ~revdep pkg ~after:image in
+          let spec = test_spec ~platform ~upgrade_opam:true ~revdep pkg ~after:image in
           Build.v ocluster ~label:"test" ~base ~spec ~master source
         in
         let+ label = Current.map OpamPackage.to_string revdep
@@ -150,7 +150,7 @@ let test_revdeps ~ocluster ~master ~base ~platform ~pkg ~after:main_build source
 
 let build_with_cluster ~ocluster ~analysis ~master source =
   let pkgs = Current.map Analyse.Analysis.packages analysis in
-  let build ?(upgrade_opam=false) ~revdeps label variant =
+  let build ~upgrade_opam ~revdeps label variant =
     let arch = Variant.arch variant in
     let pool = Conf.pool_of_arch arch in
     let platform = {Platform.label; pool; variant} in
@@ -201,7 +201,7 @@ let build_with_cluster ~ocluster ~analysis ~master source =
         let revdeps = Ocaml_version.equal v default_compiler in (* TODO: Remove this when the cluster is ready *)
         let v = Ocaml_version.to_string v in
         let variant = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(v, None) in
-        build ~revdeps v variant
+        build ~upgrade_opam:true ~revdeps v variant
       )
     end
   and+ distributions =
@@ -214,15 +214,17 @@ let build_with_cluster ~ocluster ~analysis ~master source =
         else
           let distro = Dockerfile_distro.tag_of_distro distro in
           let variant = Variant.v ~arch:`X86_64 ~distro ~compiler:(default_compiler, None) in
-          build ~revdeps:false distro variant :: acc
+          build ~upgrade_opam:true ~revdeps:false distro variant :: acc
       ) []
     end
   and+ extras =
     let master_distro = Dockerfile_distro.tag_of_distro master_distro in
     let default_compiler = Ocaml_version.to_string default_compiler in
     let flambda = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(default_compiler, Some "flambda") in
+    let opam_2_0 = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(default_compiler, None) in
     Current.list_seq (
       build ~upgrade_opam:true ~revdeps:false "flambda" flambda ::
+      build ~upgrade_opam:false ~revdeps:false "opam-2.0" opam_2_0 ::
       List.fold_left (fun acc arch ->
         if arch = `X86_64 then
           acc
