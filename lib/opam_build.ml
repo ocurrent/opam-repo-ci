@@ -21,6 +21,11 @@ let opam_install ~variant ~upgrade_opam ~pin ~with_tests ~pkg =
         opam remove -y %s && opam %s%s %s
         res=$?
         test "$res" = 0 && exit 0
+        if test "$res" = 60 && diff -q /usr/bin/opam /usr/bin/opam-2.0; then
+          sudo cp /usr/bin/opam-2.1 /usr/bin/opam
+          opam remove -y %s && opam install -y%s %s
+          res=$?
+        fi
         test "$res" = 60 && (ls -lh /tmp/cudf-dump-*.cudf; cat /tmp/cudf-dump-1.cudf; exit 1)
         test "$res" != 31 && exit 1
         export OPAMCLI=2.0
@@ -33,17 +38,15 @@ let opam_install ~variant ~upgrade_opam ~pin ~with_tests ~pkg =
         done
         exit 1
       |}
-      pkg
-      (if upgrade_opam then "install -y" else "depext -uivy")
-      (if with_tests then "t" else "")
-      pkg
+      pkg (if upgrade_opam then "install -y" else "depext -uivy") (if with_tests then "t" else "") pkg
+      pkg (if with_tests then "t" else "") pkg
       (Variant.distribution variant)
   ]
 
 let setup_repository ~upgrade_opam =
   let open Obuilder_spec in
   (if upgrade_opam then [
-    run "sudo mv /usr/bin/opam-2.1 /usr/bin/opam";
+    run "sudo cp /usr/bin/opam-2.1 /usr/bin/opam";
     env "OPAMDEPEXTYES" "1"] else []) @
   env "OPAMDOWNLOADJOBS" "1" :: (* Try to avoid github spam detection *)
   env "OPAMERRLOGLEN" "0" :: (* Show the whole log if it fails *)
