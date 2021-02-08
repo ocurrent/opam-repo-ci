@@ -22,7 +22,7 @@ let opam_install ~variant ~upgrade_opam ~pin ~with_tests ~pkg =
         res=$?
         test "$res" = 0 && exit 0
         if test "$res" = 60 && diff -q /usr/bin/opam /usr/bin/opam-2.0; then
-          sudo cp /usr/bin/opam-2.1 /usr/bin/opam
+          sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam
           opam remove -y %s && opam install -y%s %s
           res=$?
         fi
@@ -46,7 +46,7 @@ let opam_install ~variant ~upgrade_opam ~pin ~with_tests ~pkg =
 let setup_repository ~upgrade_opam =
   let open Obuilder_spec in
   (if upgrade_opam then [
-    run "sudo cp /usr/bin/opam-2.1 /usr/bin/opam";
+    run "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam";
     env "OPAMDEPEXTYES" "1"] else []) @
   env "OPAMDOWNLOADJOBS" "1" :: (* Try to avoid github spam detection *)
   env "OPAMERRLOGLEN" "0" :: (* Show the whole log if it fails *)
