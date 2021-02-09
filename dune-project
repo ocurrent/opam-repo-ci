@@ -38,7 +38,7 @@
   (capnp-rpc-lwt (>= 0.8.0))
   (capnp-rpc-unix (>= 0.8.0))
   opam-repo-ci-api
-  (opam-format (>= 2.1.0~beta))
+  (opam-format (>= 2.1.0~beta4))
   (opam-file-format (>= 2.1.2))
   conf-libev
   (dockerfile (>= 6.3.0))
