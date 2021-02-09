@@ -82,23 +82,29 @@ module Analysis = struct
             Lwt.return_some (get_package_name ~path ~name ~package)
         | ["packages"; name; package; "opam"] ->
             let cmd = "", [| "git"; "show"; master^":"^path |] in
-            Current.Process.check_output ~cwd:dir ~cancellable:true ~job cmd >|= begin function
+            Current.Process.check_output ~cwd:dir ~cancellable:true ~job cmd >>= begin function
             | Error _ -> (* new release *)
-                Some (get_package_name ~path ~name ~package)
-            | Ok content -> (* package modified *)
-                let filename = OpamFile.make (OpamFilename.raw path) in
-                let old_file =
-                  try OpamFile.OPAM.read_from_string ~filename content
-                  with Failure _ -> OpamFile.OPAM.empty
-                in
-                let new_file =
-                  try OpamFile.OPAM.read (OpamFile.make (OpamFilename.raw path))
-                  with Failure msg -> Fmt.failwith "%S failed to be parsed: %s" path msg
-                in
-                if OpamFile.OPAM.effectively_equal old_file new_file &&
-                   ci_extensions_equal old_file new_file
-                then None (* the changes are not significant so we ignore this package *)
-                else Some (get_package_name ~path ~name ~package)
+                Lwt.return_some (get_package_name ~path ~name ~package)
+            | Ok old_content ->
+                let cmd = "", [| "git"; "show"; "HEAD:"^path |] in
+                Current.Process.check_output ~cwd:dir ~cancellable:true ~job cmd >|= begin function
+                | Error _ -> (* deleted package *)
+                    None
+                | Ok new_content -> (* modified package *)
+                    let filename = OpamFile.make (OpamFilename.raw path) in
+                    let old_file =
+                      try OpamFile.OPAM.read_from_string ~filename old_content
+                      with Failure _ -> OpamFile.OPAM.empty
+                    in
+                    let new_file =
+                      try OpamFile.OPAM.read_from_string ~filename new_content
+                      with Failure msg -> Fmt.failwith "%S failed to be parsed: %s" path msg
+                    in
+                    if OpamFile.OPAM.effectively_equal old_file new_file &&
+                       ci_extensions_equal old_file new_file
+                    then None (* the changes are not significant so we ignore this package *)
+                    else Some (get_package_name ~path ~name ~package)
+                end
             end
         | _ ->
           Fmt.failwith "Unexpected path %S in output (expecting 'packages/name/pkg/...')" path
