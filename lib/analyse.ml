@@ -76,6 +76,7 @@ module Analysis = struct
     Current.Process.check_output ~cwd:dir ~cancellable:true ~job cmd >>!= fun output ->
     output
     |> String.split_on_char '\n'
+    |> List.filter (function "" -> false | _ -> true)
     |> Lwt_list.filter_map_s (fun path ->
         match String.split_on_char '/' path with
         | "packages" :: name :: package :: "files" :: _ ->
