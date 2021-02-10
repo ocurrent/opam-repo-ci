@@ -26,7 +26,7 @@
   ppx_deriving
   (mirage-crypto-rng (>= 0.8.8))
   logs
-  (fmt (>= 0.8.0))
+  (fmt (>= 0.8.7))
   (dune (>= "1.11"))
   (ocaml (>= "4.11.0"))
   current_git
@@ -53,7 +53,7 @@
  (depends
   yojson
   logs
-  (fmt (>= 0.8.0))
+  (fmt (>= 0.8.7))
   (ocaml (>= "4.11.0"))
   current_rpc
   current_ansi
@@ -73,7 +73,7 @@
  (synopsis "Command-line client for opam-repo-ci")
  (depends
   logs
-  (fmt (>= 0.8.0))
+  (fmt (>= 0.8.7))
   (dune (>= "1.11"))
   (ocaml (>= "4.11.0"))
   current_rpc

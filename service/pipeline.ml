@@ -21,9 +21,9 @@ let github_status_of_state ~head result =
   let hash = Github.Api.Commit.hash head in
   let url = url ~owner ~name ~hash in
   match result with
-  | Ok _              -> Github.Api.Status.v ~url `Success ~description:"Passed"
+  | Ok m              -> Github.Api.Status.v ~url `Success ~description:("Passed - "^m)
   | Error (`Active _) -> Github.Api.Status.v ~url `Pending
-  | Error (`Msg _)    -> Github.Api.Status.v ~url `Failure ~description:"Failed"
+  | Error (`Msg m)    -> Github.Api.Status.v ~url `Failure ~description:("Failed - "^m)
 
 let set_active_installations installations =
   let+ installations = installations in
@@ -240,41 +240,25 @@ let build_with_cluster ~ocluster ~analysis ~master source =
     Node.branch ~label:"extras" extras;
   ]
 
-let list_errors ~ok errs =
-  let groups =  (* Group by error message *)
-    List.sort compare errs |> List.fold_left (fun acc (msg, l) ->
-        match acc with
-        | (m2, ls) :: acc' when m2 = msg -> (m2, l :: ls) :: acc'
-        | _ -> (msg, [l]) :: acc
-      ) []
-  in
-  Error (`Msg (
-      match groups with
-      | [] -> "No builds at all!"
-      | [ msg, _ ] when ok = 0 -> msg (* Everything failed with the same error *)
-      | [ msg, ls ] -> Fmt.strf "%a failed: %s" Fmt.(list ~sep:(unit ", ") string) ls msg
-      | _ ->
-        (* Multiple error messages; just list everything that failed. *)
-        let pp_label f (_, l) = Fmt.string f l in
-        Fmt.strf "%a failed" Fmt.(list ~sep:(unit ", ") pp_label) errs
-    ))
-
 let summarise results =
   results
   |> Node.flatten (fun ~label ~job_id:_ ~result -> (label, result))
   |> List.fold_left (fun (ok, pending, err, skip) -> function
       | _, Ok `Checked -> (ok, pending, err, skip)  (* Don't count lint checks *)
       | _, Ok `Built -> (ok + 1, pending, err, skip)
-      | l, Error `Msg m when Astring.String.is_prefix ~affix:"[SKIP]" m -> (ok, pending, err, (m, l) :: skip)
-      | l, Error `Msg m -> (ok, pending, (m, l) :: err, skip)
+      | _, Error `Msg m when Astring.String.is_prefix ~affix:"[SKIP]" m -> (ok, pending, err, skip + 1)
+      | _, Error `Msg _ -> (ok, pending, err + 1, skip)
       | _, Error `Active _ -> (ok, pending + 1, err, skip)
-    ) (0, 0, [], [])
+      (* TODO: Find a way to use the labels and error messages to display something more useful *)
+    ) (0, 0, 0, 0)
   |> fun (ok, pending, err, skip) ->
   if pending > 0 then Error (`Active `Running)
   else match ok, err, skip with
-    | 0, [], skip -> list_errors ~ok:0 skip (* Everything was skipped - treat skips as errors *)
-    | _, [], _ -> Ok ()                     (* No errors and at least one success *)
-    | ok, err, _ -> list_errors ~ok err     (* Some errors found - report *)
+    | 0, 0, 0 -> Ok "No build was necessary"
+    | 0, 0, _skip -> Error (`Msg "Everything was skipped")
+    | ok, 0, 0 -> Ok (Fmt.str "%d jobs passed" ok)
+    | ok, 0, skip -> Ok (Fmt.str "%d jobs passed, %d jobs skipped" ok skip)
+    | ok, err, skip -> Error (`Msg (Fmt.str "%d jobs passed, %d jobs skipped, %d jobs failed" ok skip err))
 
 (* An in-memory-only latch of the last successful value. *)
 let latch ~label x =
@@ -319,7 +303,7 @@ let test_repo ~ocluster ~push_status repo =
   let status =
     let+ summary = summary in
     match summary with
-    | Ok () -> `Passed
+    | Ok _ -> `Passed
     | Error (`Active `Running) -> `Pending
     | Error (`Msg _) -> `Failed
   in
