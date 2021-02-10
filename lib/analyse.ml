@@ -5,6 +5,7 @@ let pool = Current.Pool.create ~label:"analyse" 2
 
 let ( / ) = Filename.concat
 let ( >>!= ) = Lwt_result.bind
+let list_is_empty = function [] -> true | _::_ -> false
 
 let read_file ~max_len path =
   Lwt_io.with_file ~mode:Lwt_io.input path
@@ -50,31 +51,67 @@ module Analysis = struct
       if OpamVersion.compare opam_version version_2 < 0 then
         Fmt.failwith "Package %S uses unsupported opam version %s (need >= 2)" name (OpamVersion.to_string opam_version)
 
+  let get_package_name ~path ~name ~package =
+    let nme =
+      try OpamPackage.Name.of_string name
+      with Failure msg -> Fmt.failwith "%S is not a valid package name (in %S): %s" name path msg
+    in
+    let pkg =
+      try OpamPackage.of_string package
+      with Failure msg -> Fmt.failwith "%S is not a valid package name.version (in %S): %s" package path msg
+    in
+    if OpamPackage.Name.compare nme (OpamPackage.name pkg) <> 0 then
+      Fmt.failwith "Mismatch between package dir name %S and parent directory name %S" package name;
+    pkg
+
+  (* we check extensions in case it changes the outcome of the CI (e.g. x-ci-accept-failures) *)
+  let ci_extensions_equal old_file new_file =
+    let filter_ci_exts = OpamStd.String.Map.filter (fun name _ -> OpamStd.String.starts_with ~prefix:"x-ci-" name) in
+    let old_exts = filter_ci_exts (OpamFile.OPAM.extensions old_file) in
+    let new_exts = filter_ci_exts (OpamFile.OPAM.extensions new_file) in
+    OpamStd.String.Map.equal OpamPrinter.FullPos.value_equals old_exts new_exts
+
   let find_changed_packages ~job ~master dir =
     let cmd = "", [| "git"; "diff"; "--name-only"; master; "packages/" |] in
     Current.Process.check_output ~cwd:dir ~cancellable:true ~job cmd >>!= fun output ->
     output
     |> String.split_on_char '\n'
-    |> List.filter_map (fun path ->
+    |> List.filter (function "" -> false | _ -> true)
+    |> Lwt_list.filter_map_s (fun path ->
         match String.split_on_char '/' path with
-        | [] | [""] | ["packages"] | ["packages"; _] -> None
-        | "packages" :: name :: package :: _ ->
-          let nme =
-            try OpamPackage.Name.of_string name
-            with Failure msg -> Fmt.failwith "%S is not a valid package name (in %S): %s" name path msg
-          in
-          let pkg =
-            try OpamPackage.of_string package
-            with Failure msg -> Fmt.failwith "%S is not a valid package name.version (in %S): %s" package path msg
-          in
-          if OpamPackage.Name.compare nme (OpamPackage.name pkg) <> 0 then
-            Fmt.failwith "Mismatch between package dir name %S and parent directory name %S" package name;
-          Some pkg
+        | "packages" :: name :: package :: "files" :: _ ->
+            Lwt.return_some (get_package_name ~path ~name ~package)
+        | ["packages"; name; package; "opam"] ->
+            let cmd = "", [| "git"; "show"; master^":"^path |] in
+            Current.Process.check_output ~cwd:dir ~cancellable:true ~job cmd >>= begin function
+            | Error _ -> (* new release *)
+                Lwt.return_some (get_package_name ~path ~name ~package)
+            | Ok old_content ->
+                let cmd = "", [| "git"; "show"; "HEAD:"^path |] in
+                Current.Process.check_output ~cwd:dir ~cancellable:true ~job cmd >|= begin function
+                | Error _ -> (* deleted package *)
+                    None
+                | Ok new_content -> (* modified package *)
+                    let filename = OpamFile.make (OpamFilename.raw path) in
+                    let old_file =
+                      try OpamFile.OPAM.read_from_string ~filename old_content
+                      with Failure _ -> OpamFile.OPAM.empty
+                    in
+                    let new_file =
+                      try OpamFile.OPAM.read_from_string ~filename new_content
+                      with Failure msg -> Fmt.failwith "%S failed to be parsed: %s" path msg
+                    in
+                    if OpamFile.OPAM.effectively_equal old_file new_file &&
+                       ci_extensions_equal old_file new_file
+                    then None (* the changes are not significant so we ignore this package *)
+                    else Some (get_package_name ~path ~name ~package)
+                end
+            end
         | _ ->
           Fmt.failwith "Unexpected path %S in output (expecting 'packages/name/pkg/...')" path
       )
-    |> List.sort_uniq OpamPackage.compare
-    |> Lwt_result.return
+    >|= List.sort_uniq OpamPackage.compare
+    >|= Result.ok
 
   let check_dir path =
     Lwt.try_bind
@@ -108,13 +145,15 @@ module Analysis = struct
           let full_path = Fpath.to_string dir / rel_path in
           check_dir full_path >>= function
           | `Non_directory -> Fmt.failwith "%S is not a directory!" rel_path
-          | `Directory_exists -> 
+          | `Directory_exists ->
             (* Check it exists, parses, and is the right version. *)
             let opam_path = full_path / "opam" in
             read_file ~max_len:102400 opam_path >|= fun content ->
             let filename = OpamFile.make (OpamFilename.raw (rel_path / "opam")) in
             let opam = OpamFile.OPAM.read_from_string ~filename content in
             check_opam_version opam_path opam;
+            if not (list_is_empty (OpamFile.OPAM.format_errors opam)) then
+              Fmt.failwith "Format errors detected in %S" (OpamPackage.to_string pkg);
             Some pkg
           | `Does_not_exist ->
             (* Note: we check here (rather than in the diff command) so that
