@@ -3,22 +3,8 @@ open Current.Syntax
 
 let pool = Current.Pool.create ~label:"analyse" 2
 
-let ( / ) = Filename.concat
 let ( >>!= ) = Lwt_result.bind
 let list_is_empty = function [] -> true | _::_ -> false
-
-let read_file ~max_len path =
-  Lwt_io.with_file ~mode:Lwt_io.input path
-    (fun ch ->
-       Lwt_io.length ch >>= fun len ->
-       let len =
-         if len <= Int64.of_int max_len then Int64.to_int len
-         else Fmt.failwith "File %S too big (%Ld bytes)" path len
-       in
-       let buf = Bytes.create len in
-       Lwt_io.read_into_exactly ch buf 0 len >|= fun () ->
-       Bytes.to_string buf
-    )
 
 module OpamPackage = struct
   include OpamPackage
@@ -44,12 +30,19 @@ module Analysis = struct
 
   let is_duniverse _ = false
 
-  let check_opam_version =
-    let version_2 = OpamVersion.of_string "2" in
-    fun name opam ->
-      let opam_version = OpamFile.OPAM.opam_version opam in
-      if OpamVersion.compare opam_version version_2 < 0 then
-        Fmt.failwith "Package %S uses unsupported opam version %s (need >= 2)" name (OpamVersion.to_string opam_version)
+  let opam_version_2 = OpamVersion.of_string "2"
+
+  let check_opam opam =
+    let opam_version = OpamFile.OPAM.opam_version opam in
+    let pkg = OpamFile.OPAM.package opam in
+    if OpamVersion.compare opam_version opam_version_2 < 0 then
+      Fmt.failwith
+        "Package %S uses unsupported opam version %s (need >= 2)"
+        (OpamPackage.to_string pkg)
+        (OpamVersion.to_string opam_version);
+    if not (list_is_empty (OpamFile.OPAM.format_errors opam)) then
+      Fmt.failwith "Format errors detected in %S" (OpamPackage.to_string pkg);
+    ()
 
   let get_package_name ~path ~name ~package =
     let nme =
@@ -103,6 +96,7 @@ module Analysis = struct
                       try OpamFile.OPAM.read_from_string ~filename new_content
                       with Failure msg -> Fmt.failwith "%S failed to be parsed: %s" path msg
                     in
+                    check_opam new_file;
                     if OpamFile.OPAM.effectively_equal old_file new_file &&
                        ci_extensions_equal old_file new_file
                     then None (* the changes are not significant so we ignore this package *)
@@ -115,23 +109,6 @@ module Analysis = struct
     >|= List.sort_uniq OpamPackage.compare
     >|= Result.ok
 
-  let check_dir path =
-    Lwt.try_bind
-      (fun () -> Lwt_unix.lstat path)
-      (function
-        | Unix.{ st_kind = S_DIR; _ } -> Lwt.return `Directory_exists
-        | _ -> Lwt.return `Non_directory
-      )
-      (function
-        | Unix.Unix_error(Unix.ENOENT, _, _) -> Lwt.return `Does_not_exist
-        | e -> Lwt.fail e
-      )
-
-  let path_of_package pkg =
-    Printf.sprintf "packages/%s/%s"
-      (OpamPackage.name_to_string pkg)
-      (OpamPackage.to_string pkg)
-
   let of_dir ~job ~master dir =
     let master = Current_git.Commit.hash master in
     let cmd = "", [| "git"; "merge"; "-q"; "--"; master |] in
@@ -140,30 +117,7 @@ module Analysis = struct
       Current.Job.log job "Merge failed: %s" msg;
       Lwt_result.fail (`Msg "Cannot merge to master - please rebase!")
     | Ok () ->
-      find_changed_packages ~job ~master dir >>!= fun changed ->
-      changed
-      |> Lwt_list.filter_map_s (fun pkg ->
-          let rel_path = path_of_package pkg in
-          let full_path = Fpath.to_string dir / rel_path in
-          check_dir full_path >>= function
-          | `Non_directory -> Fmt.failwith "%S is not a directory!" rel_path
-          | `Directory_exists ->
-            (* Check it exists, parses, and is the right version. *)
-            let opam_path = full_path / "opam" in
-            read_file ~max_len:102400 opam_path >|= fun content ->
-            let filename = OpamFile.make (OpamFilename.raw (rel_path / "opam")) in
-            let opam = OpamFile.OPAM.read_from_string ~filename content in
-            check_opam_version opam_path opam;
-            if not (list_is_empty (OpamFile.OPAM.format_errors opam)) then
-              Fmt.failwith "Format errors detected in %S" (OpamPackage.to_string pkg);
-            Some pkg
-          | `Does_not_exist ->
-            (* Note: we check here (rather than in the diff command) so that
-               deleting something in a package's files directory still re-checks the package. *)
-            Current.Job.log job "Package %s has been deleted" (OpamPackage.to_string pkg);
-            Lwt.return None
-        )
-      >>= fun packages ->
+      find_changed_packages ~job ~master dir >>!= fun packages ->
       let r = { packages } in
       Current.Job.log job "@[<v2>Results:@,%a@]" Yojson.Safe.(pretty_print ~std:true) (to_yojson r);
       Lwt.return (Ok r)
