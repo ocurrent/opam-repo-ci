@@ -148,7 +148,7 @@ let test_revdeps ~ocluster ~master ~base ~platform ~pkg ~after:main_build source
   in
   [Node.branch ~label:"revdeps" tests]
 
-let build_with_cluster ~ocluster ~analysis ~master source =
+let build_with_cluster ~ocluster ~analysis ~lint ~master source =
   let pkgs = Current.map Analyse.Analysis.packages analysis in
   let build ?(upgrade_opam=false) ~revdeps label variant =
     let arch = Variant.arch variant in
@@ -192,6 +192,7 @@ let build_with_cluster ~ocluster ~analysis ~master source =
     |> Current.collapse ~key:"platform" ~value:label ~input:analysis
   in
   let+ analysis = Node.action `Checked analysis
+  and+ lint = Node.action `Checked lint
   and+ compilers =
     Current.list_seq begin
       let master_distro = Dockerfile_distro.tag_of_distro master_distro in
@@ -235,6 +236,7 @@ let build_with_cluster ~ocluster ~analysis ~master source =
   in
   Node.root [
     Node.leaf ~label:"(analysis)" analysis;
+    Node.leaf ~label:"(lint)" lint;
     Node.branch ~label:"compilers" compilers;
     Node.branch ~label:"distributions" distributions;
     Node.branch ~label:"extras" extras;
@@ -298,7 +300,9 @@ let test_repo ~ocluster ~push_status repo =
   let commit_id = Current.map Github.Api.Commit.id head in
   let src = Git.fetch commit_id in
   let analysis = Analyse.examine ~master src in
-  let builds = build_with_cluster ~ocluster ~analysis ~master commit_id in
+  let packages = Current.map Analyse.Analysis.packages analysis in
+  let lint = Lint.check ~master ~packages src in
+  let builds = build_with_cluster ~ocluster ~analysis ~lint ~master commit_id in
   let summary = Current.map summarise builds in
   let status =
     let+ summary = summary in
