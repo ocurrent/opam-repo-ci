@@ -72,13 +72,15 @@ module Analysis = struct
     OpamStd.String.Map.equal OpamPrinter.FullPos.value_equals old_exts new_exts
 
   let find_changed_packages ~job ~master dir =
-    let cmd = "", [| "git"; "diff"; "--name-only"; master; "packages/" |] in
+    let cmd = "", [| "git"; "diff"; "--name-only"; master |] in
     Current.Process.check_output ~cwd:dir ~cancellable:true ~job cmd >>!= fun output ->
     output
     |> String.split_on_char '\n'
     |> List.filter (function "" -> false | _ -> true)
     |> Lwt_list.filter_map_s (fun path ->
         match String.split_on_char '/' path with
+        | [_] | ".github"::_ ->
+            Lwt.return_none
         | "packages" :: name :: package :: "files" :: _ ->
             Lwt.return_some (get_package_name ~path ~name ~package)
         | ["packages"; name; package; "opam"] ->
