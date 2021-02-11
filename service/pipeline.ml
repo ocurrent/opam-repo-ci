@@ -148,8 +148,13 @@ let test_revdeps ~ocluster ~master ~base ~platform ~pkg ~after:main_build source
   in
   [Node.branch ~label:"revdeps" tests]
 
-let build_with_cluster ~ocluster ~analysis ~master source =
+let get_significant_available_pkg = function
+  | pkg, Analyse.Analysis.(New | SignificantlyChanged) -> Some pkg
+  | _, Analyse.Analysis.(Deleted | UnsignificantlyChanged) -> None
+
+let build_with_cluster ~ocluster ~analysis ~lint ~master source =
   let pkgs = Current.map Analyse.Analysis.packages analysis in
+  let pkgs = Current.map (List.filter_map get_significant_available_pkg) pkgs in
   let build ?(upgrade_opam=false) ~revdeps label variant =
     let arch = Variant.arch variant in
     let pool = Conf.pool_of_arch arch in
@@ -192,6 +197,7 @@ let build_with_cluster ~ocluster ~analysis ~master source =
     |> Current.collapse ~key:"platform" ~value:label ~input:analysis
   in
   let+ analysis = Node.action `Checked analysis
+  and+ lint = Node.action `Checked lint
   and+ compilers =
     Current.list_seq begin
       let master_distro = Dockerfile_distro.tag_of_distro master_distro in
@@ -235,6 +241,7 @@ let build_with_cluster ~ocluster ~analysis ~master source =
   in
   Node.root [
     Node.leaf ~label:"(analysis)" analysis;
+    Node.leaf ~label:"(lint)" lint;
     Node.branch ~label:"compilers" compilers;
     Node.branch ~label:"distributions" distributions;
     Node.branch ~label:"extras" extras;
@@ -259,6 +266,7 @@ let summarise results =
     | ok, 0, 0 -> Ok (Fmt.str "%d jobs passed" ok)
     | ok, 0, skip -> Ok (Fmt.str "%d jobs passed, %d jobs skipped" ok skip)
     | ok, err, skip -> Error (`Msg (Fmt.str "%d jobs passed, %d jobs skipped, %d jobs failed" ok skip err))
+(* TODO: Tell us how many lint errors/warnings we had by introducing a [LINT] prefix and filtering it *)
 
 (* An in-memory-only latch of the last successful value. *)
 let latch ~label x =
@@ -298,7 +306,11 @@ let test_repo ~ocluster ~push_status repo =
   let commit_id = Current.map Github.Api.Commit.id head in
   let src = Git.fetch commit_id in
   let analysis = Analyse.examine ~master src in
-  let builds = build_with_cluster ~ocluster ~analysis ~master commit_id in
+  let lint =
+    let packages = Current.map Analyse.Analysis.packages analysis in
+    Lint.check ~master ~packages src
+  in
+  let builds = build_with_cluster ~ocluster ~analysis ~lint ~master commit_id in
   let summary = Current.map summarise builds in
   let status =
     let+ summary = summary in

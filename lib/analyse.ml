@@ -3,7 +3,6 @@ open Current.Syntax
 
 let pool = Current.Pool.create ~label:"analyse" 2
 
-let ( / ) = Filename.concat
 let ( >>!= ) = Lwt_result.bind
 let list_is_empty = function [] -> true | _::_ -> false
 
@@ -28,8 +27,15 @@ module OpamPackage = struct
 end
 
 module Analysis = struct
+  type kind =
+    | New
+    | Deleted
+    | SignificantlyChanged
+    | UnsignificantlyChanged
+  [@@deriving yojson]
+
   type t = {
-    packages : OpamPackage.t list;
+    packages : (OpamPackage.t * kind) list;
   }
   [@@deriving yojson]
 
@@ -44,12 +50,19 @@ module Analysis = struct
 
   let is_duniverse _ = false
 
-  let check_opam_version =
-    let version_2 = OpamVersion.of_string "2" in
-    fun name opam ->
-      let opam_version = OpamFile.OPAM.opam_version opam in
-      if OpamVersion.compare opam_version version_2 < 0 then
-        Fmt.failwith "Package %S uses unsupported opam version %s (need >= 2)" name (OpamVersion.to_string opam_version)
+  let opam_version_2 = OpamVersion.of_string "2"
+
+  let check_opam opam =
+    let opam_version = OpamFile.OPAM.opam_version opam in
+    let pkg = OpamFile.OPAM.package opam in
+    if OpamVersion.compare opam_version opam_version_2 < 0 then
+      Fmt.failwith
+        "Package %S uses unsupported opam version %s (need >= 2)"
+        (OpamPackage.to_string pkg)
+        (OpamVersion.to_string opam_version);
+    if not (list_is_empty (OpamFile.OPAM.format_errors opam)) then
+      Fmt.failwith "Format errors detected in %S" (OpamPackage.to_string pkg);
+    ()
 
   let get_package_name ~path ~name ~package =
     let nme =
@@ -71,26 +84,48 @@ module Analysis = struct
     let new_exts = filter_ci_exts (OpamFile.OPAM.extensions new_file) in
     OpamStd.String.Map.equal OpamPrinter.FullPos.value_equals old_exts new_exts
 
+  let add_pkg ~path ~name ~package kind pkgs =
+    let update old_kind = match old_kind, kind with
+      | (New | Deleted | UnsignificantlyChanged),
+        (New | Deleted | UnsignificantlyChanged) ->
+          assert false (* Would mean that packages/name/pkg/opam was present twice *)
+      | (New | Deleted), SignificantlyChanged -> old_kind
+      | UnsignificantlyChanged, SignificantlyChanged -> kind
+      | SignificantlyChanged, (New | Deleted) -> kind
+      | SignificantlyChanged, (UnsignificantlyChanged | SignificantlyChanged) -> old_kind
+    in
+    OpamPackage.Map.update (get_package_name ~path ~name ~package) update kind pkgs
+
+  let get_opam ~cwd path =
+    Lwt.catch begin fun () ->
+      read_file ~max_len:102400 (Filename.concat (Fpath.to_string cwd) path) >>=
+      Lwt.return_ok
+    end begin function
+    | Unix.Unix_error _ -> Lwt.return (Error ())
+    | e -> Lwt.fail e
+    end
+
   let find_changed_packages ~job ~master dir =
-    let cmd = "", [| "git"; "diff"; "--name-only"; master; "packages/" |] in
+    let cmd = "", [| "git"; "diff"; "--name-only"; master |] in
     Current.Process.check_output ~cwd:dir ~cancellable:true ~job cmd >>!= fun output ->
     output
     |> String.split_on_char '\n'
     |> List.filter (function "" -> false | _ -> true)
-    |> Lwt_list.filter_map_s (fun path ->
+    |> Lwt_list.fold_left_s (fun pkgs path ->
         match String.split_on_char '/' path with
+        | [_] | ".github"::_ ->
+            Lwt.return pkgs
         | "packages" :: name :: package :: "files" :: _ ->
-            Lwt.return_some (get_package_name ~path ~name ~package)
+            Lwt.return (add_pkg ~path ~name ~package SignificantlyChanged pkgs)
         | ["packages"; name; package; "opam"] ->
             let cmd = "", [| "git"; "show"; master^":"^path |] in
             Current.Process.check_output ~cwd:dir ~cancellable:true ~job cmd >>= begin function
             | Error _ -> (* new release *)
-                Lwt.return_some (get_package_name ~path ~name ~package)
+                Lwt.return (add_pkg ~path ~name ~package New pkgs)
             | Ok old_content ->
-                let cmd = "", [| "git"; "show"; "HEAD:"^path |] in
-                Current.Process.check_output ~cwd:dir ~cancellable:true ~job cmd >|= begin function
-                | Error _ -> (* deleted package *)
-                    None
+                get_opam ~cwd:dir path >|= begin function
+                | Error () -> (* deleted package *)
+                    add_pkg ~path ~name ~package Deleted pkgs
                 | Ok new_content -> (* modified package *)
                     let filename = OpamFile.make (OpamFilename.raw path) in
                     let old_file =
@@ -101,34 +136,18 @@ module Analysis = struct
                       try OpamFile.OPAM.read_from_string ~filename new_content
                       with Failure msg -> Fmt.failwith "%S failed to be parsed: %s" path msg
                     in
-                    if OpamFile.OPAM.effectively_equal old_file new_file &&
-                       ci_extensions_equal old_file new_file
-                    then None (* the changes are not significant so we ignore this package *)
-                    else Some (get_package_name ~path ~name ~package)
+                    check_opam new_file;
+                    if OpamFile.OPAM.effectively_equal old_file new_file && ci_extensions_equal old_file new_file then
+                      (* the changes are not significant so we ignore this package *)
+                      add_pkg ~path ~name ~package UnsignificantlyChanged pkgs
+                    else
+                      add_pkg ~path ~name ~package SignificantlyChanged pkgs
                 end
             end
         | _ ->
           Fmt.failwith "Unexpected path %S in output (expecting 'packages/name/pkg/...')" path
-      )
-    >|= List.sort_uniq OpamPackage.compare
+      ) OpamPackage.Map.empty
     >|= Result.ok
-
-  let check_dir path =
-    Lwt.try_bind
-      (fun () -> Lwt_unix.lstat path)
-      (function
-        | Unix.{ st_kind = S_DIR; _ } -> Lwt.return `Directory_exists
-        | _ -> Lwt.return `Non_directory
-      )
-      (function
-        | Unix.Unix_error(Unix.ENOENT, _, _) -> Lwt.return `Does_not_exist
-        | e -> Lwt.fail e
-      )
-
-  let path_of_package pkg =
-    Printf.sprintf "packages/%s/%s"
-      (OpamPackage.name_to_string pkg)
-      (OpamPackage.to_string pkg)
 
   let of_dir ~job ~master dir =
     let master = Current_git.Commit.hash master in
@@ -138,31 +157,8 @@ module Analysis = struct
       Current.Job.log job "Merge failed: %s" msg;
       Lwt_result.fail (`Msg "Cannot merge to master - please rebase!")
     | Ok () ->
-      find_changed_packages ~job ~master dir >>!= fun changed ->
-      changed
-      |> Lwt_list.filter_map_s (fun pkg ->
-          let rel_path = path_of_package pkg in
-          let full_path = Fpath.to_string dir / rel_path in
-          check_dir full_path >>= function
-          | `Non_directory -> Fmt.failwith "%S is not a directory!" rel_path
-          | `Directory_exists ->
-            (* Check it exists, parses, and is the right version. *)
-            let opam_path = full_path / "opam" in
-            read_file ~max_len:102400 opam_path >|= fun content ->
-            let filename = OpamFile.make (OpamFilename.raw (rel_path / "opam")) in
-            let opam = OpamFile.OPAM.read_from_string ~filename content in
-            check_opam_version opam_path opam;
-            if not (list_is_empty (OpamFile.OPAM.format_errors opam)) then
-              Fmt.failwith "Format errors detected in %S" (OpamPackage.to_string pkg);
-            Some pkg
-          | `Does_not_exist ->
-            (* Note: we check here (rather than in the diff command) so that
-               deleting something in a package's files directory still re-checks the package. *)
-            Current.Job.log job "Package %s has been deleted" (OpamPackage.to_string pkg);
-            Lwt.return None
-        )
-      >>= fun packages ->
-      let r = { packages } in
+      find_changed_packages ~job ~master dir >>!= fun packages ->
+      let r = { packages = OpamPackage.Map.bindings packages } in
       Current.Job.log job "@[<v2>Results:@,%a@]" Yojson.Safe.(pretty_print ~std:true) (to_yojson r);
       Lwt.return (Ok r)
 end
