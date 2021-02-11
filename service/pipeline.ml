@@ -266,6 +266,7 @@ let summarise results =
     | ok, 0, 0 -> Ok (Fmt.str "%d jobs passed" ok)
     | ok, 0, skip -> Ok (Fmt.str "%d jobs passed, %d jobs skipped" ok skip)
     | ok, err, skip -> Error (`Msg (Fmt.str "%d jobs passed, %d jobs skipped, %d jobs failed" ok skip err))
+(* TODO: Tell us how many lint errors/warnings we had by introducing a [LINT] prefix and filtering it *)
 
 (* An in-memory-only latch of the last successful value. *)
 let latch ~label x =
