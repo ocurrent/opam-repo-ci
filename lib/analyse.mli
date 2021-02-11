@@ -1,7 +1,14 @@
 module Analysis : sig
+  type kind =
+    | New
+    | Deleted
+    | SignificantlyChanged
+    | UnsignificantlyChanged
+  [@@deriving yojson]
+
   type t [@@deriving yojson]
 
-  val packages : t -> OpamPackage.t list
+  val packages : t -> (OpamPackage.t * kind) list
   val is_duniverse : t -> bool
 end
 

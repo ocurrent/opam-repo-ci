@@ -14,8 +14,15 @@ module OpamPackage = struct
 end
 
 module Analysis = struct
+  type kind =
+    | New
+    | Deleted
+    | SignificantlyChanged
+    | UnsignificantlyChanged
+  [@@deriving yojson]
+
   type t = {
-    packages : OpamPackage.t list;
+    packages : (OpamPackage.t * kind) list;
   }
   [@@deriving yojson]
 
@@ -64,28 +71,40 @@ module Analysis = struct
     let new_exts = filter_ci_exts (OpamFile.OPAM.extensions new_file) in
     OpamStd.String.Map.equal OpamPrinter.FullPos.value_equals old_exts new_exts
 
+  let add_pkg ~path ~name ~package kind pkgs =
+    let update old_kind = match old_kind, kind with
+      | (New | Deleted | UnsignificantlyChanged),
+        (New | Deleted | UnsignificantlyChanged) ->
+          assert false (* Would mean that packages/name/pkg/opam was present twice *)
+      | (New | Deleted), SignificantlyChanged -> old_kind
+      | UnsignificantlyChanged, SignificantlyChanged -> kind
+      | SignificantlyChanged, (New | Deleted) -> kind
+      | SignificantlyChanged, (UnsignificantlyChanged | SignificantlyChanged) -> old_kind
+    in
+    OpamPackage.Map.update (get_package_name ~path ~name ~package) update kind pkgs
+
   let find_changed_packages ~job ~master dir =
     let cmd = "", [| "git"; "diff"; "--name-only"; master |] in
     Current.Process.check_output ~cwd:dir ~cancellable:true ~job cmd >>!= fun output ->
     output
     |> String.split_on_char '\n'
     |> List.filter (function "" -> false | _ -> true)
-    |> Lwt_list.filter_map_s (fun path ->
+    |> Lwt_list.fold_left_s (fun pkgs path ->
         match String.split_on_char '/' path with
         | [_] | ".github"::_ ->
-            Lwt.return_none
+            Lwt.return pkgs
         | "packages" :: name :: package :: "files" :: _ ->
-            Lwt.return_some (get_package_name ~path ~name ~package)
+            Lwt.return (add_pkg ~path ~name ~package SignificantlyChanged pkgs)
         | ["packages"; name; package; "opam"] ->
             let cmd = "", [| "git"; "show"; master^":"^path |] in
             Current.Process.check_output ~cwd:dir ~cancellable:true ~job cmd >>= begin function
             | Error _ -> (* new release *)
-                Lwt.return_some (get_package_name ~path ~name ~package)
+                Lwt.return (add_pkg ~path ~name ~package New pkgs)
             | Ok old_content ->
                 let cmd = "", [| "git"; "show"; "HEAD:"^path |] in
                 Current.Process.check_output ~cwd:dir ~cancellable:true ~job cmd >|= begin function
                 | Error _ -> (* deleted package *)
-                    None
+                    add_pkg ~path ~name ~package Deleted pkgs
                 | Ok new_content -> (* modified package *)
                     let filename = OpamFile.make (OpamFilename.raw path) in
                     let old_file =
@@ -97,16 +116,16 @@ module Analysis = struct
                       with Failure msg -> Fmt.failwith "%S failed to be parsed: %s" path msg
                     in
                     check_opam new_file;
-                    if OpamFile.OPAM.effectively_equal old_file new_file &&
-                       ci_extensions_equal old_file new_file
-                    then None (* the changes are not significant so we ignore this package *)
-                    else Some (get_package_name ~path ~name ~package)
+                    if OpamFile.OPAM.effectively_equal old_file new_file && ci_extensions_equal old_file new_file then
+                      (* the changes are not significant so we ignore this package *)
+                      add_pkg ~path ~name ~package UnsignificantlyChanged pkgs
+                    else
+                      add_pkg ~path ~name ~package SignificantlyChanged pkgs
                 end
             end
         | _ ->
           Fmt.failwith "Unexpected path %S in output (expecting 'packages/name/pkg/...')" path
-      )
-    >|= List.sort_uniq OpamPackage.compare
+      ) OpamPackage.Map.empty
     >|= Result.ok
 
   let of_dir ~job ~master dir =
@@ -118,7 +137,7 @@ module Analysis = struct
       Lwt_result.fail (`Msg "Cannot merge to master - please rebase!")
     | Ok () ->
       find_changed_packages ~job ~master dir >>!= fun packages ->
-      let r = { packages } in
+      let r = { packages = OpamPackage.Map.bindings packages } in
       Current.Job.log job "@[<v2>Results:@,%a@]" Yojson.Safe.(pretty_print ~std:true) (to_yojson r);
       Lwt.return (Ok r)
 end
