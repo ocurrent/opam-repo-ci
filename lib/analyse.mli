@@ -8,6 +8,7 @@ module Analysis : sig
 
   type t [@@deriving yojson]
 
+  val get_opam : cwd:Fpath.t -> string -> (string, unit) result Lwt.t
   val packages : t -> (OpamPackage.t * kind) list
   val is_duniverse : t -> bool
 end

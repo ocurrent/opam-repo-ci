@@ -6,6 +6,19 @@ let pool = Current.Pool.create ~label:"analyse" 2
 let ( >>!= ) = Lwt_result.bind
 let list_is_empty = function [] -> true | _::_ -> false
 
+let read_file ~max_len path =
+  Lwt_io.with_file ~mode:Lwt_io.input path
+    (fun ch ->
+       Lwt_io.length ch >>= fun len ->
+       let len =
+         if len <= Int64.of_int max_len then Int64.to_int len
+         else Fmt.failwith "File %S too big (%Ld bytes)" path len
+       in
+       let buf = Bytes.create len in
+       Lwt_io.read_into_exactly ch buf 0 len >|= fun () ->
+       Bytes.to_string buf
+    )
+
 module OpamPackage = struct
   include OpamPackage
 
@@ -83,6 +96,15 @@ module Analysis = struct
     in
     OpamPackage.Map.update (get_package_name ~path ~name ~package) update kind pkgs
 
+  let get_opam ~cwd path =
+    Lwt.catch begin fun () ->
+      read_file ~max_len:102400 (Filename.concat (Fpath.to_string cwd) path) >>=
+      Lwt.return_ok
+    end begin function
+    | Unix.Unix_error _ -> Lwt.return (Error ())
+    | e -> Lwt.fail e
+    end
+
   let find_changed_packages ~job ~master dir =
     let cmd = "", [| "git"; "diff"; "--name-only"; master |] in
     Current.Process.check_output ~cwd:dir ~cancellable:true ~job cmd >>!= fun output ->
@@ -101,9 +123,8 @@ module Analysis = struct
             | Error _ -> (* new release *)
                 Lwt.return (add_pkg ~path ~name ~package New pkgs)
             | Ok old_content ->
-                let cmd = "", [| "git"; "show"; "HEAD:"^path |] in
-                Current.Process.check_output ~cwd:dir ~cancellable:true ~job cmd >|= begin function
-                | Error _ -> (* deleted package *)
+                get_opam ~cwd:dir path >|= begin function
+                | Error () -> (* deleted package *)
                     add_pkg ~path ~name ~package Deleted pkgs
                 | Ok new_content -> (* modified package *)
                     let filename = OpamFile.make (OpamFilename.raw path) in

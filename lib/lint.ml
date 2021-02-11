@@ -5,7 +5,6 @@ let pool = Current.Pool.create ~label:"lint" 2
 
 let ( >>/= ) x f = x >>= fun x -> f (Result.get_ok x)
 let exec ~cwd ~job cmd = Current.Process.exec ~cwd ~cancellable:true ~job ("", cmd)
-let exec_out ~cwd ~job cmd = Current.Process.check_output ~cwd ~cancellable:true ~job ("", cmd)
 
 type error =
   | UnnecessaryField of string
@@ -18,13 +17,13 @@ module Check = struct
   let marshal () = Yojson.Safe.to_string `Null
   let unmarshal _ = ()
 
-  let get_opam ~cwd ~job pkg =
+  let get_opam ~cwd pkg =
     let pkg_path =
       Fmt.str "packages/%s/%s/opam"
         (OpamPackage.Name.to_string (OpamPackage.name pkg))
         (OpamPackage.to_string pkg)
     in
-    exec_out ~cwd ~job [|"git"; "show"; "HEAD:"^pkg_path|] >>/= fun opam ->
+    Analyse.Analysis.get_opam ~cwd pkg_path >>/= fun opam ->
     Lwt.return (OpamFile.OPAM.read_from_string opam)
 
   let of_dir ~master ~job ~packages cwd =
@@ -35,7 +34,7 @@ module Check = struct
       | Analyse.Analysis.Deleted ->
           Lwt.return errors (* TODO *)
       | Analyse.Analysis.(New | SignificantlyChanged | UnsignificantlyChanged) ->
-          get_opam ~cwd ~job pkg >>= fun opam ->
+          get_opam ~cwd pkg >>= fun opam ->
           let errors = match OpamFile.OPAM.name_opt opam with
             | None -> errors
             | Some name ->
