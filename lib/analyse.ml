@@ -87,8 +87,7 @@ module Analysis = struct
   let add_pkg ~path ~name ~package kind pkgs =
     let update old_kind = match old_kind, kind with
       | (New | Deleted | UnsignificantlyChanged),
-        (New | Deleted | UnsignificantlyChanged) ->
-          assert false (* Would mean that packages/name/pkg/opam was present twice *)
+        (New | Deleted | UnsignificantlyChanged) -> kind
       | (New | Deleted), SignificantlyChanged -> old_kind
       | UnsignificantlyChanged, SignificantlyChanged -> kind
       | SignificantlyChanged, (New | Deleted) -> kind
