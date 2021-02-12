@@ -23,7 +23,7 @@ let opam_install ~variant ~upgrade_opam ~pin ~with_tests ~pkg =
         test "$res" = 0 && exit 0
         if test "$res" = 60 && diff -q /usr/bin/opam /usr/bin/opam-2.0; then
           sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam
-          opam remove -y %s && opam install -y%s %s
+          opam remove -y %s && opam install -y%s %s%s
           exit 1
         fi
         test "$res" != 31 && exit 1
@@ -38,7 +38,7 @@ let opam_install ~variant ~upgrade_opam ~pin ~with_tests ~pkg =
         exit 1
       |}
       pkg (if upgrade_opam then "install -y" else "depext -uivy") (if with_tests then "t" else "") pkg
-      pkg (if with_tests then "t" else "") pkg
+      pkg (if with_tests then "t" else "") pkg (if with_tests then "" else " && opam reinstall -yt "^pkg)
       (Variant.distribution variant)
   ]
 
