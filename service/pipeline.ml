@@ -71,18 +71,22 @@ let dep_list_map (type a) (module M : Current_term.S.ORDERED with type t = a) ?c
     Logs.warn (fun f -> f "dep_list_map: input is ready but output is pending!");
     []
 
-let build_spec ~platform ~upgrade_opam ?revdep pkg =
-  let+ revdep = Current.option_seq revdep
-  and+ pkg = pkg
-  in
-  Build.Spec.opam ~platform ?revdep ~with_tests:false ~upgrade_opam pkg
+let build_spec ~platform ~upgrade_opam pkg =
+  let+ pkg = pkg in
+  Build.Spec.opam ~platform ~with_tests:false ~upgrade_opam pkg
 
-let test_spec ~platform ~upgrade_opam ~after ?revdep pkg =
-  let+ revdep = Current.option_seq revdep
-  and+ _ = after
+let test_spec ~platform ~upgrade_opam ~after pkg =
+  let+ _ = after
   and+ pkg = pkg
   in
-  Build.Spec.opam ~platform ?revdep ~with_tests:true ~upgrade_opam pkg
+  Build.Spec.opam ~platform ~with_tests:true ~upgrade_opam pkg
+
+let revdep_spec ~platform ~upgrade_opam ~revdep ~with_tests pkg =
+  let+ revdep = revdep
+  and+ pkg = pkg
+  and+ with_tests = with_tests
+  in
+  Build.Spec.opam ~platform ~revdep ~with_tests ~upgrade_opam pkg
 
 module Revdep = struct
   module Map = OpamPackage.Map
@@ -128,24 +132,16 @@ let test_revdeps ~ocluster ~master ~base ~platform ~pkg ~after:main_build source
         let with_tests = Current.map (fun (_, {Revdep.with_tests}) -> with_tests) revdep in
         let revdep = Current.map (fun (pkg, _) -> pkg) revdep in
         let image =
-          let spec = build_spec ~platform ~upgrade_opam:false ~revdep pkg in
+          let spec = revdep_spec ~platform ~upgrade_opam:false ~revdep ~with_tests pkg in
           Build.v ocluster ~label:"build" ~base ~spec ~master source
-        in
-        let tests =
-          let spec = test_spec ~platform ~upgrade_opam:false ~revdep pkg ~after:image in
-          Build.v ocluster ~label:"test" ~base ~spec ~master source
         in
         let+ label = Current.map OpamPackage.to_string revdep
         and+ build = Node.action `Built image
-        and+ tests = Node.action `Built tests
-        and+ with_tests = with_tests
         in
-        if with_tests then
-          Node.actioned_branch ~label build [Node.leaf ~label:"tests" tests]
-        else
-          Node.leaf ~label build
+        Node.leaf ~label build
       )
   in
+  (* TODO: Show the two [list_revdeps] calls *)
   [Node.branch ~label:"revdeps" tests]
 
 let build_with_cluster ~ocluster ~analysis ~master source =
