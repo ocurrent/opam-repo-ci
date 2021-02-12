@@ -24,7 +24,7 @@ let opam_install ~variant ~upgrade_opam ~pin ~with_tests ~pkg =
         if test "$res" = 60 && diff -q /usr/bin/opam /usr/bin/opam-2.0; then
           sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam
           opam remove -y %s && opam install -y%s %s
-          res=$?
+          exit 1
         fi
         test "$res" != 31 && exit 1
         export OPAMCLI=2.0
