@@ -3,6 +3,7 @@ open Current.Syntax
 
 let pool = Current.Pool.create ~label:"lint" 2
 
+let ( // ) = Filename.concat
 let ( >>/= ) x f = x >>= fun x -> f (Result.get_ok x)
 let exec ~cwd ~job cmd = Current.Process.exec ~cwd ~cancellable:true ~job ("", cmd)
 
@@ -10,6 +11,8 @@ type error =
   | UnnecessaryField of string
   | UnmatchedName of OpamPackage.Name.t
   | UnmatchedVersion of OpamPackage.Version.t
+  | UnexpectedFile of string
+  | OpamLint of (int * [`Warning | `Error] * string)
 
 module Check = struct
   type t = unit
@@ -17,14 +20,51 @@ module Check = struct
   let marshal () = Yojson.Safe.to_string `Null
   let unmarshal _ = ()
 
+  let path_from_pkg pkg =
+    "packages" //
+    (OpamPackage.Name.to_string (OpamPackage.name pkg)) //
+    (OpamPackage.to_string pkg)
+
   let get_opam ~cwd pkg =
-    let pkg_path =
-      Fmt.str "packages/%s/%s/opam"
-        (OpamPackage.Name.to_string (OpamPackage.name pkg))
-        (OpamPackage.to_string pkg)
-    in
-    Analyse.Analysis.get_opam ~cwd pkg_path >>/= fun opam ->
+    Analyse.Analysis.get_opam ~cwd (path_from_pkg pkg // "opam") >>/= fun opam ->
     Lwt.return (OpamFile.OPAM.read_from_string opam)
+
+  let get_files dirname =
+    Lwt_unix.opendir dirname >>= fun dir ->
+    let rec aux files =
+      Lwt.catch begin fun () ->
+        Lwt_unix.readdir dir >>= fun file ->
+        if Fpath.is_rel_seg file then
+          aux files
+        else
+          aux (file :: files)
+      end begin function
+      | End_of_file -> Lwt.return files
+      | exn -> Lwt.fail exn
+      end
+    in
+    aux [] >>= fun files ->
+    Lwt_unix.closedir dir >|= fun () ->
+    files
+
+  let scan_dir ~cwd errors pkg =
+    let dir = Fpath.to_string cwd // path_from_pkg pkg in
+    get_files dir >>= fun files ->
+    let rec aux errors extra_files = function
+      | [] -> Lwt.return (errors, extra_files)
+      | "opam"::files -> aux errors extra_files files
+      | "files"::files ->
+          get_files (dir // "files") >>= fun extra_files ->
+          let extra_files =
+            List.map (fun file ->
+              (OpamFilename.Base.of_string file, OpamHash.check_file (dir // file))
+            ) extra_files
+          in
+          aux errors extra_files files
+      | file::files ->
+          aux (OpamPackage.Map.add pkg (UnexpectedFile file) errors) extra_files files
+    in
+    aux errors [] files
 
   let of_dir ~master ~job ~packages cwd =
     let master = Current_git.Commit.hash master in
@@ -50,6 +90,11 @@ module Check = struct
                   OpamPackage.Map.add pkg (UnnecessaryField "version") errors
                 else
                   OpamPackage.Map.add pkg (UnmatchedVersion version) errors
+          in
+          scan_dir ~cwd errors pkg >>= fun (errors, check_extra_files) ->
+          let errors =
+            OpamFileTools.lint ~check_extra_files ~check_upstream:true opam |>
+            List.fold_left (fun errors x -> OpamPackage.Map.add pkg (OpamLint x) errors) errors
           in
           Lwt.return errors
     ) OpamPackage.Map.empty packages
@@ -110,6 +155,11 @@ module Lint = struct
             pkg
             (OpamPackage.Version.to_string value)
             (OpamPackage.Version.to_string (OpamPackage.version package))
+      | UnexpectedFile file ->
+          Fmt.str "Error in %s: Unexpected file in %s/files/%s" pkg (Check.path_from_pkg package) file
+      | OpamLint warn ->
+          let warn = OpamFileTools.warns_to_string [warn] in
+          Fmt.str "Error in %s: %s" pkg warn
     )
 
   let run No_context job { Key.src; packages } { Value.master } =
