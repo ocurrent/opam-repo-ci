@@ -18,12 +18,8 @@ module Spec = struct
     upgrade_opam : bool [@default false];
   } [@@deriving to_yojson]
 
-  type opam_list = {
-    list_with_tests : bool;
-  } [@@deriving to_yojson]
-
   type ty = [
-    | `Opam of [ `Build of opam_build | `List_revdeps of opam_list ] * package
+    | `Opam of [ `Build of opam_build | `List_revdeps ] * package
   ] [@@deriving to_yojson]
 
   type t = {
@@ -41,9 +37,8 @@ module Spec = struct
     | None -> Fmt.string f (OpamPackage.to_string pkg)
 
   let pp_ty f = function
-    | `Opam (`List_revdeps { list_with_tests }, pkg) ->
-        let with_tests = if list_with_tests then "with tests" else "without tests" in
-        Fmt.pf f "list revdeps of %s %s" (OpamPackage.to_string pkg) with_tests
+    | `Opam (`List_revdeps, pkg) ->
+        Fmt.pf f "list revdeps of %s" (OpamPackage.to_string pkg)
     | `Opam (`Build { revdep; with_tests; upgrade_opam }, pkg) ->
       let action = if with_tests then "test" else "build" in
       Fmt.pf f "%s %a%s" action (pp_pkg ?revdep) pkg
@@ -126,7 +121,7 @@ module Op = struct
     let build_spec =
       let base = Image.hash base in
       match ty with
-      | `Opam (`List_revdeps { list_with_tests = with_tests }, pkg) -> Opam_build.revdeps ~with_tests ~base ~variant ~pkg
+      | `Opam (`List_revdeps, pkg) -> Opam_build.revdeps ~base ~variant ~pkg
       | `Opam (`Build { revdep; with_tests; upgrade_opam }, pkg) -> Opam_build.spec ~upgrade_opam ~base ~variant ~revdep ~with_tests ~pkg
     in
     Current.Job.write job
@@ -149,7 +144,7 @@ module Op = struct
       let pkg =
         match ty with
         | `Opam (`Build { revdep = Some revdep; _ }, pkg) -> Printf.sprintf "%s-%s" (OpamPackage.to_string pkg) (OpamPackage.to_string revdep)
-        | `Opam (`List_revdeps _, pkg)
+        | `Opam (`List_revdeps, pkg)
         | `Opam (`Build _, pkg) -> OpamPackage.to_string pkg
       in
       Printf.sprintf "%s-%s" (Image.hash base) pkg
@@ -159,7 +154,7 @@ module Op = struct
     let build_pool = Current_ocluster.Connection.pool ~job ~pool ~action ~cache_hint ~src connection in
     let buffer =
       match ty with
-      | `Opam (`List_revdeps _, _) -> Some (Buffer.create 1024)
+      | `Opam (`List_revdeps, _) -> Some (Buffer.create 1024)
       | _ -> None
     in
     Current.Job.start_with ~pool:build_pool job ~timeout ~level:Current.Level.Average >>= fun build_job ->
@@ -199,7 +194,7 @@ let v t ~label ~spec ~base ~master commit =
   BC.run t { Op.Key.pool; commit; variant; ty } { Op.Value.base }
   |> Current.Primitive.map_result (Result.map ignore)
 
-let list_revdeps t ~with_tests ~platform ~pkg ~base ~master commit =
+let list_revdeps t ~platform ~pkg ~base ~master commit =
   Current.component "list revdeps" |>
   let> pkg = pkg
   and> base = base
@@ -207,7 +202,7 @@ let list_revdeps t ~with_tests ~platform ~pkg ~base ~master commit =
   and> master = master in
   let t = { Op.config = t; master } in
   let { Platform.pool; variant; label = _ } = platform in
-  let ty = `Opam (`List_revdeps {Spec.list_with_tests = with_tests}, pkg) in
+  let ty = `Opam (`List_revdeps, pkg) in
   BC.run t
     { Op.Key.pool; commit; variant; ty }
     { Op.Value.base }

@@ -82,17 +82,18 @@ let spec ~upgrade_opam ~base ~variant ~revdep ~with_tests ~pkg =
       @ tests
   }
 
-let revdeps ~with_tests ~base ~variant:_ ~pkg =
+let revdeps ~base ~variant:_ ~pkg =
   let open Obuilder_spec in
   let pkg = Filename.quote (OpamPackage.to_string pkg) in
-  let with_tests = if with_tests then " --with-test" else "" in
   { from = base;
     ops =
       setup_repository ~upgrade_opam:false
       @ [
         run "echo '@@@OUTPUT' && \
-             opam list -s --color=never --depends-on %s --coinstallable-with %s --installable --all-versions --recursive --depopts%s && \
+             opam list -s --color=never --depends-on %s --coinstallable-with %s --installable --all-versions --recursive --depopts && \
+             opam list -s --color=never --depends-on %s --coinstallable-with %s --installable --all-versions --recursive --depopts --with-tests && \
              echo '@@@OUTPUT'"
-          pkg pkg with_tests
+          pkg pkg
+          pkg pkg
       ]
   }
