@@ -26,7 +26,6 @@ let opam_install ~variant ~upgrade_opam ~pin ~with_tests ~pkg =
           opam remove -y %s && opam install -y%s %s
           res=$?
         fi
-        test "$res" = 60 && (ls -lh /tmp/cudf-dump-*.cudf; cat /tmp/cudf-dump-1.cudf; exit 1)
         test "$res" != 31 && exit 1
         export OPAMCLI=2.0
         build_dir=$(opam var prefix)/.opam-switch/build
@@ -52,7 +51,6 @@ let setup_repository ~upgrade_opam =
   env "OPAMERRLOGLEN" "0" :: (* Show the whole log if it fails *)
   env "OPAMSOLVERTIMEOUT" "500" :: (* Increase timeout. Poor mccs is doing its best *)
   env "OPAMPRECISETRACKING" "1" :: (* Mitigate https://github.com/ocaml/opam/issues/3997 *)
-  env "OPAMCUDFFILE" "/tmp/cudf-dump" :: (* write CUDF files in case the solver timeouts *)
   [
     user ~uid:1000 ~gid:1000;
     copy ["."] ~dst:"/src/";
