@@ -1,7 +1,7 @@
 open Lwt.Infix
 open Current.Syntax
 
-let pool = Current.Pool.create ~label:"lint" 2
+let pool = Current.Pool.create ~label:"lint" 20
 
 let ( // ) = Filename.concat
 let ( >>/= ) x f = x >>= fun x -> f (Result.get_ok x)
