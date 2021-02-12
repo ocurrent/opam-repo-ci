@@ -62,7 +62,7 @@ module Check = struct
           in
           aux errors extra_files files
       | file::files ->
-          aux (OpamPackage.Map.add pkg (UnexpectedFile file) errors) extra_files files
+          aux ((pkg, UnexpectedFile file) :: errors) extra_files files
     in
     aux errors [] files
 
@@ -79,25 +79,25 @@ module Check = struct
             | None -> errors
             | Some name ->
                 if OpamPackage.Name.equal name (OpamPackage.name pkg) then
-                  OpamPackage.Map.add pkg (UnnecessaryField "name") errors
+                  (pkg, UnnecessaryField "name") :: errors
                 else
-                  OpamPackage.Map.add pkg (UnmatchedName name) errors
+                  (pkg, UnmatchedName name) :: errors
           in
           let errors = match OpamFile.OPAM.version_opt opam with
             | None -> errors
             | Some version ->
                 if OpamPackage.Version.equal version (OpamPackage.version pkg) then
-                  OpamPackage.Map.add pkg (UnnecessaryField "version") errors
+                  (pkg, UnnecessaryField "version") :: errors
                 else
-                  OpamPackage.Map.add pkg (UnmatchedVersion version) errors
+                  (pkg, UnmatchedVersion version) :: errors
           in
           scan_dir ~cwd errors pkg >>= fun (errors, check_extra_files) ->
           let errors =
             OpamFileTools.lint ~check_extra_files ~check_upstream:true opam |>
-            List.fold_left (fun errors x -> OpamPackage.Map.add pkg (OpamLint x) errors) errors
+            List.fold_left (fun errors x -> (pkg, OpamLint x) :: errors) errors
           in
           Lwt.return errors
-    ) OpamPackage.Map.empty packages
+    ) [] packages
 end
 
 module Lint = struct
@@ -138,7 +138,7 @@ module Lint = struct
   let id = "opam-ci-lint"
 
   let msg_of_errors =
-    OpamPackage.Map.mapi (fun package err ->
+    List.map (fun (package, err) ->
       let pkg = OpamPackage.to_string package in
       match err with
       | UnnecessaryField field ->
@@ -167,7 +167,6 @@ module Lint = struct
     Current_git.with_checkout ~job src @@ fun dir ->
     Check.of_dir ~master ~job ~packages dir >|= fun errors ->
     let errors = msg_of_errors errors in
-    let errors = OpamPackage.Map.values errors in
     List.iter (Current.Job.log job "%s") errors;
     match errors with
     | [] -> Ok ()
