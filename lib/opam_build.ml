@@ -21,7 +21,11 @@ let opam_install ~variant ~upgrade_opam ~pin ~with_tests ~pkg =
         opam remove -y %s && opam %s%s %s
         res=$?
         test "$res" = 0 && exit 0
-        test "$res" = 60 && (ls -lh /tmp/cudf-dump-*.cudf; cat /tmp/cudf-dump-1.cudf; exit 1)
+        if test "$res" = 60 && diff -q /usr/bin/opam /usr/bin/opam-2.0; then
+          sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam
+          opam remove -y %s && opam install -y%s %s%s
+          exit 1
+        fi
         test "$res" != 31 && exit 1
         export OPAMCLI=2.0
         build_dir=$(opam var prefix)/.opam-switch/build
@@ -33,23 +37,20 @@ let opam_install ~variant ~upgrade_opam ~pin ~with_tests ~pkg =
         done
         exit 1
       |}
-      pkg
-      (if upgrade_opam then "install -y" else "depext -uivy")
-      (if with_tests then "t" else "")
-      pkg
+      pkg (if upgrade_opam then "install -y" else "depext -uivy") (if with_tests then "t" else "") pkg
+      pkg (if with_tests then "t" else "") pkg (if with_tests then "" else " && opam reinstall -yt "^pkg)
       (Variant.distribution variant)
   ]
 
 let setup_repository ~upgrade_opam =
   let open Obuilder_spec in
   (if upgrade_opam then [
-    run "sudo mv /usr/bin/opam-2.1 /usr/bin/opam";
+    run "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam";
     env "OPAMDEPEXTYES" "1"] else []) @
   env "OPAMDOWNLOADJOBS" "1" :: (* Try to avoid github spam detection *)
   env "OPAMERRLOGLEN" "0" :: (* Show the whole log if it fails *)
   env "OPAMSOLVERTIMEOUT" "500" :: (* Increase timeout. Poor mccs is doing its best *)
   env "OPAMPRECISETRACKING" "1" :: (* Mitigate https://github.com/ocaml/opam/issues/3997 *)
-  env "OPAMCUDFFILE" "/tmp/cudf-dump" :: (* write CUDF files in case the solver timeouts *)
   [
     user ~uid:1000 ~gid:1000;
     copy ["."] ~dst:"/src/";
@@ -81,17 +82,18 @@ let spec ~upgrade_opam ~base ~variant ~revdep ~with_tests ~pkg =
       @ tests
   }
 
-let revdeps ~with_tests ~base ~variant:_ ~pkg =
+let revdeps ~base ~variant:_ ~pkg =
   let open Obuilder_spec in
   let pkg = Filename.quote (OpamPackage.to_string pkg) in
-  let with_tests = if with_tests then " --with-test" else "" in
   { from = base;
     ops =
       setup_repository ~upgrade_opam:false
       @ [
         run "echo '@@@OUTPUT' && \
-             opam list -s --color=never --depends-on %s --coinstallable-with %s --installable --all-versions --recursive --depopts%s && \
+             opam list -s --color=never --depends-on %s --coinstallable-with %s --installable --all-versions --recursive --depopts && \
+             opam list -s --color=never --depends-on %s --coinstallable-with %s --installable --all-versions --recursive --depopts --with-tests && \
              echo '@@@OUTPUT'"
-          pkg pkg with_tests
+          pkg pkg
+          pkg pkg
       ]
   }
