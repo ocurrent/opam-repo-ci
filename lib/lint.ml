@@ -58,7 +58,7 @@ module Check = struct
           let check_hash file hash = try OpamHash.check_file file hash with _ -> false in
           let extra_files =
             List.map (fun file ->
-              (OpamFilename.Base.of_string file, check_hash (dir // file))
+              (OpamFilename.Base.of_string file, check_hash (dir // "files" // file))
             ) extra_files
           in
           aux errors extra_files files
