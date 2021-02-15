@@ -2,7 +2,7 @@ open Current.Syntax
 
 type action = {
   job_id : Current.job_id option;
-  result : [`Built | `Checked] Current_term.Output.t;
+  result : [`Built | `Analysed | `Linted] Current_term.Output.t;
 }
 
 type t =
@@ -43,7 +43,8 @@ let flatten f t = flatten f t ~prefix:""
 
 let pp_result f = function
   | Ok `Built -> Fmt.string f "built"
-  | Ok `Checked -> Fmt.string f "checked"
+  | Ok `Analysed -> Fmt.string f "analysed"
+  | Ok `Linted -> Fmt.string f "linted"
   | Error (`Active _) -> Fmt.string f "active"
   | Error (`Msg m) -> Fmt.string f m
 
