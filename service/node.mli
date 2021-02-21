@@ -17,7 +17,7 @@ val root : t list -> t
 val leaf : label:string -> action -> t
 (** [leaf ~label action] is a leaf node. *)
 
-val action : [ `Built | `Checked ] -> _ Current.t -> action Current.t
+val action : [ `Built | `Analysed | `Linted ] -> _ Current.t -> action Current.t
 (** [action kind job] is a result whose status is the state of [job]
     but with the value replaced with [kind]. The job ID is extracted from the
     job (so [job] must be a primitive). Although the result is a [Current.t] it
@@ -26,7 +26,7 @@ val action : [ `Built | `Checked ] -> _ Current.t -> action Current.t
 val flatten :
   (label:string ->
    job_id:string option ->
-   result:[ `Built | `Checked ] Current_term.Output.t -> 'a) ->
+   result:[ `Built | `Analysed | `Linted ] Current_term.Output.t -> 'a) ->
   t -> 'a list
 (** [flatten f t] converts the tree to a list, applying [f] to each element. *)
 

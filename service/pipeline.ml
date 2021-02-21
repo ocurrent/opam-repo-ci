@@ -163,8 +163,8 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
     |> Current.map (Node.branch ~label)
     |> Current.collapse ~key:"platform" ~value:label ~input:analysis
   in
-  let+ analysis = Node.action `Checked analysis
-  and+ lint = Node.action `Checked lint
+  let+ analysis = Node.action `Analysed analysis
+  and+ lint = Node.action `Linted lint
   and+ compilers =
     Current.list_seq begin
       let master_distro = Dockerfile_distro.tag_of_distro master_distro in
@@ -217,23 +217,24 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
 let summarise results =
   results
   |> Node.flatten (fun ~label ~job_id:_ ~result -> (label, result))
-  |> List.fold_left (fun (ok, pending, err, skip) -> function
-      | _, Ok `Checked -> (ok, pending, err, skip)  (* Don't count lint checks *)
-      | _, Ok `Built -> (ok + 1, pending, err, skip)
-      | _, Error `Msg m when Astring.String.is_prefix ~affix:"[SKIP]" m -> (ok, pending, err, skip + 1)
-      | _, Error `Msg _ -> (ok, pending, err + 1, skip)
-      | _, Error `Active _ -> (ok, pending + 1, err, skip)
+  |> List.fold_left (fun (ok, pending, err, skip, lint) -> function
+      | _, Ok `Analysed -> (ok, pending, err, skip, lint)
+      | _, Ok `Linted -> (ok, pending, err, skip, lint + 1)
+      | _, Ok `Built -> (ok + 1, pending, err, skip, lint)
+      | _, Error `Msg m when Astring.String.is_prefix ~affix:"[SKIP]" m -> (ok, pending, err, skip + 1, lint)
+      | _, Error `Msg _ -> (ok, pending, err + 1, skip, lint)
+      | _, Error `Active _ -> (ok, pending + 1, err, skip, lint)
       (* TODO: Find a way to use the labels and error messages to display something more useful *)
-    ) (0, 0, 0, 0)
-  |> fun (ok, pending, err, skip) ->
+    ) (0, 0, 0, 0, 0)
+  |> fun (ok, pending, err, skip, lint) ->
+  let lint = if lint > 0 then "ok" else "failed" in
   if pending > 0 then Error (`Active `Running)
   else match ok, err, skip with
     | 0, 0, 0 -> Ok "No build was necessary"
     | 0, 0, _skip -> Error (`Msg "Everything was skipped")
     | ok, 0, 0 -> Ok (Fmt.str "%d jobs passed" ok)
     | ok, 0, skip -> Ok (Fmt.str "%d jobs passed, %d jobs skipped" ok skip)
-    | ok, err, skip -> Error (`Msg (Fmt.str "%d jobs passed, %d jobs skipped, %d jobs failed" ok skip err))
-(* TODO: Tell us how many lint errors/warnings we had by introducing a [LINT] prefix and filtering it *)
+    | ok, err, skip -> Error (`Msg (Fmt.str "%d jobs failed, lint: %s, %d jobs skipped, %d jobs passed" err lint skip ok))
 
 (* An in-memory-only latch of the last successful value. *)
 let latch ~label x =
