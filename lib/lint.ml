@@ -49,9 +49,9 @@ module Check = struct
       | exn -> Lwt.fail exn
       end
     in
-    aux [] >>= fun files ->
-    Lwt_unix.closedir dir >|= fun () ->
-    files
+    Lwt.finalize
+      (fun () -> aux [])
+      (fun () -> Lwt_unix.closedir dir)
 
   let scan_dir ~cwd errors pkg =
     let dir = Fpath.to_string cwd // path_from_pkg pkg in
