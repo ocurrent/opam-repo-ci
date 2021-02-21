@@ -12,6 +12,7 @@ type error =
   | UnmatchedName of OpamPackage.Name.t
   | UnmatchedVersion of OpamPackage.Version.t
   | UnexpectedFile of string
+  | ForbiddenPerm of string
   | OpamLint of (int * [`Warning | `Error] * string)
 
 module Check = struct
@@ -28,6 +29,11 @@ module Check = struct
   let get_opam ~cwd pkg =
     Analyse.Analysis.get_opam ~cwd (path_from_pkg pkg // "opam") >>/= fun opam ->
     Lwt.return (OpamFile.OPAM.read_from_string opam)
+
+  let is_perm_644 file =
+    Lwt_unix.stat file >|= function
+    | {st_kind = S_REG; st_perm = 0o644; _} -> true
+    | _ -> false
 
   let get_files dirname =
     Lwt_unix.opendir dirname >>= fun dir ->
@@ -52,9 +58,19 @@ module Check = struct
     get_files dir >>= fun files ->
     let rec aux errors extra_files = function
       | [] -> Lwt.return (errors, extra_files)
-      | "opam"::files -> aux errors extra_files files
+      | "opam"::files ->
+          is_perm_644 (dir // "opam") >|= begin function
+          | true -> errors
+          | false -> ((pkg, ForbiddenPerm (dir // "opam")) :: errors)
+          end >>= fun errors ->
+          aux errors extra_files files
       | "files"::files ->
           get_files (dir // "files") >>= fun extra_files ->
+          Lwt_list.fold_left_s (fun errors file ->
+            is_perm_644 (dir // "files" // file) >|= function
+            | true -> errors
+            | false -> ((pkg, ForbiddenPerm (dir // "files" // file)) :: errors)
+          ) errors extra_files >>= fun errors ->
           let check_hash file hash = try OpamHash.check_file file hash with _ -> false in
           let extra_files =
             List.map (fun file ->
@@ -158,6 +174,10 @@ module Lint = struct
             (OpamPackage.Version.to_string (OpamPackage.version package))
       | UnexpectedFile file ->
           Fmt.str "Error in %s: Unexpected file in %s/files/%s" pkg (Check.path_from_pkg package) file
+      | ForbiddenPerm file ->
+          Fmt.str
+            "Error in %s: Forbidden permission for file %s/files/%s. All files should have permissions 644."
+            pkg (Check.path_from_pkg package) file
       | OpamLint warn ->
           let warn = OpamFileTools.warns_to_string [warn] in
           Fmt.str "Error in %s: %s" pkg warn
