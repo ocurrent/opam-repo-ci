@@ -69,7 +69,7 @@ module Check = struct
           Lwt_list.fold_left_s (fun errors file ->
             is_perm_644 (dir // "files" // file) >|= function
             | true -> errors
-            | false -> ((pkg, ForbiddenPerm (dir // "files" // file)) :: errors)
+            | false -> ((pkg, ForbiddenPerm ("files" // file)) :: errors)
           ) errors extra_files >>= fun errors ->
           let check_hash file hash = try OpamHash.check_file file hash with _ -> false in
           let extra_files =
@@ -176,7 +176,7 @@ module Lint = struct
           Fmt.str "Error in %s: Unexpected file in %s/files/%s" pkg (Check.path_from_pkg package) file
       | ForbiddenPerm file ->
           Fmt.str
-            "Error in %s: Forbidden permission for file %s/files/%s. All files should have permissions 644."
+            "Error in %s: Forbidden permission for file %s/%s. All files should have permissions 644."
             pkg (Check.path_from_pkg package) file
       | OpamLint warn ->
           let warn = OpamFileTools.warns_to_string [warn] in
