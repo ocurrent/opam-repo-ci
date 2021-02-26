@@ -91,7 +91,7 @@ let revdeps ~base ~variant:_ ~pkg =
       @ [
         run "echo '@@@OUTPUT' && \
              opam list -s --color=never --depends-on %s --coinstallable-with %s --installable --all-versions --recursive --depopts && \
-             opam list -s --color=never --depends-on %s --coinstallable-with %s --installable --all-versions --recursive --depopts --with-test && \
+             opam list -s --color=never --depends-on %s --coinstallable-with %s --installable --all-versions --with-test --depopts && \
              echo '@@@OUTPUT'"
           pkg pkg
           pkg pkg
