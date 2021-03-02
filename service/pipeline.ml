@@ -194,8 +194,10 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
     let master_distro = Dockerfile_distro.tag_of_distro master_distro in
     let default_compiler = Ocaml_version.to_string default_compiler in
     let flambda = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(default_compiler, Some "flambda") in
+    let nnpchecker = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(default_compiler, Some "nnpchecker") in
     Current.list_seq (
       build ~upgrade_opam:true ~revdeps:false "flambda" flambda ::
+      build ~upgrade_opam:true ~revdeps:false "nnpchecker" nnpchecker ::
       List.fold_left (fun acc arch ->
         if arch = `X86_64 then
           acc
