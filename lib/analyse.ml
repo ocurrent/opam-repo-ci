@@ -1,7 +1,7 @@
 open Lwt.Infix
 open Current.Syntax
 
-let pool = Current.Pool.create ~label:"analyse" 20
+let pool = Current.Pool.create ~label:"analyse" 4
 
 let ( >>!= ) = Lwt_result.bind
 let list_is_empty = function [] -> true | _::_ -> false
