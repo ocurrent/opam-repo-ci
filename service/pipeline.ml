@@ -168,7 +168,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
   and+ compilers =
     Current.list_seq begin
       let master_distro = Dockerfile_distro.tag_of_distro master_distro in
-      (Ocaml_version.Releases.recent @ Ocaml_version.Releases.unreleased_betas) |>
+      (Ocaml_version.Releases.recent @ Ocaml_version.Releases.dev) |>
       List.map (fun v ->
         let v = Ocaml_version.with_just_major_and_minor v in
         let revdeps = Ocaml_version.equal v default_compiler in (* TODO: Remove this when the cluster is ready *)
@@ -180,9 +180,10 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
   and+ distributions =
     Current.list_seq begin
       let default_compiler = Ocaml_version.to_string default_compiler in
-      (Dockerfile_distro.active_tier1_distros `X86_64 @ Dockerfile_distro.active_tier2_distros `X86_64) |>
+      Dockerfile_distro.active_distros `X86_64 |>
       List.fold_left (fun acc distro ->
-        if Dockerfile_distro.compare distro master_distro = 0 then (* TODO: Add Dockerfile_distro.equal *)
+        if Dockerfile_distro.compare distro master_distro = 0 (* TODO: Add Dockerfile_distro.equal *)
+        || Dockerfile_distro.os_family_of_distro distro <> `Linux then (* TODO: Unlock this when Windows is ready *)
           acc
         else
           let distro = Dockerfile_distro.tag_of_distro distro in
@@ -194,7 +195,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
     let master_distro = Dockerfile_distro.tag_of_distro master_distro in
     let default_compiler = Ocaml_version.to_string default_compiler in
     let flambda = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(default_compiler, Some "flambda") in
-    let nnpchecker = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:("4.12", Some "nnpchecker") in (* TODO: use default_compiler instead when >= 4.12 *)
+    let nnpchecker = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(default_compiler, Some "nnpchecker") in
     Current.list_seq (
       build ~upgrade_opam:true ~revdeps:false "flambda" flambda ::
       build ~upgrade_opam:true ~revdeps:false "nnpchecker" nnpchecker ::
