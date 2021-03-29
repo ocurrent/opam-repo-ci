@@ -111,7 +111,7 @@ let test_revdeps ~ocluster ~master ~base ~platform ~pkg ~after:main_build source
         in
         Node.leaf ~label build
       )
-  and+ list_revdeps = Node.action `Built revdeps
+  and+ list_revdeps = Node.action `Analysed revdeps
   in
   [Node.actioned_branch ~label:"revdeps" list_revdeps tests]
 
