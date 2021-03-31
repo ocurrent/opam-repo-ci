@@ -35,8 +35,7 @@ let opam_install ~variant ~upgrade_opam ~pin ~with_tests ~pkg =
             echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."
           fi
         done
-        exit 1
-      |}
+        exit 1|}
       pkg (if upgrade_opam then "install -vy" else "depext -uivy") (if with_tests then "t" else "") pkg
       pkg (if with_tests then "t" else "") pkg (if with_tests then "" else " && opam reinstall -vyt "^pkg)
       (Variant.distribution variant)
