@@ -16,6 +16,7 @@ let opam_install ~variant ~upgrade_opam ~pin ~with_tests ~pkg =
       []
   in
   pin @ [
+    run ~network "opam %s" (if upgrade_opam then "update --depexts" else "depext -yu");
     (* TODO: Replace by two calls to opam install + opam install -t using the OPAMDROPINSTALLEDPACKAGES feature *)
     run ~cache ~network {|
         opam remove -y %s && opam %s%s %s
@@ -36,7 +37,7 @@ let opam_install ~variant ~upgrade_opam ~pin ~with_tests ~pkg =
           fi
         done
         exit 1|}
-      pkg (if upgrade_opam then "install -vy" else "depext -uivy") (if with_tests then "t" else "") pkg
+      pkg (if upgrade_opam then "install -vy" else "depext -ivy") (if with_tests then "t" else "") pkg
       pkg (if with_tests then "t" else "") pkg (if with_tests then "" else " && opam reinstall -vyt "^pkg)
       (Variant.distribution variant)
   ]
