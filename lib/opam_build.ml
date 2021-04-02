@@ -16,13 +16,14 @@ let opam_install ~variant ~upgrade_opam ~pin ~with_tests ~pkg =
       []
   in
   pin @ [
+    run ~network "opam %s" (if upgrade_opam then "update --depexts" else "depext -yu");
     (* TODO: Replace by two calls to opam install + opam install -t using the OPAMDROPINSTALLEDPACKAGES feature *)
     run ~cache ~network {|
         opam remove -y %s && opam %s%s %s
         res=$?
         test "$res" = 0 && exit 0
         if test "$res" = 60 && diff -q /usr/bin/opam /usr/bin/opam-2.0; then
-          sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam
+          sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam && opam init --reinit -ni
           opam remove -y %s && opam install -vy%s %s%s
           exit 1
         fi
@@ -36,7 +37,7 @@ let opam_install ~variant ~upgrade_opam ~pin ~with_tests ~pkg =
           fi
         done
         exit 1|}
-      pkg (if upgrade_opam then "install -vy" else "depext -uivy") (if with_tests then "t" else "") pkg
+      pkg (if upgrade_opam then "install -vy" else "depext -ivy") (if with_tests then "t" else "") pkg
       pkg (if with_tests then "t" else "") pkg (if with_tests then "" else " && opam reinstall -vyt "^pkg)
       (Variant.distribution variant)
   ]
@@ -44,7 +45,7 @@ let opam_install ~variant ~upgrade_opam ~pin ~with_tests ~pkg =
 let setup_repository ~upgrade_opam =
   let open Obuilder_spec in
   (if upgrade_opam then [
-    run "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam";
+    run "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam && opam init --reinit -ni";
     env "OPAMDEPEXTYES" "1"] else []) @
   env "OPAMDOWNLOADJOBS" "1" :: (* Try to avoid github spam detection *)
   env "OPAMERRLOGLEN" "0" :: (* Show the whole log if it fails *)
