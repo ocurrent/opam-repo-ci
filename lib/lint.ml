@@ -94,10 +94,10 @@ module Check = struct
     OpamFilename.extract_in f (OpamFilename.Dir.of_string dir);
     let dune_project = Filename.concat dir "dune-project" in
     Lwt.catch begin fun () ->
-      Lwt_io.with_file ~mode:Lwt_io.Input dune_project (fun ch -> Lwt_io.read ch >|= Csexp.parse_string) >>= begin function
-      | Ok Csexp.(List [Atom "lang"; Atom "dune"; Atom version]) -> Lwt.return_some version
-      | Ok _ -> Lwt.fail_with "(lang dune ...) is not the first construct"
-      | Error (_, err) -> Lwt.fail_with err
+      Lwt_io.with_file ~mode:Lwt_io.Input dune_project (fun ch -> Lwt_io.read ch >|= Sexplib.Sexp.parse) >>= begin function
+      | Sexplib.Sexp.(Done (List [Atom "lang"; Atom "dune"; Atom version], _)) -> Lwt.return_some version
+      | Done _ -> Lwt.fail_with "(lang dune ...) is not the first construct"
+      | Cont _ -> Lwt.fail_with "Failed to parse the dune-project file"
       end
     end begin function
     | Unix.Unix_error (Unix.ENOENT, _, _) -> Lwt.return_none
