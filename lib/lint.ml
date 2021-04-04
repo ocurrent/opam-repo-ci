@@ -127,7 +127,7 @@ module Check = struct
     let rec aux = function
       | OpamFormula.Atom (pkg, constr) ->
           if OpamPackage.Name.equal pkg (OpamPackage.Name.of_string "dune") then
-            get_lower_bound constr
+            Some (Option.value ~default:"1.0" (get_lower_bound constr))
           else
             None
       | Empty -> None
