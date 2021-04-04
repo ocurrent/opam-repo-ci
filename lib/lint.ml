@@ -91,7 +91,7 @@ module Check = struct
     Lwt_io.with_temp_dir @@ fun dir ->
     let f = OpamProcess.Job.run (OpamDownload.download ~overwrite:false (OpamFile.URL.url url) (OpamFilename.Dir.of_string dir)) in
     Lwt_io.with_temp_dir @@ fun dir ->
-    OpamFilename.extract_in f (OpamFilename.Dir.of_string dir);
+    OpamFilename.extract f (OpamFilename.Dir.of_string dir);
     let dune_project = Filename.concat dir "dune-project" in
     Lwt.catch begin fun () ->
       Lwt_io.with_file ~mode:Lwt_io.Input dune_project (fun ch -> Lwt_io.read ch >|= Sexplib.Sexp.parse) >>= begin function
