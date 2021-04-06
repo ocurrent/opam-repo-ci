@@ -9,6 +9,7 @@ let exec ~cwd ~job cmd = Current.Process.exec ~cwd ~cancellable:true ~job ("", c
 
 type error =
   | UnnecessaryField of string
+  | MissingField of string
   | UnmatchedName of OpamPackage.Name.t
   | UnmatchedVersion of OpamPackage.Version.t
   | DubiousDuneSubst
@@ -111,6 +112,11 @@ module Check = struct
                 else
                   (pkg, UnmatchedVersion version) :: errors
           in
+          (* Check license field *)
+          let errors = match OpamFile.OPAM.license opam with
+            | [] -> (pkg, MissingField "license") :: errors
+            | _ -> errors
+          in
           (* Check correct use of dune subst *)
           let errors =
             List.fold_left
@@ -192,6 +198,10 @@ module Lint = struct
             pkg
             (OpamPackage.Version.to_string value)
             (OpamPackage.Version.to_string (OpamPackage.version package))
+      | MissingField value ->
+        Fmt.str "Error in %s: The field '%s' is not present."
+          pkg
+          value
       | DubiousDuneSubst ->
           Fmt.str "Warning in %s: Dubious use of 'dune subst'. \
                    'dune subst' should always only be called with {dev} (i.e. [\"dune\" \"subst\"] {dev}) \
