@@ -41,6 +41,7 @@
   (opam-state (>= 2.1.0~beta4))
   (opam-format (>= 2.1.0~beta4))
   (opam-file-format (>= 2.1.2))
+  (sexplib (>= v0.14.0))
   conf-libev
   (dockerfile (>= 6.3.0))
   (dockerfile-opam (>= 6.3.0))

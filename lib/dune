@@ -3,6 +3,7 @@
   (preprocess (pps ppx_deriving.std ppx_deriving_yojson))
   (libraries
     logs
+    sexplib
     current
     current_docker
     current_github
