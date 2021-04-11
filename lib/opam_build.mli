@@ -1,4 +1,5 @@
 val spec :
+  for_docker:bool ->
   upgrade_opam:bool ->
   base:string ->
   variant:Variant.t ->
@@ -8,6 +9,7 @@ val spec :
   Obuilder_spec.stage
 
 val revdeps :
+  for_docker:bool ->
   base:string ->
   variant:Variant.t ->
   pkg:OpamPackage.t ->
