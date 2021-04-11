@@ -118,11 +118,11 @@ module Op = struct
 
   let run { config = { connection; timeout }; master } job { Key.pool; commit; variant; ty } { Value.base } =
     let master = Current_git.Commit.hash master in
-    let build_spec =
+    let build_spec ~for_docker =
       let base = Image.hash base in
       match ty with
-      | `Opam (`List_revdeps, pkg) -> Opam_build.revdeps ~base ~variant ~pkg
-      | `Opam (`Build { revdep; with_tests; upgrade_opam }, pkg) -> Opam_build.spec ~upgrade_opam ~base ~variant ~revdep ~with_tests ~pkg
+      | `Opam (`List_revdeps, pkg) -> Opam_build.revdeps ~for_docker ~base ~variant ~pkg
+      | `Opam (`Build { revdep; with_tests; upgrade_opam }, pkg) -> Opam_build.spec ~for_docker ~upgrade_opam ~base ~variant ~revdep ~with_tests ~pkg
     in
     Current.Job.write job
       (Fmt.strf "@.\
@@ -136,8 +136,8 @@ module Op = struct
                  docker build .@.@."
          Current_git.Commit_id.pp_user_clone commit
          master
-         Dockerfile.pp (Obuilder_spec.Docker.dockerfile_of_spec ~buildkit:false build_spec));
-    let spec_str = Fmt.to_to_string Obuilder_spec.pp_stage build_spec in
+         Dockerfile.pp (Obuilder_spec.Docker.dockerfile_of_spec ~buildkit:false (build_spec ~for_docker:true)));
+    let spec_str = Fmt.to_to_string Obuilder_spec.pp_stage (build_spec ~for_docker:false) in
     let action = Cluster_api.Submission.obuilder_build spec_str in
     let src = (Git.Commit_id.repo commit, [master; Git.Commit_id.hash commit]) in
     let cache_hint =

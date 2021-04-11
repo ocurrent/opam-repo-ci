@@ -42,11 +42,15 @@ let opam_install ~variant ~upgrade_opam ~pin ~with_tests ~pkg =
       (Variant.distribution variant)
   ]
 
-let setup_repository ~upgrade_opam =
+let setup_repository ~for_docker ~upgrade_opam =
   let open Obuilder_spec in
   (if upgrade_opam then [
-    run "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam && opam init --reinit -ni";
+    run "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam";
     env "OPAMDEPEXTYES" "1"] else []) @
+  (* [for_docker] is required because docker does not support bubblewrap in docker build *)
+  (* docker run has --privileged but docker build does not have it *)
+  (* so we need to remove the part re-enabling the sandbox *)
+  run "opam init --reinit%s -ni" (if for_docker then "" else " --config ~/.opamrc-sandbox") ::
   env "OPAMDOWNLOADJOBS" "1" :: (* Try to avoid github spam detection *)
   env "OPAMERRLOGLEN" "0" :: (* Show the whole log if it fails *)
   env "OPAMSOLVERTIMEOUT" "500" :: (* Increase timeout. Poor mccs is doing its best *)
@@ -63,7 +67,7 @@ let set_personality ~variant =
   else
     []
 
-let spec ~upgrade_opam ~base ~variant ~revdep ~with_tests ~pkg =
+let spec ~for_docker ~upgrade_opam ~base ~variant ~revdep ~with_tests ~pkg =
   let open Obuilder_spec in
   let revdep = match revdep with
     | None -> []
@@ -76,18 +80,18 @@ let spec ~upgrade_opam ~base ~variant ~revdep ~with_tests ~pkg =
   { from = base;
     ops =
       set_personality ~variant
-      @ setup_repository ~upgrade_opam
+      @ setup_repository ~for_docker ~upgrade_opam
       @ opam_install ~variant ~upgrade_opam ~pin:true ~with_tests:false ~pkg
       @ revdep
       @ tests
   }
 
-let revdeps ~base ~variant:_ ~pkg =
+let revdeps ~for_docker ~base ~variant:_ ~pkg =
   let open Obuilder_spec in
   let pkg = Filename.quote (OpamPackage.to_string pkg) in
   { from = base;
     ops =
-      setup_repository ~upgrade_opam:false
+      setup_repository ~for_docker ~upgrade_opam:false
       @ [
         run "echo '@@@OUTPUT' && \
              opam list -s --color=never --depends-on %s --coinstallable-with %s --installable --all-versions --recursive --depopts && \
