@@ -56,7 +56,6 @@ let setup_repository ~for_docker ~upgrade_opam =
   env "OPAMSOLVERTIMEOUT" "500" :: (* Increase timeout. Poor mccs is doing its best *)
   env "OPAMPRECISETRACKING" "1" :: (* Mitigate https://github.com/ocaml/opam/issues/3997 *)
   [
-    user ~uid:1000 ~gid:1000;
     copy ["."] ~dst:"/src/";
     run "opam repository set-url --strict default file:///src";
   ]
@@ -80,6 +79,7 @@ let spec ~for_docker ~upgrade_opam ~base ~variant ~revdep ~with_tests ~pkg =
   { from = base;
     ops =
       set_personality ~variant
+      @ [user ~uid:1000 ~gid:1000]
       @ setup_repository ~for_docker ~upgrade_opam
       @ opam_install ~variant ~upgrade_opam ~pin:true ~with_tests:false ~pkg
       @ revdep
