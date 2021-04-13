@@ -12,6 +12,7 @@
     dockerfile
     ppx_deriving_yojson.runtime
     ocaml-version
+    dockerfile-opam
     current_ocluster
     capnp-rpc-lwt
     obuilder-spec

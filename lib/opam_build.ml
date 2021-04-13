@@ -42,15 +42,21 @@ let opam_install ~variant ~upgrade_opam ~pin ~with_tests ~pkg =
       (Variant.distribution variant)
   ]
 
-let setup_repository ~for_docker ~upgrade_opam =
+let setup_repository ~variant ~for_docker ~upgrade_opam =
   let open Obuilder_spec in
   (if upgrade_opam then [
     run "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam";
     env "OPAMDEPEXTYES" "1"] else []) @
-  (* [for_docker] is required because docker does not support bubblewrap in docker build *)
+  (* NOTE: [for_docker] is required because docker does not support bubblewrap in docker build *)
   (* docker run has --privileged but docker build does not have it *)
-  (* so we need to remove the part re-enabling the sandbox *)
-  run "opam init --reinit%s -ni" (if for_docker then "" else " --config ~/.opamrc-sandbox") ::
+  (* so we need to remove the part re-enabling the sandbox. *)
+  (* NOTE: On alpine-3.12 bwrap fails with "capset failed: Operation not permitted". *)
+  let sandboxing_not_supported =
+    let distro = variant.Variant.distribution in
+    String.equal distro (Dockerfile_distro.tag_of_distro (`Alpine `V3_12)) ||
+    for_docker
+  in
+  run "opam init --reinit%s -ni" (if sandboxing_not_supported then "" else " --config ~/.opamrc-sandbox") ::
   env "OPAMDOWNLOADJOBS" "1" :: (* Try to avoid github spam detection *)
   env "OPAMERRLOGLEN" "0" :: (* Show the whole log if it fails *)
   env "OPAMSOLVERTIMEOUT" "500" :: (* Increase timeout. Poor mccs is doing its best *)
@@ -80,18 +86,18 @@ let spec ~for_docker ~upgrade_opam ~base ~variant ~revdep ~with_tests ~pkg =
     ops =
       set_personality ~variant
       @ [user ~uid:1000 ~gid:1000]
-      @ setup_repository ~for_docker ~upgrade_opam
+      @ setup_repository ~variant ~for_docker ~upgrade_opam
       @ opam_install ~variant ~upgrade_opam ~pin:true ~with_tests:false ~pkg
       @ revdep
       @ tests
   }
 
-let revdeps ~for_docker ~base ~variant:_ ~pkg =
+let revdeps ~for_docker ~base ~variant ~pkg =
   let open Obuilder_spec in
   let pkg = Filename.quote (OpamPackage.to_string pkg) in
   { from = base;
     ops =
-      setup_repository ~for_docker ~upgrade_opam:false
+      setup_repository ~variant ~for_docker ~upgrade_opam:false
       @ [
         run "echo '@@@OUTPUT' && \
              opam list -s --color=never --depends-on %s --coinstallable-with %s --installable --all-versions --recursive --depopts && \
