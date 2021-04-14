@@ -44,6 +44,7 @@ let opam_install ~variant ~upgrade_opam ~pin ~with_tests ~pkg =
 
 let setup_repository ~variant ~for_docker ~upgrade_opam =
   let open Obuilder_spec in
+  user ~uid:1000 ~gid:1000 ::
   (if upgrade_opam then [
     run "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam";
     env "OPAMDEPEXTYES" "1"] else []) @
@@ -85,7 +86,6 @@ let spec ~for_docker ~upgrade_opam ~base ~variant ~revdep ~with_tests ~pkg =
   { from = base;
     ops =
       set_personality ~variant
-      @ [user ~uid:1000 ~gid:1000]
       @ setup_repository ~variant ~for_docker ~upgrade_opam
       @ opam_install ~variant ~upgrade_opam ~pin:true ~with_tests:false ~pkg
       @ revdep
