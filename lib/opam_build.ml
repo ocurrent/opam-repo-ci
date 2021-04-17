@@ -74,7 +74,6 @@ let set_personality ~variant =
     []
 
 let spec ~for_docker ~upgrade_opam ~base ~variant ~revdep ~with_tests ~pkg =
-  let open Obuilder_spec in
   let revdep = match revdep with
     | None -> []
     | Some revdep -> opam_install ~variant ~upgrade_opam ~pin:false ~with_tests:false ~pkg:revdep
@@ -83,27 +82,25 @@ let spec ~for_docker ~upgrade_opam ~base ~variant ~revdep ~with_tests ~pkg =
     | true, Some revdep -> opam_install ~variant ~upgrade_opam ~pin:false ~with_tests:true ~pkg:revdep
     | false, _ -> []
   in
-  { from = base;
-    ops =
-      set_personality ~variant
-      @ setup_repository ~variant ~for_docker ~upgrade_opam
-      @ opam_install ~variant ~upgrade_opam ~pin:true ~with_tests:false ~pkg
-      @ revdep
-      @ tests
-  }
+  Obuilder_spec.stage ~from:base (
+    set_personality ~variant
+    @ setup_repository ~variant ~for_docker ~upgrade_opam
+    @ opam_install ~variant ~upgrade_opam ~pin:true ~with_tests:false ~pkg
+    @ revdep
+    @ tests
+  )
 
 let revdeps ~for_docker ~base ~variant ~pkg =
   let open Obuilder_spec in
   let pkg = Filename.quote (OpamPackage.to_string pkg) in
-  { from = base;
-    ops =
-      setup_repository ~variant ~for_docker ~upgrade_opam:false
-      @ [
-        run "echo '@@@OUTPUT' && \
-             opam list -s --color=never --depends-on %s --coinstallable-with %s --installable --all-versions --recursive --depopts && \
-             opam list -s --color=never --depends-on %s --coinstallable-with %s --installable --all-versions --with-test --depopts && \
-             echo '@@@OUTPUT'"
-          pkg pkg
-          pkg pkg
-      ]
-  }
+  Obuilder_spec.stage ~from:base (
+    setup_repository ~variant ~for_docker ~upgrade_opam:false
+    @ [
+      run "echo '@@@OUTPUT' && \
+           opam list -s --color=never --depends-on %s --coinstallable-with %s --installable --all-versions --recursive --depopts && \
+           opam list -s --color=never --depends-on %s --coinstallable-with %s --installable --all-versions --with-test --depopts && \
+           echo '@@@OUTPUT'"
+        pkg pkg
+        pkg pkg
+    ]
+  )
