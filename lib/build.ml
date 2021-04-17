@@ -131,13 +131,13 @@ module Op = struct
                  git fetch origin master@.\
                  git merge %s@.\
                  cat > ../Dockerfile <<'END-OF-DOCKERFILE'@.\
-                 \o033[34m%a\o033[0m@.\
+                 \o033[34m%s\o033[0m@.\
                  END-OF-DOCKERFILE@.\
                  docker build -f ../Dockerfile .@.@."
          Current_git.Commit_id.pp_user_clone commit
          master
-         Dockerfile.pp (Obuilder_spec.Docker.dockerfile_of_spec ~buildkit:false (build_spec ~for_docker:true)));
-    let spec_str = Fmt.to_to_string Obuilder_spec.pp_stage (build_spec ~for_docker:false) in
+         (Obuilder_spec.Docker.dockerfile_of_spec ~buildkit:false (build_spec ~for_docker:true)));
+    let spec_str = Fmt.to_to_string Obuilder_spec.pp (build_spec ~for_docker:false) in
     let action = Cluster_api.Submission.obuilder_build spec_str in
     let src = (Git.Commit_id.repo commit, [master; Git.Commit_id.hash commit]) in
     let cache_hint =
