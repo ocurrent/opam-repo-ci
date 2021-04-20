@@ -130,10 +130,10 @@ module Op = struct
                  %a@.\
                  git fetch origin master@.\
                  git merge %s@.\
-                 cat > Dockerfile <<'END-OF-DOCKERFILE'@.\
+                 cat > ../Dockerfile <<'END-OF-DOCKERFILE'@.\
                  \o033[34m%a\o033[0m@.\
                  END-OF-DOCKERFILE@.\
-                 docker build .@.@."
+                 docker build -f ../Dockerfile .@.@."
          Current_git.Commit_id.pp_user_clone commit
          master
          Dockerfile.pp (Obuilder_spec.Docker.dockerfile_of_spec ~buildkit:false (build_spec ~for_docker:true)));

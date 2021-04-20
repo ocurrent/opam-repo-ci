@@ -19,23 +19,23 @@ let opam_install ~variant ~upgrade_opam ~pin ~with_tests ~pkg =
     run ~network "opam %s" (if upgrade_opam then "update --depexts" else "depext -yu");
     (* TODO: Replace by two calls to opam install + opam install -t using the OPAMDROPINSTALLEDPACKAGES feature *)
     run ~cache ~network {|
-        opam remove -y %s && opam %s%s %s
-        res=$?
-        test "$res" = 0 && exit 0
+        opam remove -y %s && opam %s%s %s;
+        res=$?;
+        test "$res" = 0 && exit 0;
         if test "$res" = 60 && diff -q /usr/bin/opam /usr/bin/opam-2.0; then
-          sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam && opam init --reinit -ni
-          opam remove -y %s && opam install -vy%s %s%s
-          exit 1
-        fi
-        test "$res" != 31 && exit 1
-        export OPAMCLI=2.0
-        build_dir=$(opam var prefix)/.opam-switch/build
-        failed=$(ls "$build_dir")
+          sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam && opam init --reinit -ni;
+          opam remove -y %s && opam install -vy%s %s%s;
+          exit 1;
+        fi;
+        test "$res" != 31 && exit 1;
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
         for pkg in $failed; do
           if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"%s\""; then
-            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."
-          fi
-        done
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+        done;
         exit 1|}
       pkg (if upgrade_opam then "install -vy" else "depext -ivy") (if with_tests then "t" else "") pkg
       pkg (if with_tests then "t" else "") pkg (if with_tests then "" else " && opam reinstall -vyt "^pkg)
