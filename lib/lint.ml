@@ -1,7 +1,9 @@
 open Lwt.Infix
 open Current.Syntax
 
-let pool = Current.Pool.create ~label:"lint" 4
+let pool_size = 4
+let pool = Current.Pool.create ~label:"lint" pool_size
+let () = Lwt_preemptive.init 0 pool_size (fun _errlog -> ())
 
 let ( // ) = Filename.concat
 let ( >>/= ) x f = x >>= fun x -> f (Result.get_ok x)
@@ -90,9 +92,13 @@ module Check = struct
 
   let get_dune_project_version url =
     Lwt_io.with_temp_dir @@ fun dir ->
-    let f = OpamProcess.Job.run (OpamDownload.download ~overwrite:false (OpamFile.URL.url url) (OpamFilename.Dir.of_string dir)) in
+    Lwt_preemptive.detach begin fun () ->
+      OpamProcess.Job.run (OpamDownload.download ~overwrite:false (OpamFile.URL.url url) (OpamFilename.Dir.of_string dir))
+    end () >>= fun f ->
     Lwt_io.with_temp_dir @@ fun dir ->
-    OpamFilename.extract f (OpamFilename.Dir.of_string dir);
+    Lwt_preemptive.detach begin fun () ->
+      OpamFilename.extract f (OpamFilename.Dir.of_string dir)
+    end () >>= fun () ->
     let dune_project = Filename.concat dir "dune-project" in
     Lwt.catch begin fun () ->
       Lwt_io.with_file ~mode:Lwt_io.Input dune_project (fun ch -> Lwt_io.read ch >|= Sexplib.Sexp.parse) >>= begin function
@@ -209,10 +215,10 @@ module Check = struct
           (* Check directory structure correctness *)
           scan_dir ~cwd errors pkg >>= fun (errors, check_extra_files) ->
           (* opam lint *)
-          let errors =
+          Lwt_preemptive.detach begin fun () ->
             OpamFileTools.lint ~check_extra_files ~check_upstream:true opam |>
             List.fold_left (fun errors x -> (pkg, OpamLint x) :: errors) errors
-          in
+          end () >>= fun errors ->
           Lwt.return errors
     ) [] packages
 end
