@@ -255,7 +255,9 @@ let get_prs repo =
   in
   let master =
     refs
-    |> Current.map (Github.Api.Ref_map.find (`Ref "refs/heads/master"))
+    |> Current.map (fun refs ->
+      Github.Api.all_refs refs |>
+      Github.Api.Ref_map.find (`Ref (Github.Api.default_ref refs)))
     |> Current.map Github.Api.Commit.id
     |> Git.fetch
   in
@@ -265,7 +267,7 @@ let get_prs repo =
       match key with
       | `Ref _ -> acc (* Skip branches, only check PRs *)
       | `PR _ -> head :: acc
-    end refs []
+    end (Github.Api.all_refs refs) []
   in
   master, prs
 
