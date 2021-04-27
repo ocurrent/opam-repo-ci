@@ -84,6 +84,13 @@ module Analysis = struct
     let new_exts = filter_ci_exts (OpamFile.OPAM.extensions new_file) in
     OpamStd.String.Map.equal OpamPrinter.FullPos.value_equals old_exts new_exts
 
+  let depexts_equal old_file new_file =
+    let aux (set1, filter1) (set2, filter2) =
+      OpamSysPkg.Set.equal set1 set2 &&
+      filter1 = filter2 (* TODO: Add a proper filter_equal to opam-format *)
+    in
+    List.equal aux old_file.OpamFile.OPAM.depexts new_file.OpamFile.OPAM.depexts
+
   let add_pkg ~path ~name ~package kind pkgs =
     let update old_kind = match old_kind, kind with
       | (New | Deleted | UnsignificantlyChanged),
@@ -136,7 +143,10 @@ module Analysis = struct
                       with Failure msg -> Fmt.failwith "%S failed to be parsed: %s" path msg
                     in
                     check_opam new_file;
-                    if OpamFile.OPAM.effectively_equal old_file new_file && ci_extensions_equal old_file new_file then
+                    if OpamFile.OPAM.effectively_equal old_file new_file &&
+                       ci_extensions_equal old_file new_file &&
+                       depexts_equal old_file new_file
+                    then
                       (* the changes are not significant so we ignore this package *)
                       add_pkg ~path ~name ~package UnsignificantlyChanged pkgs
                     else

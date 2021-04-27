@@ -9,7 +9,7 @@
  (synopsis "Cap'n Proto API for opam-repo-ci")
  (depends
   (dune (>= "1.11"))
-  (ocaml (>= "4.11.0"))
+  (ocaml (>= "4.12.0"))
   current_rpc
   (capnp (>= 3.4.0))
   capnp-rpc-lwt
@@ -28,7 +28,7 @@
   logs
   (fmt (>= 0.8.7))
   (dune (>= "1.11"))
-  (ocaml (>= "4.11.0"))
+  (ocaml (>= "4.12.0"))
   current_git
   current_github
   current_docker
@@ -56,7 +56,7 @@
   yojson
   logs
   (fmt (>= 0.8.7))
-  (ocaml (>= "4.11.0"))
+  (ocaml (>= "4.12.0"))
   current_rpc
   current_ansi
   prometheus-app
@@ -77,7 +77,7 @@
   logs
   (fmt (>= 0.8.7))
   (dune (>= "1.11"))
-  (ocaml (>= "4.11.0"))
+  (ocaml (>= "4.12.0"))
   current_rpc
   capnp-rpc-unix
   opam-repo-ci-api
