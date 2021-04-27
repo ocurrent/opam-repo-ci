@@ -122,7 +122,7 @@ let get_significant_available_pkg = function
 let build_with_cluster ~ocluster ~analysis ~lint ~master source =
   let pkgs = Current.map Analyse.Analysis.packages analysis in
   let pkgs = Current.map (List.filter_map get_significant_available_pkg) pkgs in
-  let build ?(upgrade_opam=false) ~revdeps label variant =
+  let build ~upgrade_opam ~revdeps label variant =
     let arch = Variant.arch variant in
     let pool = Conf.pool_of_arch arch in
     let platform = {Platform.label; pool; variant} in
@@ -174,7 +174,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
         let revdeps = Ocaml_version.equal v default_compiler in (* TODO: Remove this when the cluster is ready *)
         let v = Ocaml_version.to_string v in
         let variant = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(v, None) in
-        build ~revdeps v variant
+        build ~upgrade_opam:false ~revdeps v variant
       )
     end
   and+ distributions =
@@ -188,7 +188,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
         else
           let distro = Dockerfile_distro.tag_of_distro distro in
           let variant = Variant.v ~arch:`X86_64 ~distro ~compiler:(default_compiler, None) in
-          build ~revdeps:false distro variant :: acc
+          build ~upgrade_opam:false ~revdeps:false distro variant :: acc
       ) []
     end
   and+ extras =
