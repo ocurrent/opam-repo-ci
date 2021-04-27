@@ -287,7 +287,7 @@ module Lint = struct
           Fmt.str "Warning in %s: The package has a dune-project file but no explicit dependency on dune was found." pkg
       | BadDuneConstraint (dep, ver) ->
           Fmt.str "Error in %s: Your dune-project file indicates that this package requires at least dune %s \
-                   but the dependencies only requires dune >= %s. Please check which requirement is the right one, and fix the other."
+                   but your opam file only requires dune >= %s. Please check which requirement is the right one, and fix the other."
             pkg ver dep
       | UnexpectedFile file ->
           Fmt.str "Error in %s: Unexpected file in %s/files/%s" pkg (Check.path_from_pkg package) file
