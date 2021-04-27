@@ -9,7 +9,7 @@ depends: [
   "logs"
   "fmt" {>= "0.8.7"}
   "dune" {>= "1.11"}
-  "ocaml" {>= "4.11.0"}
+  "ocaml" {>= "4.12.0"}
   "current_rpc"
   "capnp-rpc-unix"
   "opam-repo-ci-api"

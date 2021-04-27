@@ -10,7 +10,7 @@ depends: [
   "yojson"
   "logs"
   "fmt" {>= "0.8.7"}
-  "ocaml" {>= "4.11.0"}
+  "ocaml" {>= "4.12.0"}
   "current_rpc"
   "current_ansi"
   "prometheus-app"
