@@ -4,6 +4,7 @@ val spec :
   base:string ->
   variant:Variant.t ->
   revdep:OpamPackage.t option ->
+  lower_bounds:bool ->
   with_tests:bool ->
   pkg:OpamPackage.t ->
   Obuilder_spec.t

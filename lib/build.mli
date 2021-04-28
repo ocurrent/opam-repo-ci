@@ -4,6 +4,7 @@ module Spec : sig
   val opam :
     ?revdep:OpamPackage.t ->
     platform:Platform.t ->
+    lower_bounds:bool ->
     with_tests:bool ->
     upgrade_opam:bool ->
     OpamPackage.t ->

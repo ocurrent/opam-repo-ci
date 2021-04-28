@@ -73,19 +73,25 @@ let dep_list_map (type a) (module M : Current_term.S.ORDERED with type t = a) ?c
 
 let build_spec ~platform ~upgrade_opam pkg =
   let+ pkg = pkg in
-  Build.Spec.opam ~platform ~with_tests:false ~upgrade_opam pkg
+  Build.Spec.opam ~platform ~lower_bounds:false ~with_tests:false ~upgrade_opam pkg
 
 let test_spec ~platform ~upgrade_opam ~after pkg =
   let+ _ = after
   and+ pkg = pkg
   in
-  Build.Spec.opam ~platform ~with_tests:true ~upgrade_opam pkg
+  Build.Spec.opam ~platform ~lower_bounds:false  ~with_tests:true ~upgrade_opam pkg
+
+let lower_bounds_spec ~platform ~upgrade_opam ~after pkg =
+  let+ _ = after
+  and+ pkg = pkg
+  in
+  Build.Spec.opam ~platform ~lower_bounds:true ~with_tests:false ~upgrade_opam pkg
 
 let revdep_spec ~platform ~upgrade_opam ~revdep pkg =
   let+ revdep = revdep
   and+ pkg = pkg
   in
-  Build.Spec.opam ~platform ~with_tests:true ~revdep ~upgrade_opam pkg
+  Build.Spec.opam ~platform ~lower_bounds:false ~with_tests:true ~revdep ~upgrade_opam pkg
 
 let combine_revdeps revdeps =
   let map =
@@ -150,15 +156,24 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
           let spec = test_spec ~platform ~upgrade_opam pkg ~after:image in
           Build.v ocluster ~label:"test" ~base ~spec ~master source
         in
+        let lower_bounds_check =
+          let spec = lower_bounds_spec ~platform ~upgrade_opam pkg ~after:image in
+          Build.v ocluster ~label:"lower-bounds" ~base ~spec ~master source
+        in
         let+ pkg = pkg
         and+ build = Node.action `Built image
         and+ tests = Node.action `Built tests
+        and+ lower_bounds_check = Node.action `Built lower_bounds_check
         and+ revdeps =
           if revdeps then test_revdeps ~ocluster ~master ~base ~platform ~pkg source ~after:image
           else Current.return []
         in
         let label = OpamPackage.to_string pkg in
-        Node.actioned_branch ~label build (Node.leaf ~label:"tests" tests :: revdeps)
+        Node.actioned_branch ~label build (
+          Node.leaf ~label:"tests" tests ::
+          Node.leaf ~label:"lower-bounds" lower_bounds_check ::
+          revdeps
+        )
       )
     |> Current.map (Node.branch ~label)
     |> Current.collapse ~key:"platform" ~value:label ~input:analysis
