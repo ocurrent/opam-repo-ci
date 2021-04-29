@@ -95,7 +95,7 @@ let combine_revdeps revdeps =
 
 (* List the revdeps of [pkg] (using [builder] and [image]) and test each one
    (using [spec] and [base], merging [source] into [master]). *)
-let test_revdeps ~ocluster ~master ~base ~platform ~pkg ~after:main_build source =
+let test_revdeps ~ocluster ~upgrade_opam ~master ~base ~platform ~pkg ~after:main_build source =
   let revdeps = Build.list_revdeps ~base ocluster ~platform ~pkg ~master source in
   let revdeps = Current.map combine_revdeps revdeps in
   let+ tests =
@@ -103,7 +103,7 @@ let test_revdeps ~ocluster ~master ~base ~platform ~pkg ~after:main_build source
     |> Current.gate ~on:main_build
     |> dep_list_map (module OpamPackage) (fun revdep ->
         let image =
-          let spec = revdep_spec ~platform ~upgrade_opam:false ~revdep pkg in
+          let spec = revdep_spec ~platform ~upgrade_opam ~revdep pkg in
           Build.v ocluster ~label:"build" ~base ~spec ~master source
         in
         let+ label = Current.map OpamPackage.to_string revdep
@@ -154,7 +154,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
         and+ build = Node.action `Built image
         and+ tests = Node.action `Built tests
         and+ revdeps =
-          if revdeps then test_revdeps ~ocluster ~master ~base ~platform ~pkg source ~after:image
+          if revdeps then test_revdeps ~ocluster ~upgrade_opam ~master ~base ~platform ~pkg source ~after:image
           else Current.return []
         in
         let label = OpamPackage.to_string pkg in
@@ -163,9 +163,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
     |> Current.map (Node.branch ~label)
     |> Current.collapse ~key:"platform" ~value:label ~input:analysis
   in
-  let+ analysis = Node.action `Analysed analysis
-  and+ lint = Node.action `Linted lint
-  and+ compilers =
+  let compilers ~upgrade_opam =
     Current.list_seq begin
       let master_distro = Dockerfile_distro.tag_of_distro master_distro in
       (Ocaml_version.Releases.recent @ Ocaml_version.Releases.dev) |>
@@ -174,10 +172,11 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
         let revdeps = Ocaml_version.equal v default_compiler in (* TODO: Remove this when the cluster is ready *)
         let v = Ocaml_version.to_string v in
         let variant = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(v, None) in
-        build ~upgrade_opam:false ~revdeps v variant
+        build ~upgrade_opam ~revdeps v variant
       )
     end
-  and+ distributions =
+  in
+  let distributions ~upgrade_opam =
     Current.list_seq begin
       let default_compiler = Ocaml_version.to_string default_compiler in
       Dockerfile_distro.active_distros `X86_64 |>
@@ -188,9 +187,16 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
         else
           let distro = Dockerfile_distro.tag_of_distro distro in
           let variant = Variant.v ~arch:`X86_64 ~distro ~compiler:(default_compiler, None) in
-          build ~upgrade_opam:false ~revdeps:false distro variant :: acc
+          build ~upgrade_opam ~revdeps:false distro variant :: acc
       ) []
     end
+  in
+  let+ analysis = Node.action `Analysed analysis
+  and+ lint = Node.action `Linted lint
+  and+ compilers_2_0 = compilers ~upgrade_opam:false
+  and+ compilers_2_1 = compilers ~upgrade_opam:true
+  and+ distributions_2_0 = distributions ~upgrade_opam:false
+  and+ distributions_2_1 = distributions ~upgrade_opam:true
   and+ extras =
     let master_distro = Dockerfile_distro.tag_of_distro master_distro in
     let default_compiler = Ocaml_version.to_string default_compiler in
@@ -209,12 +215,24 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
       ) [] Ocaml_version.arches
     )
   in
+  let opam_2_0 =
+    [
+      Node.branch ~label:"compilers" compilers_2_0;
+      Node.branch ~label:"distributions" distributions_2_0;
+    ]
+  in
+  let opam_2_1 =
+    [
+      Node.branch ~label:"compilers" compilers_2_1;
+      Node.branch ~label:"distributions" distributions_2_1;
+      Node.branch ~label:"extras" extras;
+    ]
+  in
   Node.root [
     Node.leaf ~label:"(analysis)" analysis;
     Node.leaf ~label:"(lint)" lint;
-    Node.branch ~label:"compilers" compilers;
-    Node.branch ~label:"distributions" distributions;
-    Node.branch ~label:"extras" extras;
+    Node.branch ~label:"opam-2.0" opam_2_0;
+    Node.branch ~label:"opam-2.1" opam_2_1;
   ]
 
 let summarise results =

@@ -94,6 +94,7 @@ let revdeps ~for_docker ~base ~variant ~pkg =
   let open Obuilder_spec in
   let pkg = Filename.quote (OpamPackage.to_string pkg) in
   Obuilder_spec.stage ~from:base (
+    (* TODO: Switch to opam 2.1 when https://github.com/ocaml/opam/issues/4311 is fixed *)
     setup_repository ~variant ~for_docker ~upgrade_opam:false
     @ [
       run "echo '@@@OUTPUT' && \
