@@ -31,13 +31,7 @@ let opam_install ~variant ~is_opam_2_1 ~pin ~lower_bounds ~with_tests ~pkg =
     run ~cache ~network
       {|opam remove -y %s && opam %s%s %s;
         res=$?;
-        test "$res" = 0 && exit 0;
-        if test "$res" = 60 && diff -q /usr/bin/opam /usr/bin/opam-2.0; then
-          %s;
-          opam remove -y %s && opam install -vy%s %s%s;
-          exit 1;
-        fi;
-        test "$res" != 31 && exit 1;
+        test "$res" != 31 && exit "$res";
         export OPAMCLI=2.0;
         build_dir=$(opam var prefix)/.opam-switch/build;
         failed=$(ls "$build_dir");
@@ -48,8 +42,6 @@ let opam_install ~variant ~is_opam_2_1 ~pin ~lower_bounds ~with_tests ~pkg =
         done;
         exit 1|}
       pkg (if upgrade_opam then "install -vy" else "depext -ivy") (if with_tests then "t" else "") pkg
-      opam_upgrade_cmd
-      pkg (if with_tests then "t" else "") pkg (if with_tests then "" else " && opam reinstall -vyt "^pkg)
       (Variant.distribution variant)
   ]
 
