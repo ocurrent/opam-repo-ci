@@ -2,32 +2,36 @@ let download_cache = "opam-archives"
 let cache = [ Obuilder_spec.Cache.v download_cache ~target:"/home/opam/.opam/download-cache" ]
 let network = ["host"]
 
-let opam_install ~variant ~upgrade_opam ~pin ~with_tests ~pkg =
+let opam_upgrade_cmd = "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam && opam init --reinit -ni"
+
+let opam_install ~variant ~is_opam_2_1 ~pin ~lower_bounds ~with_tests ~pkg =
   let pkg = OpamPackage.to_string pkg in
+  let upgrade_opam = lower_bounds || is_opam_2_1 in
   let open Obuilder_spec in
-  let pin =
-    if pin then
-      let version =
-        let idx = String.index pkg '.' + 1 in
-        String.sub pkg idx (String.length pkg - idx)
-      in
-      [ run "opam pin add -k version -yn %s %s" pkg version ]
-    else
-      []
-  in
-  pin @ [
+  (if lower_bounds then
+     (if not is_opam_2_1 then [run "%s" opam_upgrade_cmd] else []) @
+     [
+       env "OPAMCRITERIA" "+removed,+count[version-lag,solution]";
+       env "OPAMEXTERNALSOLVER" "builtin-0install";
+     ]
+   else
+     []
+  ) @
+  (if pin then
+     let version =
+       let idx = String.index pkg '.' + 1 in
+       String.sub pkg idx (String.length pkg - idx)
+     in
+     [ run "opam pin add -k version -yn %s %s" pkg version ]
+   else
+     []
+  ) @ [
     run ~network "opam %s" (if upgrade_opam then "update --depexts" else "depext -yu");
     (* TODO: Replace by two calls to opam install + opam install -t using the OPAMDROPINSTALLEDPACKAGES feature *)
-    run ~cache ~network {|
-        opam remove -y %s && opam %s%s %s;
+    run ~cache ~network
+      {|opam remove -y %s && opam %s%s %s;
         res=$?;
-        test "$res" = 0 && exit 0;
-        if test "$res" = 60 && diff -q /usr/bin/opam /usr/bin/opam-2.0; then
-          sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam && opam init --reinit -ni;
-          opam remove -y %s && opam install -vy%s %s%s;
-          exit 1;
-        fi;
-        test "$res" != 31 && exit 1;
+        test "$res" != 31 && exit "$res";
         export OPAMCLI=2.0;
         build_dir=$(opam var prefix)/.opam-switch/build;
         failed=$(ls "$build_dir");
@@ -38,7 +42,6 @@ let opam_install ~variant ~upgrade_opam ~pin ~with_tests ~pkg =
         done;
         exit 1|}
       pkg (if upgrade_opam then "install -vy" else "depext -ivy") (if with_tests then "t" else "") pkg
-      pkg (if with_tests then "t" else "") pkg (if with_tests then "" else " && opam reinstall -vyt "^pkg)
       (Variant.distribution variant)
   ]
 
@@ -73,19 +76,24 @@ let set_personality ~variant =
   else
     []
 
-let spec ~for_docker ~upgrade_opam ~base ~variant ~revdep ~with_tests ~pkg =
+let spec ~for_docker ~upgrade_opam ~base ~variant ~revdep ~lower_bounds ~with_tests ~pkg =
+  let opam_install = opam_install ~variant ~is_opam_2_1:upgrade_opam in
   let revdep = match revdep with
     | None -> []
-    | Some revdep -> opam_install ~variant ~upgrade_opam ~pin:false ~with_tests:false ~pkg:revdep
+    | Some revdep -> opam_install ~pin:false ~lower_bounds:false ~with_tests:false ~pkg:revdep
   and tests = match with_tests, revdep with
-    | true, None -> opam_install ~variant ~upgrade_opam ~pin:false ~with_tests:true ~pkg
-    | true, Some revdep -> opam_install ~variant ~upgrade_opam ~pin:false ~with_tests:true ~pkg:revdep
+    | true, None -> opam_install ~pin:false ~lower_bounds:false ~with_tests:true ~pkg
+    | true, Some revdep -> opam_install ~pin:false ~lower_bounds:false ~with_tests:true ~pkg:revdep
     | false, _ -> []
+  and lower_bounds = match lower_bounds with
+    | true -> opam_install ~pin:false ~lower_bounds:true ~with_tests:false ~pkg
+    | false -> []
   in
   Obuilder_spec.stage ~from:base (
     set_personality ~variant
     @ setup_repository ~variant ~for_docker ~upgrade_opam
-    @ opam_install ~variant ~upgrade_opam ~pin:true ~with_tests:false ~pkg
+    @ opam_install ~pin:true ~lower_bounds:false ~with_tests:false ~pkg
+    @ lower_bounds
     @ revdep
     @ tests
   )
