@@ -2,14 +2,10 @@ let download_cache = "opam-archives"
 let cache = [ Obuilder_spec.Cache.v download_cache ~target:"/home/opam/.opam/download-cache" ]
 let network = ["host"]
 
-let opam_upgrade_cmd = "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam && opam init --reinit -ni"
-
-let opam_install ~variant ~is_opam_2_1 ~pin ~lower_bounds ~with_tests ~pkg =
+let opam_install ~variant ~upgrade_opam ~pin ~lower_bounds ~with_tests ~pkg =
   let pkg = OpamPackage.to_string pkg in
-  let upgrade_opam = lower_bounds || is_opam_2_1 in
   let open Obuilder_spec in
   (if lower_bounds then
-     (if not is_opam_2_1 then [run "%s" opam_upgrade_cmd] else []) @
      [
        env "OPAMCRITERIA" "+removed,+count[version-lag,solution]";
        env "OPAMEXTERNALSOLVER" "builtin-0install";
@@ -77,7 +73,7 @@ let set_personality ~variant =
     []
 
 let spec ~for_docker ~upgrade_opam ~base ~variant ~revdep ~lower_bounds ~with_tests ~pkg =
-  let opam_install = opam_install ~variant ~is_opam_2_1:upgrade_opam in
+  let opam_install = opam_install ~variant ~upgrade_opam in
   let revdep = match revdep with
     | None -> []
     | Some revdep -> opam_install ~pin:false ~lower_bounds:false ~with_tests:false ~pkg:revdep
