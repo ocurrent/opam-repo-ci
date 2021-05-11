@@ -156,14 +156,19 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
           let spec = test_spec ~platform ~upgrade_opam pkg ~after:image in
           Build.v ocluster ~label:"test" ~base ~spec ~master source
         in
-        let lower_bounds_check =
-          let spec = lower_bounds_spec ~platform ~upgrade_opam pkg ~after:image in
-          Build.v ocluster ~label:"lower-bounds" ~base ~spec ~master source
-        in
         let+ pkg = pkg
         and+ build = Node.action `Built image
         and+ tests = Node.action `Built tests
-        and+ lower_bounds_check = Node.action `Built lower_bounds_check
+        and+ lower_bounds_check =
+          if upgrade_opam then
+            let action =
+              let spec = lower_bounds_spec ~platform ~upgrade_opam pkg ~after:image in
+              Build.v ocluster ~label:"lower-bounds" ~base ~spec ~master source
+            in
+            let+ action = Node.action `Built action in
+            [Node.leaf ~label:"lower-bounds" action]
+          else
+            Current.return []
         and+ revdeps =
           if revdeps then test_revdeps ~ocluster ~upgrade_opam ~master ~base ~platform ~pkg source ~after:image
           else Current.return []
@@ -171,7 +176,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
         let label = OpamPackage.to_string pkg in
         Node.actioned_branch ~label build (
           Node.leaf ~label:"tests" tests ::
-          Node.leaf ~label:"lower-bounds" lower_bounds_check ::
+          lower_bounds_check @
           revdeps
         )
       )
