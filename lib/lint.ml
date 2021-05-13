@@ -224,7 +224,9 @@ module Check = struct
 end
 
 module Lint = struct
-  type t = No_context
+  type t = {
+    master : Current_git.Commit.t;
+  }
 
   module Key = struct
     type t = {
@@ -244,11 +246,9 @@ module Lint = struct
   end
 
   module Value = struct
-    type t = {
-      master : Current_git.Commit.t;
-    }
+    type t = unit
 
-    let digest { master = _ } =
+    let digest () =
       let json = `Assoc [
         ]
       in
@@ -305,7 +305,7 @@ module Lint = struct
           Fmt.str "Error in %s: %s" pkg warn
     )
 
-  let run No_context job { Key.src; packages } { Value.master } =
+  let run {master} job { Key.src; packages } () =
     Current.Job.start job ~pool ~level:Current.Level.Harmless >>= fun () ->
     Current_git.with_checkout ~job src @@ fun dir ->
     Check.of_dir ~master ~job ~packages dir >|= fun errors ->
@@ -329,4 +329,4 @@ let check ~master ~packages src =
   let> src = src
   and> packages = packages
   and> master = master in
-  Lint_cache.run Lint.No_context { Lint.Key.src; packages } { Lint.Value.master }
+  Lint_cache.run {Lint.master} { Lint.Key.src; packages } ()
