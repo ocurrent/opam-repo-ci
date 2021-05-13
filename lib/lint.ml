@@ -248,9 +248,8 @@ module Lint = struct
       master : Current_git.Commit.t;
     }
 
-    let digest { master } =
+    let digest { master = _ } =
       let json = `Assoc [
-          "master", `String (Current_git.Commit.hash master);
         ]
       in
       Yojson.Safe.to_string json
