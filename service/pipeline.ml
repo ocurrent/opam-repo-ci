@@ -128,7 +128,7 @@ let get_significant_available_pkg = function
 let build_with_cluster ~ocluster ~analysis ~lint ~master source =
   let pkgs = Current.map Analyse.Analysis.packages analysis in
   let pkgs = Current.map (List.filter_map get_significant_available_pkg) pkgs in
-  let build ~upgrade_opam ~revdeps label variant =
+  let build ~upgrade_opam ~lower_bounds ~revdeps label variant =
     let arch = Variant.arch variant in
     let pool = Conf.pool_of_arch arch in
     let platform = {Platform.label; pool; variant} in
@@ -160,7 +160,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
         and+ build = Node.action `Built image
         and+ tests = Node.action `Built tests
         and+ lower_bounds_check =
-          if upgrade_opam then
+          if upgrade_opam && lower_bounds then
             let action =
               let spec = lower_bounds_spec ~platform ~upgrade_opam pkg ~after:image in
               Build.v ocluster ~label:"lower-bounds" ~base ~spec ~master source
@@ -192,7 +192,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
         let revdeps = Ocaml_version.equal v default_compiler in (* TODO: Remove this when the cluster is ready *)
         let v = Ocaml_version.to_string v in
         let variant = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(v, None) in
-        build ~upgrade_opam ~revdeps v variant
+        build ~upgrade_opam ~lower_bounds:true ~revdeps v variant
       )
     end
   in
@@ -207,7 +207,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
         else
           let distro = Dockerfile_distro.tag_of_distro distro in
           let variant = Variant.v ~arch:`X86_64 ~distro ~compiler:(default_compiler, None) in
-          build ~upgrade_opam ~revdeps:false distro variant :: acc
+          build ~upgrade_opam ~lower_bounds:false ~revdeps:false distro variant :: acc
       ) []
     end
   in
@@ -223,15 +223,15 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
     let flambda = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(default_compiler, Some "flambda") in
     let nnpchecker = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(default_compiler, Some "nnpchecker") in
     Current.list_seq (
-      build ~upgrade_opam:true ~revdeps:false "flambda" flambda ::
-      build ~upgrade_opam:true ~revdeps:false "nnpchecker" nnpchecker ::
+      build ~upgrade_opam:true ~lower_bounds:false ~revdeps:false "flambda" flambda ::
+      build ~upgrade_opam:true ~lower_bounds:false ~revdeps:false "nnpchecker" nnpchecker ::
       List.fold_left (fun acc arch ->
         if arch = `X86_64 then
           acc
         else
           let label = Ocaml_version.to_opam_arch arch in
           let variant = Variant.v ~arch ~distro:master_distro ~compiler:(default_compiler, None) in
-          build ~upgrade_opam:true ~revdeps:false label variant :: acc
+          build ~upgrade_opam:true ~lower_bounds:false ~revdeps:false label variant :: acc
       ) [] Ocaml_version.arches
     )
   in
