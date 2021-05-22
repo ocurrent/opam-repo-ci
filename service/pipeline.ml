@@ -47,7 +47,21 @@ let set_active_refs ~repo xs =
 
 module OpamPackage = struct
   include OpamPackage
+
   let pp = Fmt.of_to_string to_string
+end
+
+module PackageOpt = struct
+  type t = {
+    pkg : OpamPackage.t;
+    enable_revdeps : bool;
+  }
+
+  let compare {pkg = pkg1; enable_revdeps = _} {pkg = pkg2; enable_revdeps = _} =
+    OpamPackage.compare pkg1 pkg2
+
+  let pp f {pkg; enable_revdeps} =
+    Fmt.pf f "%s (enable_revdeps = %b)" (OpamPackage.to_string pkg) enable_revdeps
 end
 
 let with_label l t =
@@ -102,12 +116,13 @@ let combine_revdeps revdeps =
 (* List the revdeps of [pkg] (using [builder] and [image]) and test each one
    (using [spec] and [base], merging [source] into [master]). *)
 let test_revdeps ~ocluster ~upgrade_opam ~master ~base ~platform ~pkg ~after:main_build source =
-  let revdeps = Build.list_revdeps ~base ocluster ~platform ~pkg ~master source in
-  let revdeps = Current.map combine_revdeps revdeps in
-  let+ tests =
-    revdeps
-    |> Current.gate ~on:main_build
-    |> dep_list_map (module OpamPackage) (fun revdep ->
+  Current.option_map begin fun pkg ->
+    let revdeps = Build.list_revdeps ~base ocluster ~platform ~pkg ~master source in
+    let revdeps = Current.map combine_revdeps revdeps in
+    let+ tests =
+      revdeps |>
+      Current.gate ~on:main_build |>
+      dep_list_map (module OpamPackage) (fun revdep ->
         let image =
           let spec = revdep_spec ~platform ~upgrade_opam ~revdep pkg in
           Build.v ocluster ~label:"build" ~base ~spec ~master source
@@ -117,12 +132,14 @@ let test_revdeps ~ocluster ~upgrade_opam ~master ~base ~platform ~pkg ~after:mai
         in
         Node.leaf ~label build
       )
-  and+ list_revdeps = Node.action `Analysed revdeps
-  in
-  [Node.actioned_branch ~label:"revdeps" list_revdeps tests]
+    and+ list_revdeps = Node.action `Analysed revdeps
+    in
+    [Node.actioned_branch ~label:"revdeps" list_revdeps tests]
+  end pkg
 
 let get_significant_available_pkg = function
-  | pkg, Analyse.Analysis.(New | SignificantlyChanged) -> Some pkg
+  | pkg, Analyse.Analysis.(New | CriticallyChanged) -> Some {PackageOpt.pkg; enable_revdeps = true}
+  | pkg, Analyse.Analysis.SignificantlyChanged -> Some {PackageOpt.pkg; enable_revdeps = false}
   | _, Analyse.Analysis.(Deleted | UnsignificantlyChanged) -> None
 
 let build_with_cluster ~ocluster ~analysis ~lint ~master source =
@@ -141,7 +158,13 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
       and+ pkgs = pkgs in
       pkgs
     in
-    pkgs |> dep_list_map ~collapse_key:"pkg" (module OpamPackage) (fun pkg ->
+    pkgs |> dep_list_map ~collapse_key:"pkg" (module PackageOpt) (fun pkg_and_options ->
+        let pkg_and_options =
+          Current.map (fun {PackageOpt.pkg; enable_revdeps} ->
+            {PackageOpt.pkg; enable_revdeps = revdeps && enable_revdeps}
+          ) pkg_and_options
+        in
+        let pkg = Current.map (fun {PackageOpt.pkg; enable_revdeps = _} -> pkg) pkg_and_options in
         let base =
           let+ repo_id =
             Docker.peek ~schedule:weekly ~arch:(Ocaml_version.to_docker_arch arch)
@@ -170,8 +193,16 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
           else
             Current.return []
         and+ revdeps =
-          if revdeps then test_revdeps ~ocluster ~upgrade_opam ~master ~base ~platform ~pkg source ~after:image
-          else Current.return []
+          let pkg =
+            Current.map (function
+              | {PackageOpt.pkg; enable_revdeps = true} -> Some pkg
+              | {PackageOpt.pkg = _; enable_revdeps = false} -> None
+            ) pkg_and_options
+          in
+          test_revdeps ~ocluster ~upgrade_opam ~master ~base ~platform ~pkg source ~after:image |>
+          Current.map @@ function
+          | None -> []
+          | Some revdeps -> revdeps
         in
         let label = OpamPackage.to_string pkg in
         Node.actioned_branch ~label build (

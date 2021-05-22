@@ -30,6 +30,7 @@ module Analysis = struct
   type kind =
     | New
     | Deleted
+    | CriticallyChanged
     | SignificantlyChanged
     | UnsignificantlyChanged
   [@@deriving yojson]
@@ -77,6 +78,26 @@ module Analysis = struct
       Fmt.failwith "Mismatch between package dir name %S and parent directory name %S" package name;
     pkg
 
+  let has_not_critically_changed old_file new_file =
+    let simplify_url = function (* NOTE: From opam/src/format/OpamFile.ml:OPAM.effective_part *)
+      | None -> None
+      | Some u -> match OpamFile.URL.checksum u with
+        | [] -> Some (OpamFile.URL.create (OpamFile.URL.url u)) (* ignore mirrors *)
+        | cksum::_ ->
+            Some (OpamFile.URL.with_checksum [cksum] OpamFile.URL.empty)
+            (* ignore actual url and extra checksums *)
+    in
+    (* TODO: Add a proper equality function for all of these in opam-format *)
+    old_file.OpamFile.OPAM.patches = new_file.OpamFile.OPAM.patches &&
+    old_file.OpamFile.OPAM.substs = new_file.OpamFile.OPAM.substs &&
+    old_file.OpamFile.OPAM.env = new_file.OpamFile.OPAM.env &&
+    old_file.OpamFile.OPAM.build_env = new_file.OpamFile.OPAM.build_env &&
+    old_file.OpamFile.OPAM.build = new_file.OpamFile.OPAM.build &&
+    old_file.OpamFile.OPAM.install = new_file.OpamFile.OPAM.install &&
+    old_file.OpamFile.OPAM.extra_files = new_file.OpamFile.OPAM.extra_files &&
+    old_file.OpamFile.OPAM.extra_sources = new_file.OpamFile.OPAM.extra_sources &&
+    simplify_url old_file.OpamFile.OPAM.url = simplify_url new_file.OpamFile.OPAM.url
+
   (* we check extensions in case it changes the outcome of the CI (e.g. x-ci-accept-failures) *)
   let ci_extensions_equal old_file new_file =
     let filter_ci_exts = OpamStd.String.Map.filter (fun name _ -> OpamStd.String.starts_with ~prefix:"x-ci-" name) in
@@ -93,12 +114,17 @@ module Analysis = struct
 
   let add_pkg ~path ~name ~package kind pkgs =
     let update old_kind = match old_kind, kind with
-      | (New | Deleted | UnsignificantlyChanged),
-        (New | Deleted | UnsignificantlyChanged) -> kind
-      | (New | Deleted), SignificantlyChanged -> old_kind
-      | UnsignificantlyChanged, SignificantlyChanged -> kind
-      | SignificantlyChanged, (New | Deleted) -> kind
-      | SignificantlyChanged, (UnsignificantlyChanged | SignificantlyChanged) -> old_kind
+      | New, (New | Deleted | CriticallyChanged | SignificantlyChanged | UnsignificantlyChanged)
+      | Deleted, (Deleted | CriticallyChanged | SignificantlyChanged | UnsignificantlyChanged)
+      | CriticallyChanged, (CriticallyChanged | SignificantlyChanged | UnsignificantlyChanged)
+      | SignificantlyChanged, (SignificantlyChanged | UnsignificantlyChanged)
+      | UnsignificantlyChanged, UnsignificantlyChanged ->
+          old_kind
+      | Deleted, New
+      | CriticallyChanged, (New | Deleted)
+      | SignificantlyChanged, (New | Deleted | CriticallyChanged)
+      | UnsignificantlyChanged, (New | Deleted | CriticallyChanged | SignificantlyChanged) ->
+          kind
     in
     OpamPackage.Map.update (get_package_name ~path ~name ~package) update kind pkgs
 
@@ -144,13 +170,15 @@ module Analysis = struct
                     in
                     check_opam new_file;
                     if OpamFile.OPAM.effectively_equal old_file new_file &&
-                       ci_extensions_equal old_file new_file &&
-                       depexts_equal old_file new_file
+                            ci_extensions_equal old_file new_file &&
+                            depexts_equal old_file new_file
                     then
                       (* the changes are not significant so we ignore this package *)
                       add_pkg ~path ~name ~package UnsignificantlyChanged pkgs
-                    else
+                    else if has_not_critically_changed old_file new_file then
                       add_pkg ~path ~name ~package SignificantlyChanged pkgs
+                    else
+                      add_pkg ~path ~name ~package CriticallyChanged pkgs
                 end
             end
         | _ ->

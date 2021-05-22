@@ -169,7 +169,7 @@ module Check = struct
       match kind with
       | Analyse.Analysis.Deleted ->
           Lwt.return errors (* TODO *)
-      | Analyse.Analysis.(New | SignificantlyChanged | UnsignificantlyChanged) ->
+      | Analyse.Analysis.(New | CriticallyChanged | SignificantlyChanged | UnsignificantlyChanged) ->
           get_opam ~cwd pkg >>= fun opam ->
           (* Check name field *)
           let errors = match OpamFile.OPAM.name_opt opam with
