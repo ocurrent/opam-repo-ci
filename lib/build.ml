@@ -106,11 +106,13 @@ module Op = struct
   module Value = struct
     type t = {
       base : Image.t;                           (* The image with the OCaml compiler to use. *)
+      level : Current.Level.t;                  (* Should the build wait for maintainers input *)
     }
 
-    let to_json { base } =
+    let to_json { base; level } =
       `Assoc [
         "base", `String (Image.digest base);
+        "level", `String (Current.Level.to_string level);
       ]
 
     let digest t = Yojson.Safe.to_string (to_json t)
@@ -118,7 +120,7 @@ module Op = struct
 
   module Outcome = Current.String
 
-  let run { config = { connection; timeout }; master } job { Key.pool; commit; variant; ty } { Value.base } =
+  let run { config = { connection; timeout }; master } job { Key.pool; commit; variant; ty } { Value.base; level } =
     let master = Current_git.Commit.hash master in
     let build_spec ~for_docker =
       let base = Image.hash base in
@@ -161,7 +163,7 @@ module Op = struct
       | _ when is_nnpchecker -> Some (Buffer.create 50_000)
       | _ -> None
     in
-    Current.Job.start_with ~pool:build_pool job ~timeout ~level:Current.Level.Average >>= fun build_job ->
+    Current.Job.start_with ~pool:build_pool job ~timeout ~level >>= fun build_job ->
     Capability.with_ref build_job (run_job ?buffer ~job) >>!= fun (_ : string) ->
     match buffer with
     | None -> Lwt_result.return ""
@@ -201,21 +203,22 @@ let v t ~label ~spec ~base ~master commit =
   and> master = master in
   let t = { Op.config = t; master } in
   let { Platform.pool; variant; label = _ } = platform in
-  BC.run t { Op.Key.pool; commit; variant; ty } { Op.Value.base }
+  BC.run t { Op.Key.pool; commit; variant; ty } { Op.Value.base; level = Current.Level.Average }
   |> Current.Primitive.map_result (Result.map ignore) (* TODO: Create a separate type of cache that doesn't parse the output *)
 
-let list_revdeps t ~platform ~pkg ~base ~master commit =
+let list_revdeps t ~platform ~pkgopt ~base ~master commit =
   Current.component "list revdeps" |>
-  let> pkg = pkg
+  let> {PackageOpt.pkg; wait_for_revdeps} = pkgopt
   and> base = base
   and> commit = commit
   and> master = master in
   let t = { Op.config = t; master } in
   let { Platform.pool; variant; label = _ } = platform in
   let ty = `Opam (`List_revdeps, pkg) in
+  let level = if wait_for_revdeps then Current.Level.Dangerous else Current.Level.Average in
   BC.run t
     { Op.Key.pool; commit; variant; ty }
-    { Op.Value.base }
+    { Op.Value.base; level }
   |> Current.Primitive.map_result (Result.map (fun output ->
       String.split_on_char '\n' output |>
       List.filter_map (function

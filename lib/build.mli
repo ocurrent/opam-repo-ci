@@ -27,7 +27,7 @@ val v :
 val list_revdeps :
   t ->
   platform:Platform.t ->
-  pkg:OpamPackage.t Current.t ->
+  pkgopt:PackageOpt.t Current.t ->
   base:Current_docker.Raw.Image.t Current.t ->
   master:Current_git.Commit.t Current.t ->
   Current_git.Commit_id.t Current.t ->

@@ -87,9 +87,9 @@ let lower_bounds_spec ~platform ~upgrade_opam ~after pkg =
   in
   Build.Spec.opam ~platform ~lower_bounds:true ~with_tests:false ~upgrade_opam pkg
 
-let revdep_spec ~platform ~upgrade_opam ~revdep pkg =
+let revdep_spec ~platform ~upgrade_opam ~revdep pkgopt =
   let+ revdep = revdep
-  and+ pkg = pkg
+  and+ {PackageOpt.pkg; wait_for_revdeps = _} = pkgopt
   in
   Build.Spec.opam ~platform ~lower_bounds:false ~with_tests:true ~revdep ~upgrade_opam pkg
 
@@ -99,17 +99,17 @@ let combine_revdeps revdeps =
   in
   OpamPackage.Set.elements map
 
-(* List the revdeps of [pkg] (using [builder] and [image]) and test each one
+(* List the revdeps of [pkgopt] (using [builder] and [image]) and test each one
    (using [spec] and [base], merging [source] into [master]). *)
-let test_revdeps ~ocluster ~upgrade_opam ~master ~base ~platform ~pkg ~after:main_build source =
-  let revdeps = Build.list_revdeps ~base ocluster ~platform ~pkg ~master source in
+let test_revdeps ~ocluster ~upgrade_opam ~master ~base ~platform ~pkgopt ~after:main_build source =
+  let revdeps = Build.list_revdeps ~base ocluster ~platform ~pkgopt ~master source in
   let revdeps = Current.map combine_revdeps revdeps in
   let+ tests =
     revdeps
     |> Current.gate ~on:main_build
     |> dep_list_map (module OpamPackage) (fun revdep ->
         let image =
-          let spec = revdep_spec ~platform ~upgrade_opam ~revdep pkg in
+          let spec = revdep_spec ~platform ~upgrade_opam ~revdep pkgopt in
           Build.v ocluster ~label:"build" ~base ~spec ~master source
         in
         let+ label = Current.map OpamPackage.to_string revdep
@@ -122,7 +122,8 @@ let test_revdeps ~ocluster ~upgrade_opam ~master ~base ~platform ~pkg ~after:mai
   [Node.actioned_branch ~label:"revdeps" list_revdeps tests]
 
 let get_significant_available_pkg = function
-  | pkg, Analyse.Analysis.(New | SignificantlyChanged) -> Some pkg
+  | pkg, Analyse.Analysis.New -> Some {PackageOpt.pkg; wait_for_revdeps = false}
+  | pkg, Analyse.Analysis.SignificantlyChanged -> Some {PackageOpt.pkg; wait_for_revdeps = true}
   | _, Analyse.Analysis.(Deleted | UnsignificantlyChanged) -> None
 
 let build_with_cluster ~ocluster ~analysis ~lint ~master source =
@@ -141,7 +142,8 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
       and+ pkgs = pkgs in
       pkgs
     in
-    pkgs |> dep_list_map ~collapse_key:"pkg" (module OpamPackage) (fun pkg ->
+    pkgs |> dep_list_map ~collapse_key:"pkg" (module PackageOpt) (fun pkgopt ->
+        let pkg = Current.map (fun {PackageOpt.pkg; wait_for_revdeps = _} -> pkg) pkgopt in
         let base =
           let+ repo_id =
             Docker.peek ~schedule:weekly ~arch:(Ocaml_version.to_docker_arch arch)
@@ -170,7 +172,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
           else
             Current.return []
         and+ revdeps =
-          if revdeps then test_revdeps ~ocluster ~upgrade_opam ~master ~base ~platform ~pkg source ~after:image
+          if revdeps then test_revdeps ~ocluster ~upgrade_opam ~master ~base ~platform ~pkgopt source ~after:image
           else Current.return []
         in
         let label = OpamPackage.to_string pkg in
