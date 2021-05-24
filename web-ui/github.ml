@@ -168,12 +168,19 @@ let is_error = function
   | { Client.outcome = Failed msg; _ } -> not (Astring.String.is_prefix ~affix:"[SKIP]" msg)
   | _ -> false
 
-let show_status =
+let show_status ~jobs =
   let open Tyxml.Html in
+  let is_active = function
+    | {Client.outcome = Active; _} -> true
+    | _ -> false
+  in
   function
   | `Not_started -> [p [txt "Job not yet started"]]
   | `Pending -> [p [txt "Testing in progress..."]]
-  | `Passed -> [p ~a:[a_class ["ok"]] [txt "Passed"]] 
+  | `Passed -> [p ~a:[a_class ["ok"]] [txt "Passed"]]
+  | `Failed when List.exists is_active jobs ->
+      [p [txt "The main checks are done, however a few extra checks might be needed. \
+               Waiting for the maintainers to review this."]]
   | `Failed -> []
 
 let link_jobs ~owner ~name ~hash ?selected jobs =
@@ -264,7 +271,7 @@ let repo_handle ~meth ~owner ~name ~repo path =
                      owner, owner;
                      name, name] (short_hash hash);
         link_github_refs ~owner ~name refs;
-      ] @ show_status commit_status @ link_jobs ~owner ~name ~hash jobs)
+      ] @ show_status ~jobs commit_status @ link_jobs ~owner ~name ~hash jobs)
     in
     Server.respond_string ~status:`OK ~body () |> normal_response
   | `GET, ["commit"; hash; "variant"; variant] ->
