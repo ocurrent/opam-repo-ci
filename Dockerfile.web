@@ -2,11 +2,14 @@ FROM ocaml/opam:debian-ocaml-4.12 AS build
 RUN sudo apt-get update && sudo apt-get install libev-dev capnproto m4 pkg-config libgmp-dev -y --no-install-recommends
 RUN cd ~/opam-repository && git pull origin master && git reset --hard 6ce3d5e32a605cbb8eab42f76fe54a692f3bb766 && opam update
 COPY --chown=opam \
+	ansi/current_ansi.opam \
+	/src/ansi/
+COPY --chown=opam \
 	ocurrent/current_rpc.opam \
-	ocurrent/current_ansi.opam \
 	/src/ocurrent/
 WORKDIR /src
-RUN opam pin -yn add ./ocurrent
+RUN opam pin -yn add ./ansi && \
+    opam pin -yn add ./ocurrent
 COPY --chown=opam opam-repo-ci-api.opam opam-repo-ci-web.opam /src/
 RUN opam install -y --deps-only .
 ADD --chown=opam . .

@@ -11,3 +11,6 @@
 [submodule "ocaml-version"]
 	path = ocaml-version
 	url = git://github.com/ocurrent/ocaml-version.git
+[submodule "ansi"]
+	path = ansi
+	url = git://github.com/ocurrent/ansi.git

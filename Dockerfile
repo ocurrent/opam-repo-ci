@@ -2,7 +2,9 @@ FROM ocaml/opam:debian-ocaml-4.12 AS build
 RUN sudo apt-get update && sudo apt-get install libev-dev capnproto graphviz m4 pkg-config libsqlite3-dev libgmp-dev -y --no-install-recommends
 RUN cd ~/opam-repository && git pull origin master && git reset --hard 6ce3d5e32a605cbb8eab42f76fe54a692f3bb766 && opam update
 COPY --chown=opam \
-	ocurrent/current_ansi.opam \
+	ansi/current_ansi.opam \
+	/src/ansi/
+COPY --chown=opam \
 	ocurrent/current_docker.opam \
 	ocurrent/current_github.opam \
 	ocurrent/current_git.opam \
@@ -13,7 +15,7 @@ COPY --chown=opam \
 	ocurrent/current_web.opam \
 	/src/ocurrent/
 WORKDIR /src
-RUN opam pin add -yn current_ansi.dev "./ocurrent" && \
+RUN opam pin add -yn current_ansi.dev "./ansi" && \
     opam pin add -yn current_docker.dev "./ocurrent" && \
     opam pin add -yn current_github.dev "./ocurrent" && \
     opam pin add -yn current_git.dev "./ocurrent" && \

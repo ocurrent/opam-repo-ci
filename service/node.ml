@@ -45,7 +45,8 @@ let pp_result f = function
   | Ok `Built -> Fmt.string f "built"
   | Ok `Analysed -> Fmt.string f "analysed"
   | Ok `Linted -> Fmt.string f "linted"
-  | Error (`Active _) -> Fmt.string f "active"
+  | Error (`Active (`Ready | `Running)) -> Fmt.string f "active"
+  | Error (`Active `Waiting_for_confirmation) -> Fmt.string f "waiting-for-confirmation"
   | Error (`Msg m) -> Fmt.string f m
 
 let rec dump f = function

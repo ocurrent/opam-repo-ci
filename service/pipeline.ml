@@ -21,9 +21,9 @@ let github_status_of_state ~head result =
   let hash = Github.Api.Commit.hash head in
   let url = url ~owner ~name ~hash in
   match result with
-  | Ok m              -> Github.Api.Status.v ~url `Success ~description:("Passed - "^m)
-  | Error (`Active _) -> Github.Api.Status.v ~url `Pending
-  | Error (`Msg m)    -> Github.Api.Status.v ~url `Failure ~description:("Failed - "^m)
+  | Ok description           -> Github.Api.Status.v ~url `Success ~description
+  | Error (`Active `Running) -> Github.Api.Status.v ~url `Pending
+  | Error (`Msg description) -> Github.Api.Status.v ~url `Failure ~description
 
 let set_active_installations installations =
   let+ installations = installations in
@@ -260,24 +260,26 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
 let summarise results =
   results
   |> Node.flatten (fun ~label ~job_id:_ ~result -> (label, result))
-  |> List.fold_left (fun (ok, pending, err, skip, lint) -> function
-      | _, Ok `Analysed -> (ok, pending, err, skip, lint)
-      | _, Ok `Linted -> (ok, pending, err, skip, lint + 1)
-      | _, Ok `Built -> (ok + 1, pending, err, skip, lint)
-      | _, Error `Msg m when Astring.String.is_prefix ~affix:"[SKIP]" m -> (ok, pending, err, skip + 1, lint)
-      | _, Error `Msg _ -> (ok, pending, err + 1, skip, lint)
-      | _, Error `Active _ -> (ok, pending + 1, err, skip, lint)
+  |> List.fold_left (fun (ok, pending, err, skip, lint, waiting) -> function
+      | _, Ok `Analysed -> (ok, pending, err, skip, lint, waiting)
+      | _, Ok `Linted -> (ok, pending, err, skip, lint + 1, waiting)
+      | _, Ok `Built -> (ok + 1, pending, err, skip, lint, waiting)
+      | _, Error `Msg m when Astring.String.is_prefix ~affix:"[SKIP]" m -> (ok, pending, err, skip + 1, lint, waiting)
+      | _, Error `Msg _ -> (ok, pending, err + 1, skip, lint, waiting)
+      | _, Error `Active (`Ready | `Running) -> (ok, pending + 1, err, skip, lint, waiting)
+      | _, Error `Active `Waiting_for_confirmation -> (ok, pending, err, skip, lint, waiting + 1)
       (* TODO: Find a way to use the labels and error messages to display something more useful *)
-    ) (0, 0, 0, 0, 0)
-  |> fun (ok, pending, err, skip, lint) ->
+    ) (0, 0, 0, 0, 0, 0)
+  |> fun (ok, pending, err, skip, lint, waiting) ->
   let lint = if lint > 0 then "ok" else "failed" in
   if pending > 0 then Error (`Active `Running)
-  else match ok, err, skip with
-    | 0, 0, 0 -> Ok "No build was necessary"
-    | 0, 0, _skip -> Error (`Msg "Everything was skipped")
-    | ok, 0, 0 -> Ok (Fmt.str "%d jobs passed" ok)
-    | ok, 0, skip -> Ok (Fmt.str "%d jobs passed, %d jobs skipped" ok skip)
-    | ok, err, skip -> Error (`Msg (Fmt.str "%d jobs failed, lint: %s, %d jobs skipped, %d jobs passed" err lint skip ok))
+  else match ok, err, skip, waiting with
+    | 0, 0, 0, 0 -> Ok "Passed - No build was necessary"
+    | 0, 0, _skip, 0 -> Error (`Msg "Failed - Everything was skipped")
+    | ok, 0, 0, 0 -> Ok (Fmt.str "Passed - %d jobs passed" ok)
+    | ok, 0, skip, 0 -> Ok (Fmt.str "Passed - %d jobs passed, %d jobs skipped" ok skip)
+    | ok, err, skip, 0 -> Error (`Msg (Fmt.str "Failed - %d jobs failed, lint: %s, %d jobs skipped, %d jobs passed" err lint skip ok))
+    | ok, err, _skip, waiting -> Error (`Msg (Fmt.str "Waiting for maintainers approval (%d) - %d jobs failed, lint: %s, %d jobs passed" waiting err lint ok))
 
 (* An in-memory-only latch of the last successful value. *)
 let latch ~label x =
