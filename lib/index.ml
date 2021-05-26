@@ -77,10 +77,12 @@ let init () = ignore (Lazy.force db)
 
 let get_job_ids t ~owner ~name ~hash =
   Db.query t.get_job_ids Sqlite3.Data.[ TEXT owner; TEXT name; TEXT hash ]
-  |> List.map @@ function
+  |> List.rev_map begin function
   | Sqlite3.Data.[ TEXT variant; NULL ] -> variant, None
   | Sqlite3.Data.[ TEXT variant; TEXT id ] -> variant, Some id
   | row -> Fmt.failwith "get_job_ids: invalid row %a" Db.dump_row row
+  end
+  |> List.rev
 
 module Status_cache = struct
   let cache = Hashtbl.create 1_000
