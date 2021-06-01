@@ -37,7 +37,7 @@ let opam_install ~variant ~upgrade_opam ~pin ~lower_bounds ~with_tests ~pkg =
           fi;
         done;
         exit 1|}
-      pkg (if upgrade_opam then "install -vy" else "depext -ivy") (if with_tests then "t" else "") pkg
+      pkg (if upgrade_opam then "install -v" else "depext -ivy") (if with_tests then "t" else "") pkg
       (Variant.distribution variant)
   ]
 
@@ -46,7 +46,8 @@ let setup_repository ~variant ~for_docker ~upgrade_opam =
   user ~uid:1000 ~gid:1000 ::
   (if upgrade_opam then [
     run "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam";
-    env "OPAMDEPEXTYES" "1"] else []) @
+    env "OPAMDEPEXTYES" "1"; (* TODO: Remove this when all the docker images have been updated *)
+    env "OPAMCONFIRMLEVEL" "unsafe-yes"] else []) @
   (* NOTE: [for_docker] is required because docker does not support bubblewrap in docker build *)
   (* docker run has --privileged but docker build does not have it *)
   (* so we need to remove the part re-enabling the sandbox. *)
