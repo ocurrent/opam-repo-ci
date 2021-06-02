@@ -4,6 +4,7 @@ let network = ["host"]
 
 let opam_install ~variant ~upgrade_opam ~pin ~lower_bounds ~with_tests ~pkg =
   let pkg = OpamPackage.to_string pkg in
+  let with_tests_opt = if with_tests then " --with-test" else "" in
   let open Obuilder_spec in
   (if lower_bounds then
      [
@@ -22,10 +23,10 @@ let opam_install ~variant ~upgrade_opam ~pin ~lower_bounds ~with_tests ~pkg =
    else
      []
   ) @ [
-    run ~network "opam %s" (if upgrade_opam then "update --depexts" else "depext -yu");
+    run ~network "opam %s" (if upgrade_opam then "update --depexts" else "depext -u");
     (* TODO: Replace by two calls to opam install + opam install -t using the OPAMDROPINSTALLEDPACKAGES feature *)
     run ~cache ~network
-      {|opam remove -y %s && opam %s%s %s;
+      {|opam remove %s%s && opam install --deps-only%s %s && opam install -v%s %s;
         res=$?;
         test "$res" != 31 && exit "$res";
         export OPAMCLI=2.0;
@@ -37,7 +38,7 @@ let opam_install ~variant ~upgrade_opam ~pin ~lower_bounds ~with_tests ~pkg =
           fi;
         done;
         exit 1|}
-      pkg (if upgrade_opam then "install -vy" else "depext -ivy") (if with_tests then "t" else "") pkg
+      pkg (if upgrade_opam then "" else " && opam depext"^with_tests_opt^" "^pkg) with_tests_opt pkg with_tests_opt pkg
       (Variant.distribution variant)
   ]
 
@@ -46,7 +47,8 @@ let setup_repository ~variant ~for_docker ~upgrade_opam =
   user ~uid:1000 ~gid:1000 ::
   (if upgrade_opam then [
     run "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam";
-    env "OPAMDEPEXTYES" "1"] else []) @
+    env "OPAMDEPEXTYES" "1"; (* TODO: Remove this when all the docker images have been updated *)
+    env "OPAMCONFIRMLEVEL" "unsafe-yes"] else []) @
   (* NOTE: [for_docker] is required because docker does not support bubblewrap in docker build *)
   (* docker run has --privileged but docker build does not have it *)
   (* so we need to remove the part re-enabling the sandbox. *)
