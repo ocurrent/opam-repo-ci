@@ -93,12 +93,17 @@ module Analysis = struct
 
   let add_pkg ~path ~name ~package kind pkgs =
     let update old_kind = match old_kind, kind with
-      | (New | Deleted | UnsignificantlyChanged),
-        (New | Deleted | UnsignificantlyChanged) -> kind
-      | (New | Deleted), SignificantlyChanged -> old_kind
-      | UnsignificantlyChanged, SignificantlyChanged -> kind
-      | SignificantlyChanged, (New | Deleted) -> kind
-      | SignificantlyChanged, (UnsignificantlyChanged | SignificantlyChanged) -> old_kind
+      (* NOTE: stronger_kind >= weaker_kind *)
+      | New, (New | Deleted | SignificantlyChanged | UnsignificantlyChanged)
+      | Deleted, (Deleted | SignificantlyChanged | UnsignificantlyChanged)
+      | SignificantlyChanged, (SignificantlyChanged | UnsignificantlyChanged)
+      | UnsignificantlyChanged, UnsignificantlyChanged ->
+          old_kind
+      (* NOTE: weaker_kind < stronger_kind *)
+      | Deleted, New
+      | SignificantlyChanged, (New | Deleted)
+      | UnsignificantlyChanged, (New | Deleted | SignificantlyChanged) ->
+          kind
     in
     OpamPackage.Map.update (get_package_name ~path ~name ~package) update kind pkgs
 

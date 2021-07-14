@@ -2,6 +2,8 @@ open Capnp_rpc_lwt
 open Lwt.Infix
 
 let () =
+  Printexc.record_backtrace true;
+  Printexc.register_printer (fun e -> Some (Printexc.to_string_default e ^ " -- " ^ Printexc.get_backtrace ()));
   Memtrace.trace_if_requested ~context:"opam-repo-ci" ();
   Unix.putenv "DOCKER_BUILDKIT" "1";
   Prometheus_unix.Logging.init ();
