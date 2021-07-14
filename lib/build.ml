@@ -81,6 +81,7 @@ module Op = struct
     config : t;
     master : Current_git.Commit.t;
     urgent : ([`High | `Low] -> bool) option;
+    base : Image.t;                           (* The image with the OCaml compiler to use. *)
   }
 
   let id = "ci-ocluster-build"
@@ -105,13 +106,10 @@ module Op = struct
   end
 
   module Value = struct
-    type t = {
-      base : Image.t;                           (* The image with the OCaml compiler to use. *)
-    }
+    type t = unit
 
-    let to_json { base } =
+    let to_json () =
       `Assoc [
-        "base", `String (Image.digest base);
       ]
 
     let digest t = Yojson.Safe.to_string (to_json t)
@@ -119,7 +117,7 @@ module Op = struct
 
   module Outcome = Current.String
 
-  let run { config = { connection; timeout }; master; urgent } job { Key.pool; commit; variant; ty } { Value.base } =
+  let run { config = { connection; timeout }; master; urgent; base } job { Key.pool; commit; variant; ty } () =
     let master = Current_git.Commit.hash master in
     let build_spec ~for_docker =
       let base = Image.hash base in
@@ -201,9 +199,9 @@ let v t ~label ~spec ~base ~master ~urgent commit =
   and> commit = commit
   and> master = master
   and> urgent = urgent in
-  let t = { Op.config = t; master; urgent } in
+  let t = { Op.config = t; master; urgent; base } in
   let { Platform.pool; variant; label = _ } = platform in
-  BC.run t { Op.Key.pool; commit; variant; ty } { Op.Value.base }
+  BC.run t { Op.Key.pool; commit; variant; ty } ()
   |> Current.Primitive.map_result (Result.map ignore) (* TODO: Create a separate type of cache that doesn't parse the output *)
 
 let list_revdeps t ~platform ~pkgopt ~base ~master commit =
@@ -212,12 +210,10 @@ let list_revdeps t ~platform ~pkgopt ~base ~master commit =
   and> base = base
   and> commit = commit
   and> master = master in
-  let t = { Op.config = t; master; urgent } in
+  let t = { Op.config = t; master; urgent; base } in
   let { Platform.pool; variant; label = _ } = platform in
   let ty = `Opam (`List_revdeps, pkg) in
-  BC.run t
-    { Op.Key.pool; commit; variant; ty }
-    { Op.Value.base }
+  BC.run t { Op.Key.pool; commit; variant; ty } ()
   |> Current.Primitive.map_result (Result.map (fun output ->
       String.split_on_char '\n' output |>
       List.filter_map (function
