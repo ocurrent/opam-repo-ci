@@ -80,6 +80,7 @@ module Op = struct
   type nonrec t = {
     config : t;
     master : Current_git.Commit.t;
+    urgent : ([`High | `Low] -> bool) option;
   }
 
   let id = "ci-ocluster-build"
@@ -118,7 +119,7 @@ module Op = struct
 
   module Outcome = Current.String
 
-  let run { config = { connection; timeout }; master } job { Key.pool; commit; variant; ty } { Value.base } =
+  let run { config = { connection; timeout }; master; urgent } job { Key.pool; commit; variant; ty } { Value.base } =
     let master = Current_git.Commit.hash master in
     let build_spec ~for_docker =
       let base = Image.hash base in
@@ -153,7 +154,7 @@ module Op = struct
     in
     Current.Job.log job "Using cache hint %S" cache_hint;
     Current.Job.log job "Using OBuilder spec:@.%s@." spec_str;
-    let build_pool = Current_ocluster.Connection.pool ~job ~pool ~action ~cache_hint ~src connection in
+    let build_pool = Current_ocluster.Connection.pool ?urgent ~job ~pool ~action ~cache_hint ~src connection in
     let is_nnpchecker = Option.equal String.equal variant.Variant.ocaml_variant (Some "nnpchecker") in
     let buffer =
       match ty with
@@ -193,24 +194,25 @@ let config ~timeout sr =
   let connection = Current_ocluster.Connection.create sr in
   { connection; timeout }
 
-let v t ~label ~spec ~base ~master commit =
+let v t ~label ~spec ~base ~master ~urgent commit =
   Current.component "%s" label |>
   let> { Spec.platform; ty } = spec
   and> base = base
   and> commit = commit
-  and> master = master in
-  let t = { Op.config = t; master } in
+  and> master = master
+  and> urgent = urgent in
+  let t = { Op.config = t; master; urgent } in
   let { Platform.pool; variant; label = _ } = platform in
   BC.run t { Op.Key.pool; commit; variant; ty } { Op.Value.base }
   |> Current.Primitive.map_result (Result.map ignore) (* TODO: Create a separate type of cache that doesn't parse the output *)
 
-let list_revdeps t ~platform ~pkg ~base ~master commit =
+let list_revdeps t ~platform ~pkgopt ~base ~master commit =
   Current.component "list revdeps" |>
-  let> pkg = pkg
+  let> {PackageOpt.pkg; urgent} = pkgopt
   and> base = base
   and> commit = commit
   and> master = master in
-  let t = { Op.config = t; master } in
+  let t = { Op.config = t; master; urgent } in
   let { Platform.pool; variant; label = _ } = platform in
   let ty = `Opam (`List_revdeps, pkg) in
   BC.run t

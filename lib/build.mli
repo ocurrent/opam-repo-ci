@@ -21,13 +21,14 @@ val v :
   spec:Spec.t Current.t ->
   base:Current_docker.Raw.Image.t Current.t ->
   master:Current_git.Commit.t Current.t ->
+  urgent:([`High | `Low] -> bool) option Current.t ->
   Current_git.Commit_id.t Current.t ->
   unit Current.t
 
 val list_revdeps :
   t ->
   platform:Platform.t ->
-  pkg:OpamPackage.t Current.t ->
+  pkgopt:PackageOpt.t Current.t ->
   base:Current_docker.Raw.Image.t Current.t ->
   master:Current_git.Commit.t Current.t ->
   Current_git.Commit_id.t Current.t ->
