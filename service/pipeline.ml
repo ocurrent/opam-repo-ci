@@ -125,7 +125,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
   let pkgs = Current.map (List.filter_map get_significant_available_pkg) pkgs in
   let build ~opam_version ~lower_bounds ~revdeps label variant =
     let arch = Variant.arch variant in
-    let pool = Conf.pool_of_arch arch in
+    let pool = Conf.pool_of_arch variant in
     let platform = {Platform.label; pool; variant} in
     let analysis = with_label label analysis in
     let pkgs =
@@ -140,11 +140,14 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
         let pkg = Current.map (fun {PackageOpt.pkg; urgent = _} -> pkg) pkgopt in
         let urgent = Current.return None in
         let base =
-          let+ repo_id =
-            Docker.peek ~schedule:weekly ~arch:(Ocaml_version.to_docker_arch arch)
-              ("ocaml/opam:" ^ Variant.docker_tag variant)
-          in
-          Current_docker.Raw.Image.of_hash repo_id
+          if Variant.is_macos variant then
+            Current.return (Build.MacOS (Variant.docker_tag variant))
+          else (* TODO: We can definitly use docker images as base for both macOS and linux *)
+            let+ repo_id =
+              Docker.peek ~schedule:weekly ~arch:(Ocaml_version.to_docker_arch arch)
+                ("ocaml/opam:" ^ Variant.docker_tag variant)
+            in
+            Build.Docker (Current_docker.Raw.Image.of_hash repo_id)
         in
         let image =
           let spec = build_spec ~platform ~opam_version pkg in
@@ -196,8 +199,8 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
     end
   in
   let distributions ~opam_version =
-    Current.list_seq begin
-      let default_compiler = Ocaml_version.to_string default_compiler in
+    let default_compiler = Ocaml_version.to_string default_compiler in
+    let linux_distributions =
       Dockerfile_distro.active_distros `X86_64 |>
       List.fold_left (fun acc distro ->
         if Dockerfile_distro.compare distro master_distro = 0 (* TODO: Add Dockerfile_distro.equal *)
@@ -208,6 +211,12 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
           let variant = Variant.v ~arch:`X86_64 ~distro ~compiler:(default_compiler, None) in
           build ~opam_version ~lower_bounds:false ~revdeps:false distro variant :: acc
       ) []
+    in
+    let macos_distro = "macos-homebrew" in
+    let macos = Variant.v ~arch:`X86_64 ~distro:macos_distro ~compiler:(default_compiler, None) in
+    Current.list_seq begin
+      build ~opam_version ~lower_bounds:false ~revdeps:false macos_distro macos ::
+      linux_distributions
     end
   in
   let+ analysis = Node.action `Analysed analysis

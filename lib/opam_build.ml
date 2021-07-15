@@ -44,6 +44,7 @@ let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
 
 let setup_repository ~variant ~for_docker ~opam_version =
   let open Obuilder_spec in
+  let prefix = if Variant.is_macos variant then "~/local" else "/usr" in
   user ~uid:1000 ~gid:1000 ::
   run "for pkg in $(opam pin list --short); do opam pin remove \"$pkg\"; done" :: (* The ocaml/opam base images have a pin to their compiler package.
                                                                                      Such pin is useless for opam 2.0 as we don't use --unlock-base,
@@ -53,11 +54,12 @@ let setup_repository ~variant ~for_docker ~opam_version =
   run "opam repository remove -a multicore || true" :: (* We remove this non-standard repository
                                                           because we don't have access and it hosts
                                                           non-official packages *)
-  run "sudo ln -f /usr/bin/opam-%s /usr/bin/opam"
-    (match opam_version with
+  run "%sln -f %s/bin/opam-%s %s/bin/opam"
+    (if Variant.is_macos variant then "" else "sudo ")
+    prefix (match opam_version with
      | `V2_0 -> "2.0"
      | `V2_1 -> "2.1"
-    ) ::
+    ) prefix ::
   (* NOTE: [for_docker] is required because docker does not support bubblewrap in docker build *)
   (* docker run has --privileged but docker build does not have it *)
   (* so we need to remove the part re-enabling the sandbox. *)
@@ -67,14 +69,17 @@ let setup_repository ~variant ~for_docker ~opam_version =
     String.equal distro (Dockerfile_distro.tag_of_distro (`Alpine `V3_12)) ||
     for_docker
   in
-  run "opam init --reinit%s -ni" (if sandboxing_not_supported then "" else " --config ~/.opamrc-sandbox") ::
+  run "opam init --reinit%s -ni"
+    (* NOTE: On macOS, the sandbox is always (and should be) enabled by default and does not have those ~/.opamrc-sandbox files *)
+    (if sandboxing_not_supported || Variant.is_macos variant then "" else " --config ~/.opamrc-sandbox") ::
   env "OPAMDOWNLOADJOBS" "1" :: (* Try to avoid github spam detection *)
   env "OPAMERRLOGLEN" "0" :: (* Show the whole log if it fails *)
   env "OPAMSOLVERTIMEOUT" "500" :: (* Increase timeout. Poor mccs is doing its best *)
   env "OPAMPRECISETRACKING" "1" :: (* Mitigate https://github.com/ocaml/opam/issues/3997 *)
   [
-    copy ["."] ~dst:"/src/";
-    run "opam repository set-url --strict default file:///src";
+    run "rm -rf opam-repository/";
+    copy ["."] ~dst:"opam-repository/";
+    run "opam repository set-url --strict default \"file://$HOME/opam-repository\"";
   ]
 
 let set_personality ~variant =

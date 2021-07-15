@@ -3,7 +3,14 @@ open Capnp_rpc_lwt
 open Lwt.Infix
 
 module Git = Current_git
-module Image = Current_docker.Raw.Image
+
+type base =
+  | Docker of Current_docker.Raw.Image.t
+  | MacOS of string
+
+let base_to_string = function
+  | Docker img -> Current_docker.Raw.Image.hash img
+  | MacOS base -> base
 
 let ( >>!= ) = Lwt_result.bind
 
@@ -84,7 +91,7 @@ module Op = struct
     config : t;
     master : Current_git.Commit.t;
     urgent : ([`High | `Low] -> bool) option;
-    base : Image.t;                           (* The image with the OCaml compiler to use. *)
+    base : base;
   }
 
   let id = "ci-ocluster-build"
@@ -123,7 +130,7 @@ module Op = struct
   let run { config = { connection; timeout }; master; urgent; base } job { Key.pool; commit; variant; ty } () =
     let master = Current_git.Commit.hash master in
     let build_spec ~for_docker =
-      let base = Image.hash base in
+      let base = base_to_string base in
       match ty with
       | `Opam (`List_revdeps, pkg) -> Opam_build.revdeps ~for_docker ~base ~variant ~pkg
       | `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) -> Opam_build.spec ~for_docker ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_tests ~pkg
@@ -151,7 +158,7 @@ module Op = struct
         | `Opam (`List_revdeps, pkg)
         | `Opam (`Build _, pkg) -> OpamPackage.to_string pkg
       in
-      Printf.sprintf "%s-%s-%s" (Image.hash base) pkg (Git.Commit_id.hash commit)
+      Printf.sprintf "%s-%s-%s" (base_to_string base) pkg (Git.Commit_id.hash commit)
     in
     Current.Job.log job "Using cache hint %S" cache_hint;
     Current.Job.log job "Using OBuilder spec:@.%s@." spec_str;
