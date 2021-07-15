@@ -22,8 +22,13 @@ end
 (** Maximum time for one build. *)
 let build_timeout = Duration.of_hour 1
 
-let pool_of_arch = function
-  | `X86_64 | `I386 -> "linux-x86_64"
-  | `Aarch32 | `Aarch64 -> "linux-arm64"
-  | `Ppc64le -> "linux-ppc64"
-  | `S390x -> "linux-s390x"
+let pool_of_arch variant =
+  let open Opam_repo_ci in
+  let os = if Variant.is_macos variant then "macos" else "linux" in
+  let arch = match variant.Variant.arch with
+    | `X86_64 | `I386 -> "x86_64"
+    | `Aarch32 | `Aarch64 -> "arm64"
+    | `Ppc64le -> "ppc64"
+    | `S390x -> "s390x"
+  in
+  os^"-"^arch
