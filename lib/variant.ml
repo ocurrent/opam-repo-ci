@@ -20,5 +20,10 @@ let distribution t = t.distribution
 
 let pp f t = Fmt.pf f "%s/%s" (docker_tag t) (Ocaml_version.string_of_arch t.arch)
 
+(* TODO: do better *)
+let is_macos = function
+  | {distribution = "macos-hombrew"; _} -> true
+  | _ -> false
+
 let v ~arch ~distro ~compiler:(ocaml_version, ocaml_variant) =
   { arch; distribution = distro; ocaml_version; ocaml_variant }

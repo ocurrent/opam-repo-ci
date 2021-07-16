@@ -45,10 +45,13 @@ let opam_install ~variant ~upgrade_opam ~pin ~lower_bounds ~with_tests ~pkg =
 let setup_repository ~variant ~for_docker ~upgrade_opam =
   let open Obuilder_spec in
   user ~uid:1000 ~gid:1000 ::
-  (if upgrade_opam then [
-    run "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam";
-    env "OPAMDEPEXTYES" "1"; (* TODO: Remove this when all the docker images have been updated *)
-    env "OPAMCONFIRMLEVEL" "unsafe-yes"] else []) @
+  (if upgrade_opam then
+     if Variant.is_macos variant then
+       [run "ln -f ~/local/bin/opam-2.1 ~/local/bin/opam"]
+     else
+       [run "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam"]
+   else
+     []) @
   (* NOTE: [for_docker] is required because docker does not support bubblewrap in docker build *)
   (* docker run has --privileged but docker build does not have it *)
   (* so we need to remove the part re-enabling the sandbox. *)
@@ -58,14 +61,17 @@ let setup_repository ~variant ~for_docker ~upgrade_opam =
     String.equal distro (Dockerfile_distro.tag_of_distro (`Alpine `V3_12)) ||
     for_docker
   in
-  run "opam init --reinit%s -ni" (if sandboxing_not_supported then "" else " --config ~/.opamrc-sandbox") ::
+  run "opam init --reinit%s -ni"
+    (* NOTE: On macOS, the sandbox is always (and should be) enabled by default and does not have those ~/.opamrc-sandbox files *)
+    (if sandboxing_not_supported || Variant.is_macos variant then "" else " --config ~/.opamrc-sandbox") ::
   env "OPAMDOWNLOADJOBS" "1" :: (* Try to avoid github spam detection *)
   env "OPAMERRLOGLEN" "0" :: (* Show the whole log if it fails *)
   env "OPAMSOLVERTIMEOUT" "500" :: (* Increase timeout. Poor mccs is doing its best *)
   env "OPAMPRECISETRACKING" "1" :: (* Mitigate https://github.com/ocaml/opam/issues/3997 *)
   [
-    copy ["."] ~dst:"/src/";
-    run "opam repository set-url --strict default file:///src";
+    run "rm -rf opam-repository/";
+    copy ["."] ~dst:"opam-repository/";
+    run "opam repository set-url --strict default \"file://$HOME/opam-repository\"";
   ]
 
 let set_personality ~variant =
