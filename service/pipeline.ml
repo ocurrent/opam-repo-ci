@@ -75,16 +75,12 @@ let build_spec ~platform ~upgrade_opam pkg =
   let+ pkg = pkg in
   Build.Spec.opam ~platform ~lower_bounds:false ~with_tests:false ~upgrade_opam pkg
 
-let test_spec ~platform ~upgrade_opam ~after pkg =
-  let+ _ = after
-  and+ pkg = pkg
-  in
-  Build.Spec.opam ~platform ~lower_bounds:false  ~with_tests:true ~upgrade_opam pkg
+let test_spec ~platform ~upgrade_opam pkg =
+  let+ pkg = pkg in
+  Build.Spec.opam ~platform ~lower_bounds:false ~with_tests:true ~upgrade_opam pkg
 
-let lower_bounds_spec ~platform ~upgrade_opam ~after pkg =
-  let+ _ = after
-  and+ pkg = pkg
-  in
+let lower_bounds_spec ~platform ~upgrade_opam pkg =
+  let+ pkg = pkg in
   Build.Spec.opam ~platform ~lower_bounds:true ~with_tests:false ~upgrade_opam pkg
 
 let revdep_spec ~platform ~upgrade_opam ~revdep pkg =
@@ -158,7 +154,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
           let spec = build_spec ~platform ~upgrade_opam pkg in
           Build.v ocluster ~label:"build" ~base ~spec ~master ~urgent source in
         let tests =
-          let spec = test_spec ~platform ~upgrade_opam pkg ~after:image in
+          let spec = test_spec ~platform ~upgrade_opam pkg in
           Build.v ocluster ~label:"test" ~base ~spec ~master ~urgent source
         in
         let+ pkg = pkg
@@ -167,7 +163,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
         and+ lower_bounds_check =
           if upgrade_opam && lower_bounds then
             let action =
-              let spec = lower_bounds_spec ~platform ~upgrade_opam pkg ~after:image in
+              let spec = lower_bounds_spec ~platform ~upgrade_opam pkg in
               Build.v ocluster ~label:"lower-bounds" ~base ~spec ~master ~urgent source
             in
             let+ action = Node.action `Built action in

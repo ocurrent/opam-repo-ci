@@ -119,12 +119,14 @@ let statuses ss =
     in
     li ~a:[a_class [status_class_name]] (elms1 @ elms2)
   in
-  let rec render_status = function
+  let rec render_status : (Client.State.t * _) StatusTree.tree -> _ = function
     | StatusTree.Leaf (_, x) ->
         status x []
     | StatusTree.Branch (b, None, ss) ->
         li ~a:[a_class ["none"]] [txt b; ul ~a:[a_class ["statuses"]] (List.map render_status ss)]
-    | StatusTree.Branch (_, Some x, ss) ->
+    | StatusTree.Branch (_, Some (((NotStarted | Aborted | Failed _ | Undefined _), _) as x), _) ->
+        status x [] (* Do not show children of a node that has failed (guarenties in service/pipeline.ml means that only successful parents have children with meaningful error messages) *)
+    | StatusTree.Branch (_, Some (((Passed | Active), _) as x), ss) ->
         status x [ul ~a:[a_class ["statuses"]] (List.map render_status ss)]
   in
   ul ~a:[a_class ["statuses"]] (List.map render_status ss)
@@ -173,7 +175,7 @@ let show_status =
   function
   | `Not_started -> [p [txt "Job not yet started"]]
   | `Pending -> [p [txt "Testing in progress..."]]
-  | `Passed -> [p ~a:[a_class ["ok"]] [txt "Passed"]] 
+  | `Passed -> [p ~a:[a_class ["ok"]] [txt "Passed"]]
   | `Failed -> []
 
 let link_jobs ~owner ~name ~hash ?selected jobs =
