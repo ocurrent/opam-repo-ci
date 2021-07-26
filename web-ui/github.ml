@@ -123,6 +123,7 @@ let statuses ss =
     | StatusTree.Leaf (_, x) ->
         status x []
     | StatusTree.Branch (b, None, ss) ->
+        let b = if b = "macos-homebrew" then b^" (experimental)" else b in
         li ~a:[a_class ["none"]] [txt b; ul ~a:[a_class ["statuses"]] (List.map render_status ss)]
     | StatusTree.Branch (_, Some (((NotStarted | Aborted | Failed _ | Undefined _), _) as x), _) ->
         status x [] (* Do not show children of a node that has failed (guarenties in service/pipeline.ml means that only successful parents have children with meaningful error messages) *)
