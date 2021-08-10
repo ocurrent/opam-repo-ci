@@ -3,7 +3,10 @@ open Current.Syntax
 
 let pool_size = 4
 let pool = Current.Pool.create ~label:"lint" pool_size
-let () = Lwt_preemptive.init 0 pool_size (fun _errlog -> ())
+let () = Lwt_preemptive.init 0 1 (fun _errlog -> ()) (* NOTE: Lwt_preemptive is used to wrap
+                                                        long opam calls, and as of today (opam 2.1.0)
+                                                        opam uses Unix.chdir to normalize paths
+                                                        which isn't thread-safe. *)
 
 let ( // ) = Filename.concat
 let ( >>/= ) x f = x >>= fun x -> f (Result.get_ok x)
