@@ -220,20 +220,22 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
   and+ distributions_2_1 = distributions ~upgrade_opam:true
   and+ extras =
     let master_distro = Dockerfile_distro.tag_of_distro master_distro in
-    let default_compiler = Ocaml_version.to_string default_compiler in
-    let flambda = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(default_compiler, Some "flambda") in
-    let nnpchecker = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(default_compiler, Some "nnpchecker") in
+    let default_comp = Ocaml_version.to_string default_compiler in
     Current.list_seq (
-      build ~upgrade_opam:true ~lower_bounds:false ~revdeps:false "flambda" flambda ::
-      build ~upgrade_opam:true ~lower_bounds:false ~revdeps:false "nnpchecker" nnpchecker ::
-      List.fold_left (fun acc arch ->
-        if arch = `X86_64 then
-          acc
-        else
-          let label = Ocaml_version.to_opam_arch arch in
-          let variant = Variant.v ~arch ~distro:master_distro ~compiler:(default_compiler, None) in
-          build ~upgrade_opam:true ~lower_bounds:false ~revdeps:false label variant :: acc
-      ) [] Ocaml_version.arches
+      List.filter_map (fun v ->
+        match Ocaml_version.extra v with
+        | None -> None
+        | Some label ->
+            let variant = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(default_comp, Some label) in
+            Some (build ~upgrade_opam:true ~lower_bounds:false ~revdeps:false label variant)
+      ) (Ocaml_version.compiler_variants `X86_64 default_compiler) @
+      List.filter_map (function
+        | `X86_64 -> None
+        | arch ->
+            let label = Ocaml_version.to_opam_arch arch in
+            let variant = Variant.v ~arch ~distro:master_distro ~compiler:(default_comp, None) in
+            Some (build ~upgrade_opam:true ~lower_bounds:false ~revdeps:false label variant)
+      ) Ocaml_version.arches
     )
   in
   let opam_2_0 =
