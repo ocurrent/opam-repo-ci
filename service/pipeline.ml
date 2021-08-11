@@ -191,7 +191,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
   let compilers ~upgrade_opam =
     Current.list_seq begin
       let master_distro = Dockerfile_distro.tag_of_distro master_distro in
-      (Ocaml_version.Releases.recent @ Ocaml_version.Releases.dev) |>
+      (Ocaml_version.Releases.recent @ Ocaml_version.Releases.unreleased_betas) |>
       List.map (fun v ->
         let v = Ocaml_version.with_just_major_and_minor v in
         let revdeps = Ocaml_version.equal v default_compiler in (* TODO: Remove this when the cluster is ready *)
