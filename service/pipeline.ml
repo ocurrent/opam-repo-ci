@@ -226,9 +226,12 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
         match Ocaml_version.extra v with
         | None -> None
         | Some label ->
+            (* TODO: This should be in ocaml-version or ocaml-dockerfile *)
+            (* TODO: The same code is used in docker-base-images *)
+            let label = String.map (function '+' -> '-' | c -> c) label in
             let variant = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(default_comp, Some label) in
             Some (build ~upgrade_opam:true ~lower_bounds:false ~revdeps:false label variant)
-      ) (Ocaml_version.compiler_variants `X86_64 default_compiler) @
+      ) (Ocaml_version.Opam.V2.switches `X86_64 default_compiler) @
       List.filter_map (function
         | `X86_64 -> None
         | arch ->
