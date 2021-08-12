@@ -25,8 +25,8 @@ depends: [
   "capnp-rpc-lwt" {>= "0.8.0"}
   "capnp-rpc-unix" {>= "0.8.0"}
   "opam-repo-ci-api"
-  "opam-state" {>= "2.1.0~beta4"}
-  "opam-format" {>= "2.1.0~beta4"}
+  "opam-state" {>= "2.2.0~alpha~dev"}
+  "opam-format" {>= "2.2.0~alpha~dev"}
   "opam-file-format" {>= "2.1.2"}
   "sexplib" {>= "v0.14.0"}
   "conf-libev"
@@ -38,6 +38,13 @@ depends: [
 ]
 conflicts: [
   "ocaml-migrate-parsetree" {= "1.7.1"}
+]
+pin-depends: [
+  # TODO: Remove this when the first alpha of opam 2.2.0 is out
+  ["opam-core.2.2.0~alpha~dev" "git+https://github.com/ocaml/opam.git#c8f8f74b45e14379cff9811a9aefbbf1770d0da4"]
+  ["opam-state.2.2.0~alpha~dev" "git+https://github.com/ocaml/opam.git#c8f8f74b45e14379cff9811a9aefbbf1770d0da4"]
+  ["opam-format.2.2.0~alpha~dev" "git+https://github.com/ocaml/opam.git#c8f8f74b45e14379cff9811a9aefbbf1770d0da4"]
+  ["opam-repository.2.2.0~alpha~dev" "git+https://github.com/ocaml/opam.git#c8f8f74b45e14379cff9811a9aefbbf1770d0da4"]
 ]
 build: [
   ["dune" "subst"] {pinned}
