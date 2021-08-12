@@ -24,6 +24,7 @@ type error =
   | UnexpectedFile of string
   | ForbiddenPerm of string
   | OpamLint of (int * [`Warning | `Error] * string)
+  | FailedToDownload of string
 
 module Check = struct
   type t = unit
@@ -93,26 +94,29 @@ module Check = struct
     in
     aux errors [] files
 
-  let get_dune_project_version url =
+  let get_dune_project_version ~pkg url =
     Lwt_io.with_temp_dir @@ fun dir ->
     Lwt_preemptive.detach begin fun () ->
-      OpamProcess.Job.run (OpamDownload.download ~overwrite:false (OpamFile.URL.url url) (OpamFilename.Dir.of_string dir))
-    end () >>= fun f ->
-    Lwt_io.with_temp_dir @@ fun dir ->
-    Lwt_preemptive.detach begin fun () ->
-      OpamFilename.extract f (OpamFilename.Dir.of_string dir)
-    end () >>= fun () ->
-    let dune_project = Filename.concat dir "dune-project" in
-    Lwt.catch begin fun () ->
-      Lwt_io.with_file ~mode:Lwt_io.Input dune_project (fun ch -> Lwt_io.read ch >|= Sexplib.Sexp.parse) >>= begin function
-      | Sexplib.Sexp.(Done (List [Atom "lang"; Atom "dune"; Atom version], _)) -> Lwt.return_some version
-      | Done _ -> Lwt.fail_with "(lang dune ...) is not the first construct"
-      | Cont _ -> Lwt.fail_with "Failed to parse the dune-project file"
-      end
-    end begin function
-    | Unix.Unix_error (Unix.ENOENT, _, _) -> Lwt.return_none
-    | exn -> Lwt.fail exn
-    end
+      OpamProcess.Job.run @@
+      OpamRepository.pull_tree (OpamPackage.to_string pkg)
+        (OpamFilename.Dir.of_string dir)
+        (OpamFile.URL.checksum url)
+        [OpamFile.URL.url url]
+    end () >>= function
+    | OpamTypes.Not_available (_, msg) ->
+        Lwt.return (Error msg)
+    | Up_to_date _ | Result _ ->
+        let dune_project = Filename.concat dir "dune-project" in
+        Lwt.catch begin fun () ->
+          Lwt_io.with_file ~mode:Lwt_io.Input dune_project (fun ch -> Lwt_io.read ch >|= Sexplib.Sexp.parse) >>= begin function
+          | Sexplib.Sexp.(Done (List [Atom "lang"; Atom "dune"; Atom version], _)) -> Lwt.return (Ok (Some version))
+          | Done _ -> Lwt.fail_with "(lang dune ...) is not the first construct"
+          | Cont _ -> Lwt.fail_with "Failed to parse the dune-project file"
+          end
+        end begin function
+        | Unix.Unix_error (Unix.ENOENT, _, _) -> Lwt.return (Ok None)
+        | exn -> Lwt.fail exn
+        end
 
   let get_dune_constraint opam =
     let get_max = function
@@ -150,13 +154,14 @@ module Check = struct
   let check_dune_constraints ~errors ~pkg opam =
     match opam.OpamFile.OPAM.url with
     | Some url ->
-        get_dune_project_version url >|= fun dune_version ->
+        get_dune_project_version ~pkg url >|= fun dune_version ->
         let dune_constraint = get_dune_constraint opam in
         begin match dune_constraint, dune_version with
-        | None, None -> errors
-        | Some _, None -> (pkg, DuneProjectMissing) :: errors
-        | None, Some _ -> (pkg, DuneConstraintMissing) :: errors
-        | Some dep, Some ver ->
+        | _, Error msg -> (pkg, FailedToDownload msg) :: errors
+        | None, Ok None -> errors
+        | Some _, Ok None -> (pkg, DuneProjectMissing) :: errors
+        | None, Ok (Some _) -> (pkg, DuneConstraintMissing) :: errors
+        | Some dep, Ok (Some ver) ->
             if OpamVersionCompare.compare dep ver >= 0 then
               errors
             else
@@ -306,6 +311,8 @@ module Lint = struct
       | OpamLint warn ->
           let warn = OpamFileTools.warns_to_string [warn] in
           Fmt.str "Error in %s: %s" pkg warn
+      | FailedToDownload msg ->
+          Fmt.str "Error in %s: Failed to download the archive. Details: %s" pkg msg
     )
 
   let run {master} job { Key.src; packages } () =
