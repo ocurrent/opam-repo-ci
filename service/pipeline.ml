@@ -7,7 +7,8 @@ module Docker = Current_docker.Default
 module Common = Opam_repo_ci_api.Common
 
 let master_distro = Dockerfile_distro.resolve_alias Dockerfile_distro.master_distro
-let default_compiler = Ocaml_version.with_just_major_and_minor Ocaml_version.Releases.latest
+let default_compiler_full = Ocaml_version.Releases.latest
+let default_compiler = Ocaml_version.with_just_major_and_minor default_compiler_full
 
 let weekly = Current_cache.Schedule.v ~valid_for:(Duration.of_day 7) ()
 
@@ -231,7 +232,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
             let label = String.map (function '+' -> '-' | c -> c) label in
             let variant = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(default_comp, Some label) in
             Some (build ~upgrade_opam:true ~lower_bounds:false ~revdeps:false label variant)
-      ) (Ocaml_version.Opam.V2.switches `X86_64 default_compiler) @
+      ) (Ocaml_version.Opam.V2.switches `X86_64 default_compiler_full) @
       List.filter_map (function
         | `X86_64 -> None
         | arch ->
