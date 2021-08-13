@@ -45,6 +45,9 @@ let opam_install ~variant ~upgrade_opam ~pin ~lower_bounds ~with_tests ~pkg =
 let setup_repository ~variant ~for_docker ~upgrade_opam =
   let open Obuilder_spec in
   user ~uid:1000 ~gid:1000 ::
+  run "opam repository remove -a multicore || true" :: (* We remove this non-standard repository
+                                                          because we don't have access and it hosts
+                                                          non-official packages *)
   (if upgrade_opam then [
     run "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam";
     env "OPAMDEPEXTYES" "1"; (* TODO: Remove this when all the docker images have been updated *)
