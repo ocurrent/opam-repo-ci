@@ -4,7 +4,6 @@ open Current.Syntax
 let pool = Current.Pool.create ~label:"analyse" 4
 
 let ( >>!= ) = Lwt_result.bind
-let list_is_empty = function [] -> true | _::_ -> false
 
 let read_file ~max_len path =
   Lwt_io.with_file ~mode:Lwt_io.input path
@@ -60,8 +59,16 @@ module Analysis = struct
         "Package %S uses unsupported opam version %s (need >= 2)"
         (OpamPackage.to_string pkg)
         (OpamVersion.to_string opam_version);
-    if not (list_is_empty (OpamFile.OPAM.format_errors opam)) then
-      Fmt.failwith "Format errors detected in %S" (OpamPackage.to_string pkg);
+    begin match OpamFile.OPAM.format_errors opam with
+    | [] -> ()
+    | errors ->
+        let errors =
+          errors |>
+          List.map (fun (_, err) -> "  - "^OpamPp.string_of_bad_format (OpamPp.Bad_format err)) |>
+          String.concat "\n"
+        in
+        Fmt.failwith "Format errors detected in %s:\n%s" (OpamPackage.to_string pkg) errors
+    end;
     ()
 
   let get_package_name ~path ~name ~package =
