@@ -16,5 +16,4 @@ FROM debian:10
 RUN apt-get update && apt-get install libev4 dumb-init -y --no-install-recommends
 WORKDIR /
 ENTRYPOINT ["dumb-init", "/usr/local/bin/opam-repo-ci-web"]
-RUN apt-get install ca-certificates -y  # https://github.com/mirage/ocaml-conduit/issues/388
 COPY --from=build /src/_build/install/default/bin/opam-repo-ci-web /usr/local/bin/

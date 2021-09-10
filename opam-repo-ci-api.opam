@@ -13,6 +13,9 @@ depends: [
   "capnp-rpc-lwt"
   "dockerfile"
 ]
+conflicts: [
+  "conduit-lwt-unix" {< "4.0.1"}
+]
 build: [
   ["dune" "subst"] {pinned}
   [
