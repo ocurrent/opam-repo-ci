@@ -7,6 +7,8 @@
 (package
  (name opam-repo-ci-api)
  (synopsis "Cap'n Proto API for opam-repo-ci")
+ (conflicts
+  (conduit-lwt-unix (< 4.0.1)))
  (depends
   (dune (>= "1.11"))
   (ocaml (>= "4.12.0"))
@@ -17,7 +19,9 @@
 (package
  (name opam-repo-ci-service)
  (synopsis "Test OCaml projects on GitHub")
- (conflicts (ocaml-migrate-parsetree (= "1.7.1")))
+ (conflicts
+  (ocaml-migrate-parsetree (= "1.7.1"))
+  (conduit-lwt-unix (< 4.0.1)))
  (depends
   (prometheus-app (>= 1.0))
   (prometheus (>= 0.7))
@@ -51,7 +55,9 @@
 (package
  (name opam-repo-ci-web)
  (synopsis "Web-server frontend for opam-repo-ci")
- (conflicts (ocaml-migrate-parsetree (= "1.7.1")))
+ (conflicts
+  (ocaml-migrate-parsetree (= "1.7.1"))
+  (conduit-lwt-unix (< 4.0.1)))
  (depends
   yojson
   logs
@@ -73,6 +79,8 @@
 (package
  (name opam-repo-ci-client)
  (synopsis "Command-line client for opam-repo-ci")
+ (conflicts
+  (conduit-lwt-unix (< 4.0.1)))
  (depends
   logs
   (fmt (>= 0.8.7))

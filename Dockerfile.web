@@ -1,6 +1,6 @@
-FROM ocaml/opam:debian-ocaml-4.12 AS build
+FROM ocaml/opam:debian-11-ocaml-4.12 AS build
 RUN sudo apt-get update && sudo apt-get install libev-dev capnproto m4 pkg-config libgmp-dev libffi-dev -y --no-install-recommends
-RUN cd ~/opam-repository && git pull origin master && git reset --hard 45f8be308d8ff428fa37cc4740dfc68c05f7578b && opam update
+RUN cd ~/opam-repository && git pull origin master && git reset --hard 81d2d054a0c2686544e2a651a8154a584dba8403 && opam update
 COPY --chown=opam \
 	ocurrent/current_rpc.opam \
 	ocurrent/current_ansi.opam \
@@ -12,9 +12,8 @@ RUN opam install -y --deps-only .
 ADD --chown=opam . .
 RUN opam config exec -- dune build ./_build/install/default/bin/opam-repo-ci-web
 
-FROM debian:10
+FROM debian:11
 RUN apt-get update && apt-get install libev4 dumb-init -y --no-install-recommends
 WORKDIR /
 ENTRYPOINT ["dumb-init", "/usr/local/bin/opam-repo-ci-web"]
-RUN apt-get install ca-certificates -y  # https://github.com/mirage/ocaml-conduit/issues/388
 COPY --from=build /src/_build/install/default/bin/opam-repo-ci-web /usr/local/bin/

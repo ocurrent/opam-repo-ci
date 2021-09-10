@@ -27,6 +27,7 @@ depends: [
 ]
 conflicts: [
   "ocaml-migrate-parsetree" {= "1.7.1"}
+  "conduit-lwt-unix" {< "4.0.1"}
 ]
 build: [
   ["dune" "subst"] {pinned}
