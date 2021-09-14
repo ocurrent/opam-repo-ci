@@ -203,7 +203,7 @@ module Check = struct
             | [] -> (pkg, MissingField "license") :: errors
             | _ -> errors
           in
-          (* Workaround while discussing https://github.com/ocaml/opam/pull/4834 *)
+          (* TODO: Workaround while discussing https://github.com/ocaml/opam/pull/4834 *)
           let archive_is_in_cache = match OpamFile.OPAM.url opam with
             | None -> false
             | Some url ->
