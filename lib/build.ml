@@ -16,7 +16,7 @@ module Spec = struct
     revdep : package option;
     with_tests : bool;
     lower_bounds : bool;
-    upgrade_opam : bool [@default false];
+    opam_version : [`V2_0 | `V2_1];
   } [@@deriving to_yojson]
 
   type ty = [
@@ -28,8 +28,8 @@ module Spec = struct
     ty : ty;
   }
 
-  let opam ?revdep ~platform ~lower_bounds ~with_tests ~upgrade_opam pkg =
-    let ty = `Opam (`Build { revdep; lower_bounds; with_tests; upgrade_opam }, pkg) in
+  let opam ?revdep ~platform ~lower_bounds ~with_tests ~opam_version pkg =
+    let ty = `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) in
     { platform; ty }
 
   let pp_pkg ?revdep f pkg =
@@ -40,11 +40,14 @@ module Spec = struct
   let pp_ty f = function
     | `Opam (`List_revdeps, pkg) ->
         Fmt.pf f "list revdeps of %s" (OpamPackage.to_string pkg)
-    | `Opam (`Build { revdep; lower_bounds; with_tests; upgrade_opam }, pkg) ->
+    | `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) ->
       let action = if with_tests then "test" else "build" in
-      Fmt.pf f "%s %a%s%s" action (pp_pkg ?revdep) pkg
+      Fmt.pf f "%s %a%s, using opam %s" action (pp_pkg ?revdep) pkg
         (if lower_bounds then ", lower-bounds" else "")
-        (if upgrade_opam then ", using opam 2.1" else "")
+        (match opam_version with
+         | `V2_0 -> "2.0"
+         | `V2_1 -> "2.1"
+        )
 end
 
 type t = {
@@ -123,7 +126,7 @@ module Op = struct
       let base = Image.hash base in
       match ty with
       | `Opam (`List_revdeps, pkg) -> Opam_build.revdeps ~for_docker ~base ~variant ~pkg
-      | `Opam (`Build { revdep; lower_bounds; with_tests; upgrade_opam }, pkg) -> Opam_build.spec ~for_docker ~upgrade_opam ~base ~variant ~revdep ~lower_bounds ~with_tests ~pkg
+      | `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) -> Opam_build.spec ~for_docker ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_tests ~pkg
     in
     Current.Job.write job
       (Fmt.strf "@.\

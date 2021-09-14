@@ -72,23 +72,23 @@ let dep_list_map (type a) (module M : Current_term.S.ORDERED with type t = a) ?c
     Logs.warn (fun f -> f "dep_list_map: input is ready but output is pending!");
     []
 
-let build_spec ~platform ~upgrade_opam pkg =
+let build_spec ~platform ~opam_version pkg =
   let+ pkg = pkg in
-  Build.Spec.opam ~platform ~lower_bounds:false ~with_tests:false ~upgrade_opam pkg
+  Build.Spec.opam ~platform ~lower_bounds:false ~with_tests:false ~opam_version pkg
 
-let test_spec ~platform ~upgrade_opam pkg =
+let test_spec ~platform ~opam_version pkg =
   let+ pkg = pkg in
-  Build.Spec.opam ~platform ~lower_bounds:false ~with_tests:true ~upgrade_opam pkg
+  Build.Spec.opam ~platform ~lower_bounds:false ~with_tests:true ~opam_version pkg
 
-let lower_bounds_spec ~platform ~upgrade_opam pkg =
+let lower_bounds_spec ~platform ~opam_version pkg =
   let+ pkg = pkg in
-  Build.Spec.opam ~platform ~lower_bounds:true ~with_tests:false ~upgrade_opam pkg
+  Build.Spec.opam ~platform ~lower_bounds:true ~with_tests:false ~opam_version pkg
 
-let revdep_spec ~platform ~upgrade_opam ~revdep pkg =
+let revdep_spec ~platform ~opam_version ~revdep pkg =
   let+ revdep = revdep
   and+ pkg = pkg
   in
-  Build.Spec.opam ~platform ~lower_bounds:false ~with_tests:true ~revdep ~upgrade_opam pkg
+  Build.Spec.opam ~platform ~lower_bounds:false ~with_tests:true ~revdep ~opam_version pkg
 
 let combine_revdeps revdeps =
   let map =
@@ -98,7 +98,7 @@ let combine_revdeps revdeps =
 
 (* List the revdeps of [pkg] (using [builder] and [image]) and test each one
    (using [spec] and [base], merging [source] into [master]). *)
-let test_revdeps ~ocluster ~upgrade_opam ~master ~base ~platform ~pkgopt ~after:main_build source =
+let test_revdeps ~ocluster ~opam_version ~master ~base ~platform ~pkgopt ~after:main_build source =
   let revdeps = Build.list_revdeps ~base ocluster ~platform ~pkgopt ~master source in
   let revdeps = Current.map combine_revdeps revdeps in
   let pkg = Current.map (fun {PackageOpt.pkg = pkg; urgent = _} -> pkg) pkgopt in
@@ -108,7 +108,7 @@ let test_revdeps ~ocluster ~upgrade_opam ~master ~base ~platform ~pkgopt ~after:
     |> Current.gate ~on:main_build
     |> dep_list_map (module OpamPackage) (fun revdep ->
         let image =
-          let spec = revdep_spec ~platform ~upgrade_opam ~revdep pkg in
+          let spec = revdep_spec ~platform ~opam_version ~revdep pkg in
           Build.v ocluster ~label:"build" ~base ~spec ~master ~urgent source
         in
         let+ label = Current.map OpamPackage.to_string revdep
@@ -128,7 +128,7 @@ let get_significant_available_pkg = function
 let build_with_cluster ~ocluster ~analysis ~lint ~master source =
   let pkgs = Current.map Analyse.Analysis.packages analysis in
   let pkgs = Current.map (List.filter_map get_significant_available_pkg) pkgs in
-  let build ~upgrade_opam ~lower_bounds ~revdeps label variant =
+  let build ~opam_version ~lower_bounds ~revdeps label variant =
     let arch = Variant.arch variant in
     let pool = Conf.pool_of_arch arch in
     let platform = {Platform.label; pool; variant} in
@@ -152,27 +152,29 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
           Current_docker.Raw.Image.of_hash repo_id
         in
         let image =
-          let spec = build_spec ~platform ~upgrade_opam pkg in
+          let spec = build_spec ~platform ~opam_version pkg in
           Build.v ocluster ~label:"build" ~base ~spec ~master ~urgent source in
         let tests =
-          let spec = test_spec ~platform ~upgrade_opam pkg in
+          let spec = test_spec ~platform ~opam_version pkg in
           Build.v ocluster ~label:"test" ~base ~spec ~master ~urgent source
         in
         let+ pkg = pkg
         and+ build = Node.action `Built image
         and+ tests = Node.action `Built tests
         and+ lower_bounds_check =
-          if upgrade_opam && lower_bounds then
+          match opam_version, lower_bounds with
+          | `V2_1, true ->
             let action =
-              let spec = lower_bounds_spec ~platform ~upgrade_opam pkg in
+              let spec = lower_bounds_spec ~platform ~opam_version pkg in
               Build.v ocluster ~label:"lower-bounds" ~base ~spec ~master ~urgent source
             in
             let+ action = Node.action `Built action in
             [Node.leaf ~label:"lower-bounds" action]
-          else
+          | `V2_0, true
+          | (`V2_1 | `V2_0), false ->
             Current.return []
         and+ revdeps =
-          if revdeps then test_revdeps ~ocluster ~upgrade_opam ~master ~base ~platform ~pkgopt source ~after:image
+          if revdeps then test_revdeps ~ocluster ~opam_version ~master ~base ~platform ~pkgopt source ~after:image
           else Current.return []
         in
         let label = OpamPackage.to_string pkg in
@@ -185,7 +187,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
     |> Current.map (Node.branch ~label)
     |> Current.collapse ~key:"platform" ~value:label ~input:analysis
   in
-  let compilers ~upgrade_opam =
+  let compilers ~opam_version =
     Current.list_seq begin
       let master_distro = Dockerfile_distro.tag_of_distro master_distro in
       (Ocaml_version.Releases.recent @ Ocaml_version.Releases.unreleased_betas) |>
@@ -194,11 +196,11 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
         let revdeps = Ocaml_version.equal v default_compiler in (* TODO: Remove this when the cluster is ready *)
         let v = Ocaml_version.to_string v in
         let variant = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(v, None) in
-        build ~upgrade_opam ~lower_bounds:true ~revdeps v variant
+        build ~opam_version ~lower_bounds:true ~revdeps v variant
       )
     end
   in
-  let distributions ~upgrade_opam =
+  let distributions ~opam_version =
     Current.list_seq begin
       let default_compiler = Ocaml_version.to_string default_compiler in
       Dockerfile_distro.active_distros `X86_64 |>
@@ -209,16 +211,16 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
         else
           let distro = Dockerfile_distro.tag_of_distro distro in
           let variant = Variant.v ~arch:`X86_64 ~distro ~compiler:(default_compiler, None) in
-          build ~upgrade_opam ~lower_bounds:false ~revdeps:false distro variant :: acc
+          build ~opam_version ~lower_bounds:false ~revdeps:false distro variant :: acc
       ) []
     end
   in
   let+ analysis = Node.action `Analysed analysis
   and+ lint = Node.action `Linted lint
-  and+ compilers_2_0 = compilers ~upgrade_opam:false
-  and+ compilers_2_1 = compilers ~upgrade_opam:true
-  and+ distributions_2_0 = distributions ~upgrade_opam:false
-  and+ distributions_2_1 = distributions ~upgrade_opam:true
+  and+ compilers_2_0 = compilers ~opam_version:`V2_0
+  and+ compilers_2_1 = compilers ~opam_version:`V2_1
+  and+ distributions_2_0 = distributions ~opam_version:`V2_0
+  and+ distributions_2_1 = distributions ~opam_version:`V2_1
   and+ extras =
     let master_distro = Dockerfile_distro.tag_of_distro master_distro in
     let default_comp = Ocaml_version.to_string default_compiler in
@@ -231,14 +233,14 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
             (* TODO: The same code is used in docker-base-images *)
             let label = String.map (function '+' -> '-' | c -> c) label in
             let variant = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(default_comp, Some label) in
-            Some (build ~upgrade_opam:true ~lower_bounds:false ~revdeps:false label variant)
+            Some (build ~opam_version:`V2_1 ~lower_bounds:false ~revdeps:false label variant)
       ) (Ocaml_version.Opam.V2.switches `X86_64 default_compiler_full) @
       List.filter_map (function
         | `X86_64 -> None
         | arch ->
             let label = Ocaml_version.to_opam_arch arch in
             let variant = Variant.v ~arch ~distro:master_distro ~compiler:(default_comp, None) in
-            Some (build ~upgrade_opam:true ~lower_bounds:false ~revdeps:false label variant)
+            Some (build ~opam_version:`V2_1 ~lower_bounds:false ~revdeps:false label variant)
       ) Ocaml_version.arches
     )
   in

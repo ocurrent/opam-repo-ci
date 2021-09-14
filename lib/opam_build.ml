@@ -2,7 +2,7 @@ let download_cache = "opam-archives"
 let cache = [ Obuilder_spec.Cache.v download_cache ~target:"/home/opam/.opam/download-cache" ]
 let network = ["host"]
 
-let opam_install ~variant ~upgrade_opam ~pin ~lower_bounds ~with_tests ~pkg =
+let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
   let pkg = OpamPackage.to_string pkg in
   let with_tests_opt = if with_tests then " --with-test" else "" in
   let open Obuilder_spec in
@@ -23,7 +23,7 @@ let opam_install ~variant ~upgrade_opam ~pin ~lower_bounds ~with_tests ~pkg =
    else
      []
   ) @ [
-    run ~network "opam %s" (if upgrade_opam then "update --depexts" else "depext -u");
+    run ~network "opam %s" (match opam_version with `V2_1 -> "update --depexts" | `V2_0 -> "depext -u");
     (* TODO: Replace by two calls to opam install + opam install -t using the OPAMDROPINSTALLEDPACKAGES feature *)
     run ~cache ~network
       {|opam remove %s%s && opam install --deps-only%s %s && opam install -v%s %s;
@@ -38,20 +38,21 @@ let opam_install ~variant ~upgrade_opam ~pin ~lower_bounds ~with_tests ~pkg =
           fi;
         done;
         exit 1|}
-      pkg (if upgrade_opam then "" else " && opam depext"^with_tests_opt^" "^pkg) with_tests_opt pkg with_tests_opt pkg
+      pkg (match opam_version with `V2_1 -> "" | `V2_0 -> " && opam depext"^with_tests_opt^" "^pkg) with_tests_opt pkg with_tests_opt pkg
       (Variant.distribution variant)
   ]
 
-let setup_repository ~variant ~for_docker ~upgrade_opam =
+let setup_repository ~variant ~for_docker ~opam_version =
   let open Obuilder_spec in
   user ~uid:1000 ~gid:1000 ::
   run "opam repository remove -a multicore || true" :: (* We remove this non-standard repository
                                                           because we don't have access and it hosts
                                                           non-official packages *)
-  (if upgrade_opam then [
-    run "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam";
-    env "OPAMDEPEXTYES" "1"; (* TODO: Remove this when all the docker images have been updated *)
-    env "OPAMCONFIRMLEVEL" "unsafe-yes"] else []) @
+  run "sudo ln -f /usr/bin/opam-%s /usr/bin/opam"
+    (match opam_version with
+     | `V2_0 -> "2.0"
+     | `V2_1 -> "2.1"
+    ) ::
   (* NOTE: [for_docker] is required because docker does not support bubblewrap in docker build *)
   (* docker run has --privileged but docker build does not have it *)
   (* so we need to remove the part re-enabling the sandbox. *)
@@ -77,8 +78,8 @@ let set_personality ~variant =
   else
     []
 
-let spec ~for_docker ~upgrade_opam ~base ~variant ~revdep ~lower_bounds ~with_tests ~pkg =
-  let opam_install = opam_install ~variant ~upgrade_opam in
+let spec ~for_docker ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_tests ~pkg =
+  let opam_install = opam_install ~variant ~opam_version in
   let revdep = match revdep with
     | None -> []
     | Some revdep -> opam_install ~pin:false ~lower_bounds:false ~with_tests:false ~pkg:revdep
@@ -92,7 +93,7 @@ let spec ~for_docker ~upgrade_opam ~base ~variant ~revdep ~lower_bounds ~with_te
   in
   Obuilder_spec.stage ~from:base (
     set_personality ~variant
-    @ setup_repository ~variant ~for_docker ~upgrade_opam
+    @ setup_repository ~variant ~for_docker ~opam_version
     @ opam_install ~pin:true ~lower_bounds:false ~with_tests:false ~pkg
     @ lower_bounds
     @ revdep
@@ -104,7 +105,7 @@ let revdeps ~for_docker ~base ~variant ~pkg =
   let pkg = Filename.quote (OpamPackage.to_string pkg) in
   Obuilder_spec.stage ~from:base (
     (* TODO: Switch to opam 2.1 when https://github.com/ocaml/opam/issues/4311 is fixed *)
-    setup_repository ~variant ~for_docker ~upgrade_opam:false
+    setup_repository ~variant ~for_docker ~opam_version:`V2_0
     @ [
       run "echo '@@@OUTPUT' && \
            opam list -s --color=never --depends-on %s --coinstallable-with %s --installable --all-versions --recursive --depopts && \
