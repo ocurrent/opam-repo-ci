@@ -25,7 +25,34 @@ let has_role user = function
            ) -> true
     | _ -> false
 
+let add_default_matching_log_rules () =
+  match Current.Log_matcher.list_rules () with
+  | _::_ -> ()
+  | [] ->
+      let default_rules =
+        let open Current.Log_matcher in
+        [
+          {
+            pattern = "[\n]\[ERROR\] .+ unmet availability conditions: .+[\n]";
+            report = "[SKIP] Package not available";
+            score = 1;
+          };
+          {
+            pattern = "[\n]\[ERROR\] No solution for .+: The following dependencies couldn't be met:[\n]";
+            report = "[SKIP] Package not available";
+            score = 1;
+          };
+          {
+            pattern = "[\n]\[ERROR\] Package conflict![\n]";
+            report = "[SKIP] Package not available";
+            score = 1;
+          };
+        ]
+      in
+      List.iter Current.Log_matcher.add_rule default_rules
+
 let main config mode app capnp_address github_auth submission_uri =
+  add_default_matching_log_rules ();
   Lwt_main.run begin
     let listen_address = Capnp_rpc_unix.Network.Location.tcp ~host:"0.0.0.0" ~port:Conf.Capnp.internal_port in
     Capnp_setup.run ~listen_address capnp_address >>= fun (vat, rpc_engine_resolver) ->
