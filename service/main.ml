@@ -47,6 +47,21 @@ let add_default_matching_log_rules () =
             report = "[SKIP] Package not available";
             score = 1;
           };
+          { (* e.g. build: ["bash"] on platforms without bash will result in this error *)
+            pattern = "[\n]# bwrap: execvp (.+): No such file or directory[\n]";
+            report = "\1 not found";
+            score = 5;
+          };
+          { (* Generic errors caught by opam (e.g. cargo) *)
+            pattern = "[\n]# error: (.+)[\n]";
+            report = "\1";
+            score = 10;
+          };
+          { (* Generic errors caught by opam (e.g. gcc) *)
+            pattern = "[\n]# .+: error: (.+)[\n]";
+            report = "\1";
+            score = 15;
+          };
         ]
       in
       List.iter Current.Log_matcher.add_rule default_rules
