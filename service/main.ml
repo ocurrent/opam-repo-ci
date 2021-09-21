@@ -32,17 +32,17 @@ let add_default_matching_log_rules () =
       let default_rules =
         let open Current.Log_matcher in
         [
-          {
+          { (* Opam when the package or one of its dependencies has available: <non-compatible-condition> *)
             pattern = "[\n]\[ERROR\] .+ unmet availability conditions: .+[\n]";
             report = "[SKIP] Package not available";
             score = 1;
           };
-          {
+          { (* Opam 2.0 when the package or one of its dependencies isn't available on the current switch/plateform *)
             pattern = "[\n]\[ERROR\] No solution for .+: The following dependencies couldn't be met:[\n]";
             report = "[SKIP] Package not available";
             score = 1;
           };
-          {
+          { (* Opam 2.1 when the package or one of its dependencies isn't available on the current switch/plateform *)
             pattern = "[\n]\[ERROR\] Package conflict![\n]";
             report = "[SKIP] Package not available";
             score = 1;
