@@ -148,11 +148,14 @@ module Analysis = struct
                     let filename = OpamFile.make (OpamFilename.raw path) in
                     let old_file =
                       try OpamFile.OPAM.read_from_string ~filename old_content
-                      with Failure _ -> OpamFile.OPAM.empty
+                      with OpamPp.Bad_format _ | OpamPp.Bad_version _ -> OpamFile.OPAM.empty
                     in
                     let new_file =
                       try OpamFile.OPAM.read_from_string ~filename new_content
-                      with Failure msg -> Fmt.failwith "%S failed to be parsed: %s" path msg
+                      with
+                      | OpamPp.Bad_format (_, msg)
+                      | OpamPp.Bad_version (_, msg) ->
+                          Fmt.failwith "%S failed to be parsed: %s" path msg
                     in
                     check_opam new_file;
                     if OpamFile.OPAM.effectively_equal old_file new_file &&
