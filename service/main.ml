@@ -47,6 +47,12 @@ let add_default_matching_log_rules () =
             report = "[SKIP] Package not available";
             score = 100;
           };
+          { (* Ignore failures on failing packages when the platform being tested is contained in the x-ci-accept-failures optional field *)
+            (* See lib/opam_build.ml corresponding bash command printing this exact line *)
+            pattern = "[\n]A package failed and has been disabled for CI using the 'x-ci-accept-failures' field\.[\n]";
+            report = "[SKIP] Failure ignored";
+            score = 100;
+          };
           { (* e.g. build: ["bash"] on platforms without bash will result in this error *)
             pattern = "[\n]# bwrap: execvp (.+): No such file or directory[\n]";
             report = "\1 not found";
