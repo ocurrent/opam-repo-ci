@@ -63,6 +63,11 @@ let add_default_matching_log_rules () =
             report = "\1";
             score = 40;
           };
+          { (* Generic error caught by opam (e.g. uncaught OCaml exception) *)
+            pattern = "[\n]# Fatal error: (.+)[\n]";
+            report = "\1";
+            score = 35;
+          }
           { (* Generic errors caught by opam (e.g. gcc) *)
             pattern = "[\n]# .+: error: (.+)[\n]";
             report = "\1";
