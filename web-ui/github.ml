@@ -186,7 +186,7 @@ let link_jobs ~owner ~name ~hash ?selected jobs =
     let k = String.split_on_char Common.status_sep variant in
     let x =
       let label_txt = List.hd (List.rev k) in
-      let label = txt (Fmt.strf "%s (%a)" label_txt Client.State.pp outcome) in
+      let label = txt (Fmt.str "%s (%a)" label_txt Client.State.pp outcome) in
       let label = if selected = Some variant then b [label] else label in
       outcome, [a ~a:[a_href uri] [label]]
     in
@@ -240,7 +240,7 @@ let stream_logs job ~owner ~name ~refs ~hash ~variant ~status (data, next) write
       aux next
     | Error (`Capnp ex) ->
       Log.warn (fun f -> f "Error fetching logs: %a" Capnp_rpc.Error.pp ex);
-      Transfer_IO.write writer (Fmt.strf "opam-repo-ci error: %a@." Capnp_rpc.Error.pp ex)
+      Transfer_IO.write writer (Fmt.str "opam-repo-ci error: %a@." Capnp_rpc.Error.pp ex)
   in
   aux next
 
