@@ -207,11 +207,6 @@ let v t ~label ~spec ~base ~master ~urgent commit =
   BC.run t { Op.Key.pool; commit; variant; ty } ()
   |> Current.Primitive.map_result (Result.map ignore) (* TODO: Create a separate type of cache that doesn't parse the output *)
 
-type revdep = {
-  base_pkg : OpamPackage.t;
-  revdep : OpamPackage.t;
-}
-
 let list_revdeps t ~platform ~pkgopt ~base ~master commit =
   Current.component "list revdeps" |>
   let> {PackageOpt.pkg; urgent} = pkgopt
@@ -231,6 +226,6 @@ let list_revdeps t ~platform ~pkgopt ~base ~master commit =
               if OpamPackage.equal pkg revdep then
                 None (* NOTE: opam list --recursive --depends-on <pkg> also returns <pkg> itself *)
               else
-                Some {base_pkg = pkg; revdep}
+                Some revdep
         )
     ))
