@@ -33,44 +33,44 @@ let add_default_matching_log_rules () =
         let open Current.Log_matcher in
         [
           { (* Opam when the package or one of its dependencies has available: <non-compatible-condition> *)
-            pattern = "[\n]\[ERROR\] .+ unmet availability conditions: .+[\n]";
-            report = "[SKIP] Package not available";
+            pattern = {|[\n]\[ERROR\] .+ unmet availability conditions: .+[\n]|};
+            report = {|[SKIP] Package not available|};
             score = 100;
           };
           { (* Opam 2.0 when the package or one of its dependencies isn't available on the current switch/plateform *)
-            pattern = "[\n]\[ERROR\] No solution for .+: The following dependencies couldn't be met:[\n]";
-            report = "[SKIP] Package not available";
+            pattern = {|[\n]\[ERROR\] No solution for .+: The following dependencies couldn't be met:[\n]|};
+            report = {|[SKIP] Package not available|};
             score = 100;
           };
           { (* Opam 2.1 when the package or one of its dependencies isn't available on the current switch/plateform *)
-            pattern = "[\n]\[ERROR\] Package conflict![\n]";
-            report = "[SKIP] Package not available";
+            pattern = {|[\n]\[ERROR\] Package conflict![\n]|};
+            report = {|[SKIP] Package not available|};
             score = 100;
           };
           { (* Ignore failures on failing packages when the platform being tested is contained in the x-ci-accept-failures optional field *)
             (* See lib/opam_build.ml corresponding bash command printing this exact line *)
-            pattern = "[\n]A package failed and has been disabled for CI using the 'x-ci-accept-failures' field\.[\n]";
-            report = "[SKIP] Failure ignored";
+            pattern = {|[\n]A package failed and has been disabled for CI using the 'x-ci-accept-failures' field\.[\n]|};
+            report = {|[SKIP] Failure ignored|};
             score = 100;
           };
           { (* e.g. build: ["bash"] on platforms without bash will result in this error *)
-            pattern = "[\n]# bwrap: execvp (.+): No such file or directory[\n]";
-            report = "\1 not found";
+            pattern = {|[\n]# bwrap: execvp (.+): No such file or directory[\n]|};
+            report = {|\1 not found|};
             score = 50;
           };
           { (* Generic errors caught by opam (e.g. cargo) *)
-            pattern = "[\n]# error: (.+)[\n]";
-            report = "\1";
+            pattern = {|[\n]# error: (.+)[\n]|};
+            report = {|\1|};
             score = 40;
           };
           { (* Generic error caught by opam (e.g. uncaught OCaml exception) *)
-            pattern = "[\n]# Fatal error: (.+)[\n]";
-            report = "\1";
+            pattern = {|[\n]# Fatal error: (.+)[\n]|};
+            report = {|\1|};
             score = 35;
           }
           { (* Generic errors caught by opam (e.g. gcc) *)
-            pattern = "[\n]# .+: error: (.+)[\n]";
-            report = "\1";
+            pattern = {|[\n]# .+: error: (.+)[\n]|};
+            report = {|\1|};
             score = 30;
           };
         ]
