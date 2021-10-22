@@ -67,7 +67,7 @@ let add_default_matching_log_rules () =
             pattern = {|[\n]# Fatal error: (.+)[\n]|};
             report = {|\1|};
             score = 35;
-          }
+          };
           { (* Generic errors caught by opam (e.g. gcc) *)
             pattern = {|[\n]# .+: error: (.+)[\n]|};
             report = {|\1|};
