@@ -8,7 +8,7 @@ let () =
   Logging.init ~level:Logs.Warning ()
 
 let errorf msg =
-  msg |> Fmt.kstrf @@ fun msg ->
+  msg |> Fmt.kstr @@ fun msg ->
   Error (`Msg msg)
 
 let with_ref r fn =
@@ -147,7 +147,7 @@ let gref =
   let make_ref s =
     if String.is_prefix ~affix:"refs/pull/" s then (
       match String.cuts ~sep:"/" s with
-      | ["refs"; "pull"; pr] -> Ok (`Ref (Fmt.strf "refs/pull/%s/merge" pr))
+      | ["refs"; "pull"; pr] -> Ok (`Ref (Fmt.str "refs/pull/%s/merge" pr))
       | _ -> Ok (`Ref s)
     ) else (
       Ok (`Ref s)

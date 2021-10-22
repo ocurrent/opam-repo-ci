@@ -129,15 +129,15 @@ module Op = struct
       | `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) -> Opam_build.spec ~for_docker ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_tests ~pkg
     in
     Current.Job.write job
-      (Fmt.strf "@.\
-                 To reproduce locally:@.@.\
-                 %a@.\
-                 git fetch origin master@.\
-                 git merge %s@.\
-                 cat > ../Dockerfile <<'END-OF-DOCKERFILE'@.\
-                 \o033[34m%s\o033[0m@.\
-                 END-OF-DOCKERFILE@.\
-                 docker build -f ../Dockerfile .@.@."
+      (Fmt.str "@.\
+                To reproduce locally:@.@.\
+                %a@.\
+                git fetch origin master@.\
+                git merge %s@.\
+                cat > ../Dockerfile <<'END-OF-DOCKERFILE'@.\
+                \o033[34m%s\o033[0m@.\
+                END-OF-DOCKERFILE@.\
+                docker build -f ../Dockerfile .@.@."
          Current_git.Commit_id.pp_user_clone commit
          master
          (Obuilder_spec.Docker.dockerfile_of_spec ~buildkit:false (build_spec ~for_docker:true)));
