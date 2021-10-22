@@ -90,17 +90,33 @@ let revdep_spec ~platform ~opam_version ~revdep pkg =
   in
   Build.Spec.opam ~platform ~lower_bounds:false ~with_tests:true ~revdep ~opam_version pkg
 
-let combine_revdeps revdeps =
-  let map =
-    List.fold_left (fun set pkg -> OpamPackage.Set.add pkg set) OpamPackage.Set.empty revdeps
+module Revdep_set = Set.Make (struct
+    type t = Build.revdep
+
+    let compare {Build.base_pkg; revdep} y =
+      match OpamPackage.compare revdep y.Build.revdep with
+      | 0 -> OpamPackage.compare base_pkg y.Build.base_pkg
+      | n -> n
+  end)
+
+let combine_revdeps ~already_tested revdeps =
+  let new_already_tested, set =
+    List.fold_left (fun (already_tested, set) ({Build.base_pkg = _; revdep} as tested) ->
+      if Revdep_set.mem tested already_tested then
+        already_tested, set
+      else
+        Revdep_set.add tested already_tested,
+        OpamPackage.Set.add revdep set
+    ) (!already_tested, OpamPackage.Set.empty) revdeps
   in
-  OpamPackage.Set.elements map
+  already_tested := new_already_tested;
+  OpamPackage.Set.elements set
 
 (* List the revdeps of [pkg] (using [builder] and [image]) and test each one
    (using [spec] and [base], merging [source] into [master]). *)
-let test_revdeps ~ocluster ~opam_version ~master ~base ~platform ~pkgopt ~after:main_build source =
+let test_revdeps ~ocluster ~opam_version ~master ~base ~platform ~pkgopt ~already_tested ~after:main_build source =
   let revdeps = Build.list_revdeps ~base ocluster ~platform ~pkgopt ~master source in
-  let revdeps = Current.map combine_revdeps revdeps in
+  let revdeps = Current.map (combine_revdeps ~already_tested) revdeps in
   let pkg = Current.map (fun {PackageOpt.pkg = pkg; urgent = _} -> pkg) pkgopt in
   let urgent = Current.map (fun {PackageOpt.pkg = _; urgent} -> urgent) pkgopt in
   let+ tests =
@@ -174,8 +190,9 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
           | (`V2_1 | `V2_0), false ->
             Current.return []
         and+ revdeps =
-          if revdeps then test_revdeps ~ocluster ~opam_version ~master ~base ~platform ~pkgopt source ~after:image
-          else Current.return []
+          match revdeps with
+          | Some already_tested -> test_revdeps ~ocluster ~opam_version ~master ~base ~platform ~pkgopt ~already_tested source ~after:image
+          | None -> Current.return []
         in
         let label = OpamPackage.to_string pkg in
         Node.actioned_branch ~label build (
@@ -188,15 +205,16 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
     |> Current.collapse ~key:"platform" ~value:label ~input:analysis
   in
   let compilers ~opam_version =
+    let revdeps = ref Revdep_set.empty in
     Current.list_seq begin
       let master_distro = Dockerfile_distro.tag_of_distro master_distro in
-      (Ocaml_version.Releases.recent @ Ocaml_version.Releases.unreleased_betas) |>
+      (* NOTE: Always put the most important release to test first for the revdeps to be prioritory tested with it *)
+      (List.rev Ocaml_version.Releases.recent @ Ocaml_version.Releases.unreleased_betas) |>
       List.map (fun v ->
         let v = Ocaml_version.with_just_major_and_minor v in
-        let revdeps = Ocaml_version.equal v default_compiler in (* TODO: Remove this when the cluster is ready *)
         let v = Ocaml_version.to_string v in
         let variant = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(v, None) in
-        build ~opam_version ~lower_bounds:true ~revdeps v variant
+        build ~opam_version ~lower_bounds:true ~revdeps:(Some revdeps) v variant
       )
     end
   in
@@ -211,7 +229,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
         else
           let distro = Dockerfile_distro.tag_of_distro distro in
           let variant = Variant.v ~arch:`X86_64 ~distro ~compiler:(default_compiler, None) in
-          build ~opam_version ~lower_bounds:false ~revdeps:false distro variant :: acc
+          build ~opam_version ~lower_bounds:false ~revdeps:None distro variant :: acc
       ) []
     end
   in
@@ -233,14 +251,14 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
             (* TODO: The same code is used in docker-base-images *)
             let label = String.map (function '+' -> '-' | c -> c) label in
             let variant = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(default_comp, Some label) in
-            Some (build ~opam_version:`V2_1 ~lower_bounds:false ~revdeps:false label variant)
+            Some (build ~opam_version:`V2_1 ~lower_bounds:false ~revdeps:None label variant)
       ) (Ocaml_version.Opam.V2.switches `X86_64 default_compiler_full) @
       List.filter_map (function
         | `X86_64 -> None
         | arch ->
             let label = Ocaml_version.to_opam_arch arch in
             let variant = Variant.v ~arch ~distro:master_distro ~compiler:(default_comp, None) in
-            Some (build ~opam_version:`V2_1 ~lower_bounds:false ~revdeps:false label variant)
+            Some (build ~opam_version:`V2_1 ~lower_bounds:false ~revdeps:None label variant)
       ) Ocaml_version.arches
     )
   in
