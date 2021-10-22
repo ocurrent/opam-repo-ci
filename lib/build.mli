@@ -25,6 +25,11 @@ val v :
   Current_git.Commit_id.t Current.t ->
   unit Current.t
 
+type revdep = {
+  base_pkg : OpamPackage.t;
+  revdep : OpamPackage.t;
+}
+
 val list_revdeps :
   t ->
   platform:Platform.t ->
@@ -32,4 +37,4 @@ val list_revdeps :
   base:Current_docker.Raw.Image.t Current.t ->
   master:Current_git.Commit.t Current.t ->
   Current_git.Commit_id.t Current.t ->
-  OpamPackage.t list Current.t
+  revdep list Current.t
