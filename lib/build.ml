@@ -151,7 +151,7 @@ module Op = struct
         | `Opam (`List_revdeps, pkg)
         | `Opam (`Build _, pkg) -> OpamPackage.to_string pkg
       in
-      Printf.sprintf "%s-%s" (Image.hash base) pkg
+      Printf.sprintf "%s-%s-%s" (Image.hash base) pkg (Git.Commit_id.hash commit)
     in
     Current.Job.log job "Using cache hint %S" cache_hint;
     Current.Job.log job "Using OBuilder spec:@.%s@." spec_str;
