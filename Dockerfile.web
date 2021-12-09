@@ -13,7 +13,7 @@ ADD --chown=opam . .
 RUN opam config exec -- dune build ./_build/install/default/bin/opam-repo-ci-web
 
 FROM debian:11
-RUN apt-get update && apt-get install libev4 dumb-init -y --no-install-recommends
+RUN apt-get update && apt-get install ca-certificates libev4 dumb-init -y --no-install-recommends
 WORKDIR /
 ENTRYPOINT ["dumb-init", "/usr/local/bin/opam-repo-ci-web"]
 COPY --from=build /src/_build/install/default/bin/opam-repo-ci-web /usr/local/bin/
