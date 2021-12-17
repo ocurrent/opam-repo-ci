@@ -156,23 +156,15 @@ module Op = struct
     Current.Job.log job "Using cache hint %S" cache_hint;
     Current.Job.log job "Using OBuilder spec:@.%s@." spec_str;
     let build_pool = Current_ocluster.Connection.pool ?urgent ~job ~pool ~action ~cache_hint ~src connection in
-    let is_nnpchecker = Option.equal String.equal variant.Variant.ocaml_variant (Some "nnpchecker") in
     let buffer =
       match ty with
       | `Opam (`List_revdeps, _) -> Some (Buffer.create 1024)
-      | _ when is_nnpchecker -> Some (Buffer.create 50_000)
       | _ -> None
     in
     Current.Job.start_with ~pool:build_pool job ~timeout ~level:Current.Level.Average >>= fun build_job ->
     Capability.with_ref build_job (run_job ?buffer ~job) >>!= fun (_ : string) ->
     match buffer with
     | None -> Lwt_result.return ""
-    | Some buffer when is_nnpchecker ->
-        (* TODO: Remove this hack when we switch to OCaml 4.13. See https://github.com/ocaml/ocaml/pull/10171 *)
-        begin match Astring.String.find_sub ~rev:true ~sub:"Out-of-heap pointer at " (Buffer.contents buffer) with
-        | None -> Lwt_result.return ""
-        | Some _ -> Lwt_result.fail (`Msg "Naked pointers detected")
-        end
     | Some buffer ->
       match Astring.String.cuts ~sep:"\n@@@OUTPUT\n" (Buffer.contents buffer) with
       | [_; output; _] -> Lwt_result.return output
