@@ -1,6 +1,6 @@
 [submodule "ocurrent"]
 	path = ocurrent
-	url = git://github.com/ocurrent/ocurrent.git
+	url = https://github.com/ocurrent/ocurrent.git
 	branch = master
 [submodule "ocluster"]
 	path = ocluster
@@ -8,9 +8,9 @@
 	branch = master
 [submodule "ocaml-dockerfile"]
 	path = ocaml-dockerfile
-	url = git://github.com/avsm/ocaml-dockerfile.git
+	url = https://github.com/avsm/ocaml-dockerfile.git
 	branch = master
 [submodule "ocaml-version"]
 	path = ocaml-version
-	url = git://github.com/ocurrent/ocaml-version.git
+	url = https://github.com/ocurrent/ocaml-version.git
 	branch = master
