@@ -203,13 +203,6 @@ module Check = struct
             | [] -> (pkg, MissingField "license") :: errors
             | _ -> errors
           in
-          
-          let archive_is_in_cache = match OpamFile.OPAM.url opam with
-            | None -> false
-            | Some url ->
-                let url = OpamUrl.to_string (OpamFile.URL.url url) in
-                OpamStd.String.starts_with ~prefix:"https://opam.ocaml.org/cache/" url
-          in
           (* Check correct use of dune subst *)
           let errors =
             List.fold_left
