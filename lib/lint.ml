@@ -203,7 +203,7 @@ module Check = struct
             | [] -> (pkg, MissingField "license") :: errors
             | _ -> errors
           in
-          (* TODO: Workaround while discussing https://github.com/ocaml/opam/pull/4834 *)
+          
           let archive_is_in_cache = match OpamFile.OPAM.url opam with
             | None -> false
             | Some url ->
@@ -233,7 +233,9 @@ module Check = struct
           Lwt_preemptive.detach begin fun () ->
             OpamFileTools.lint ~check_extra_files ~check_upstream:true opam |>
             List.fold_left begin fun errors -> function
-              | (67, _, _) when archive_is_in_cache -> errors
+              | (67, _, _) -> errors (* TODO: Disable error 67 (Checksum specified with a non archive url) while discussing a fix:
+                                        - https://github.com/ocaml/opam/pull/4834
+                                        - https://github.com/ocaml/opam/pull/4960 *)
               | x -> (pkg, OpamLint x) :: errors
             end errors
           end () >>= fun errors ->
