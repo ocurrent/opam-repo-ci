@@ -199,12 +199,13 @@ let v t ~label ~spec ~base ~master ~urgent commit =
   BC.run t { Op.Key.pool; commit; variant; ty } ()
   |> Current.Primitive.map_result (Result.map ignore) (* TODO: Create a separate type of cache that doesn't parse the output *)
 
-let list_revdeps t ~platform ~pkgopt ~base ~master commit =
+let list_revdeps t ~platform ~pkgopt ~base ~master ~after commit =
   Current.component "list revdeps" |>
   let> {PackageOpt.pkg; urgent} = pkgopt
   and> base = base
   and> commit = commit
-  and> master = master in
+  and> master = master
+  and> () = after in
   let t = { Op.config = t; master; urgent; base } in
   let { Platform.pool; variant; label = _ } = platform in
   let ty = `Opam (`List_revdeps, pkg) in
