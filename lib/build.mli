@@ -32,4 +32,4 @@ val list_revdeps :
   base:Current_docker.Raw.Image.t Current.t ->
   master:Current_git.Commit.t Current.t ->
   Current_git.Commit_id.t Current.t ->
-  OpamPackage.t list Current.t
+  OpamPackage.Set.t Current.t

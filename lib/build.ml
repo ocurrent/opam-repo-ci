@@ -211,13 +211,13 @@ let list_revdeps t ~platform ~pkgopt ~base ~master commit =
   BC.run t { Op.Key.pool; commit; variant; ty } ()
   |> Current.Primitive.map_result (Result.map (fun output ->
       String.split_on_char '\n' output |>
-      List.filter_map (function
-          | "" -> None
+      List.fold_left (fun acc -> function
+          | "" -> acc
           | revdep ->
               let revdep = OpamPackage.of_string revdep in
               if OpamPackage.equal pkg revdep then
-                None (* NOTE: opam list --recursive --depends-on <pkg> also returns <pkg> itself *)
+                acc (* NOTE: opam list --recursive --depends-on <pkg> also returns <pkg> itself *)
               else
-                Some revdep
-        )
+                OpamPackage.Set.add revdep acc
+        ) OpamPackage.Set.empty
     ))

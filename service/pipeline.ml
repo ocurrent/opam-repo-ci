@@ -90,17 +90,10 @@ let revdep_spec ~platform ~opam_version ~revdep pkg =
   in
   Build.Spec.opam ~platform ~lower_bounds:false ~with_tests:true ~revdep ~opam_version pkg
 
-let combine_revdeps revdeps =
-  let map =
-    List.fold_left (fun set pkg -> OpamPackage.Set.add pkg set) OpamPackage.Set.empty revdeps
-  in
-  OpamPackage.Set.elements map
-
 (* List the revdeps of [pkg] (using [builder] and [image]) and test each one
    (using [spec] and [base], merging [source] into [master]). *)
 let test_revdeps ~ocluster ~opam_version ~master ~base ~platform ~pkgopt ~after:main_build source =
-  let revdeps = Build.list_revdeps ~base ocluster ~platform ~pkgopt ~master source in
-  let revdeps = Current.map combine_revdeps revdeps in
+  let revdeps = Current.map OpamPackage.Set.elements revdeps in
   let pkg = Current.map (fun {PackageOpt.pkg = pkg; urgent = _} -> pkg) pkgopt in
   let urgent = Current.map (fun {PackageOpt.pkg = _; urgent} -> urgent) pkgopt in
   let+ tests =
