@@ -1,23 +1,19 @@
-FROM ocaml/opam:debian-11-ocaml-4.12@sha256:5db4b47a7066e39e473981d23ea24b4306eb59c688a89fe20046f9845eb7b1bd AS build
+FROM ocaml/opam:debian-11-ocaml-4.13@sha256:41a176aa60a2573e6d99c41c9250f3aac726f97ee630a581d58cf31ce8cb9e58 AS build
 RUN sudo apt-get update && sudo apt-get install libev-dev capnproto graphviz m4 pkg-config libsqlite3-dev libgmp-dev libffi-dev -y --no-install-recommends
-RUN cd ~/opam-repository && git pull origin master && git reset --hard 81d2d054a0c2686544e2a651a8154a584dba8403 && opam update
+RUN cd ~/opam-repository && git pull origin master && git reset --hard 98ca36cd9f1b442c9fca580503ebf57a3c68a9de && opam update
 COPY --chown=opam \
-	ocurrent/current_ansi.opam \
 	ocurrent/current_docker.opam \
 	ocurrent/current_github.opam \
 	ocurrent/current_git.opam \
-	ocurrent/current_incr.opam \
 	ocurrent/current.opam \
 	ocurrent/current_rpc.opam \
 	ocurrent/current_slack.opam \
 	ocurrent/current_web.opam \
 	/src/ocurrent/
 WORKDIR /src
-RUN opam pin add -yn current_ansi.dev "./ocurrent" && \
-    opam pin add -yn current_docker.dev "./ocurrent" && \
+RUN opam pin add -yn current_docker.dev "./ocurrent" && \
     opam pin add -yn current_github.dev "./ocurrent" && \
     opam pin add -yn current_git.dev "./ocurrent" && \
-    opam pin add -yn current_incr.dev "./ocurrent" && \
     opam pin add -yn current.dev "./ocurrent" && \
     opam pin add -yn current_rpc.dev "./ocurrent" && \
     opam pin add -yn current_slack.dev "./ocurrent" && \
