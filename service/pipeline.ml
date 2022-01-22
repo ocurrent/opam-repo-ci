@@ -140,14 +140,15 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
         let pkg = Current.map (fun {PackageOpt.pkg; urgent = _} -> pkg) pkgopt in
         let urgent = Current.return None in
         let base =
-          if Variant.is_macos variant then
-            Current.return (Build.MacOS (Variant.docker_tag variant))
-          else (* TODO: We can definitly use docker images as base for both macOS and linux *)
-            let+ repo_id =
-              Docker.peek ~schedule:weekly ~arch:(Ocaml_version.to_docker_arch arch)
-                ("ocaml/opam:" ^ Variant.docker_tag variant)
-            in
-            Build.Docker (Current_docker.Raw.Image.of_hash repo_id)
+          match Variant.os variant with
+          | `macOS ->
+              Current.return (Build.MacOS (Variant.docker_tag variant))
+          | `linux -> (* TODO: Use docker images as base for both macOS and linux *)
+              let+ repo_id =
+                Docker.peek ~schedule:weekly ~arch:(Ocaml_version.to_docker_arch arch)
+                  ("ocaml/opam:" ^ Variant.docker_tag variant)
+              in
+              Build.Docker (Current_docker.Raw.Image.of_hash repo_id)
         in
         let image =
           let spec = build_spec ~platform ~opam_version pkg in
@@ -212,12 +213,14 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
           build ~opam_version ~lower_bounds:false ~revdeps:false distro variant :: acc
       ) []
     in
-    let macos_distro = "macos-homebrew" in
-    let macos = Variant.v ~arch:`X86_64 ~distro:macos_distro ~compiler:(default_compiler, None) in
-    Current.list_seq begin
-      build ~opam_version ~lower_bounds:false ~revdeps:false macos_distro macos ::
-      linux_distributions
-    end
+    let macos_distributions =
+      Variant.macos_distributions |>
+      List.map (fun distro ->
+        let variant = Variant.v ~arch:`X86_64 ~distro ~compiler:(default_compiler, None) in
+        build ~opam_version ~lower_bounds:false ~revdeps:false distro variant
+      )
+    in
+    Current.list_seq (macos_distributions @ linux_distributions)
   in
   let+ analysis = Node.action `Analysed analysis
   and+ lint = Node.action `Linted lint
