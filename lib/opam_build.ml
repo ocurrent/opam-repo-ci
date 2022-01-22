@@ -45,8 +45,8 @@ let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
 let setup_repository ~variant ~for_docker ~opam_version =
   let open Obuilder_spec in
   let home_dir = match Variant.os variant with
-    | `macOS -> "/Users/mac705"
-    | `linux -> "/home/opam"
+    | `macOS -> None
+    | `linux -> Some "/home/opam"
   in
   let prefix = match Variant.os variant with
     | `macOS -> "~/local"
@@ -60,6 +60,10 @@ let setup_repository ~variant ~for_docker ~opam_version =
     | `V2_0 -> "2.0"
     | `V2_1 -> "2.1"
   in
+  let opam_repo_args = match Variant.os variant with
+    | `macOS -> " -k local" (* TODO: (copy ...) do not copy the content of .git or something like that and make the subsequent opam pin fail *)
+    | `linux -> ""
+  in
   let opamrc = match Variant.os variant with
     (* NOTE: [for_docker] is required because docker does not support bubblewrap in docker build *)
     (* docker run has --privileged but docker build does not have it *)
@@ -69,7 +73,9 @@ let setup_repository ~variant ~for_docker ~opam_version =
     (* TODO: On macOS, the sandbox is always (and should be) enabled by default but does not have those ~/.opamrc-sandbox files *)
   in
   user ~uid:1000 ~gid:1000 ::
-  workdir home_dir ::
+  (match home_dir with Some home_dir -> [workdir home_dir] | None -> []) @
+  (* TODO: macOS seems to have a bug in (copy ...) so I am forced to remove the (workdir ...) here.
+     Otherwise the "opam pin" after the "opam repository set-url" will fail (cannot find the new package for some reason) *)
   run "for pkg in $(opam pin list --short); do opam pin remove \"$pkg\"; done" :: (* The ocaml/opam base images have a pin to their compiler package.
                                                                                      Such pin is useless for opam 2.0 as we don't use --unlock-base,
                                                                                      and causes issues for opam 2.1 as it allows to upgrade the compiler
@@ -87,7 +93,7 @@ let setup_repository ~variant ~for_docker ~opam_version =
   [
     run "rm -rf opam-repository/";
     copy ["."] ~dst:"opam-repository/";
-    run "opam repository set-url --strict default opam-repository/";
+    run "opam repository set-url%s --strict default opam-repository/" opam_repo_args;
   ]
 
 let set_personality ~variant =
