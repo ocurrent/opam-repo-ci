@@ -4,6 +4,7 @@ open Lwt.Infix
 
 module Git = Current_git
 
+(* TODO: Make macOS use docker images *)
 type base =
   | Docker of Current_docker.Raw.Image.t
   | MacOS of string
