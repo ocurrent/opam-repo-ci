@@ -1,4 +1,5 @@
 open Current.Syntax
+open Opam_repo_ci
 
 type action = {
   job_id : Current.job_id option;
@@ -28,18 +29,20 @@ let action kind job =
   in
   { job_id; result }
 
-let rec flatten ~prefix f = function
+let rec flatten ~prefix acc f = function
   | Root children ->
-    List.concat_map (flatten ~prefix f) children
+    flatten_children ~prefix acc f children
   | Branch { label; action = None; children } ->
     let prefix = prefix ^ label ^ status_sep in
-    List.concat_map (flatten ~prefix f) children
+    flatten_children ~prefix acc f children
   | Branch { label; action = Some { job_id; result }; children } ->
     let prefix_children = prefix ^ label ^ status_sep in
     let label = prefix ^ label in
-    f ~label ~job_id ~result :: List.concat_map (flatten ~prefix:prefix_children f) children
+    Index.Job_map.add label (f ~job_id ~result) (flatten_children ~prefix:prefix_children acc f children)
+and flatten_children ~prefix acc f children =
+  List.fold_left (fun acc child -> flatten ~prefix acc f child) acc children
 
-let flatten f t = flatten f t ~prefix:""
+let flatten f t = flatten Index.Job_map.empty f t ~prefix:""
 
 let pp_result f = function
   | Ok `Built -> Fmt.string f "built"
