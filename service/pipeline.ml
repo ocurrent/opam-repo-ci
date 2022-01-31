@@ -263,18 +263,19 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
   ]
 
 let summarise results =
-  results
-  |> Node.flatten (fun ~label ~job_id:_ ~result -> (label, result))
-  |> List.fold_left (fun (ok, pending, err, skip, lint) -> function
-      | _, Ok `Analysed -> (ok, pending, err, skip, lint)
-      | _, Ok `Linted -> (ok, pending, err, skip, lint + 1)
-      | _, Ok `Built -> (ok + 1, pending, err, skip, lint)
-      | _, Error `Msg m when Astring.String.is_prefix ~affix:"[SKIP]" m -> (ok, pending, err, skip + 1, lint)
-      | _, Error `Msg _ -> (ok, pending, err + 1, skip, lint)
-      | _, Error `Active _ -> (ok, pending + 1, err, skip, lint)
+  let results = Node.flatten (fun ~job_id:_ ~result -> result) results in
+  let (ok, pending, err, skip, lint) =
+    Index.Job_map.fold (fun _ result (ok, pending, err, skip, lint) ->
+      match result with
+      | Ok `Analysed -> (ok, pending, err, skip, lint)
+      | Ok `Linted -> (ok, pending, err, skip, lint + 1)
+      | Ok `Built -> (ok + 1, pending, err, skip, lint)
+      | Error `Msg m when Astring.String.is_prefix ~affix:"[SKIP]" m -> (ok, pending, err, skip + 1, lint)
+      | Error `Msg _ -> (ok, pending, err + 1, skip, lint)
+      | Error `Active _ -> (ok, pending + 1, err, skip, lint)
       (* TODO: Find a way to use the labels and error messages to display something more useful *)
-    ) (0, 0, 0, 0, 0)
-  |> fun (ok, pending, err, skip, lint) ->
+    ) results (0, 0, 0, 0, 0)
+  in
   let lint = if lint > 0 then "ok" else "failed" in
   if pending > 0 then Error (`Active `Running)
   else match ok, err, skip with
@@ -339,7 +340,7 @@ let test_repo ~ocluster ~push_status repo =
   in
   let index =
     let+ commit = head
-    and+ jobs = Current.map (Node.flatten (fun ~label ~job_id ~result:_ -> (label, job_id))) builds
+    and+ jobs = Current.map (Node.flatten (fun ~job_id ~result:_ -> job_id)) builds
     and+ status = status in
     let repo = Current_github.Api.Commit.repo_id commit in
     let hash = Current_github.Api.Commit.hash commit in
