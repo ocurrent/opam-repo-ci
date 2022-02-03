@@ -6,7 +6,7 @@ module Github = Current_github
 module Docker = Current_docker.Default
 module Common = Opam_repo_ci_api.Common
 
-let master_distro = Dockerfile_distro.resolve_alias Dockerfile_distro.master_distro
+let master_distro = (Dockerfile_distro.resolve_alias Dockerfile_distro.master_distro :> Dockerfile_distro.t)
 let default_compiler_full = Ocaml_version.Releases.latest
 let default_compiler = Ocaml_version.with_just_major_and_minor default_compiler_full
 
