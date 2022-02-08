@@ -12,21 +12,34 @@ module Spec = struct
 
   let package_to_yojson x = `String (OpamPackage.to_string x)
 
+  type opam_version = [
+    | `V2_0
+    | `V2_1
+  ] [@@deriving to_yojson]
+
   type opam_build = {
     revdep : package option;
     with_tests : bool;
     lower_bounds : bool;
-    opam_version : [`V2_0 | `V2_1];
+    opam_version : opam_version;
+  } [@@deriving to_yojson]
+
+  type revdeps = {
+    opam_version : opam_version;
   } [@@deriving to_yojson]
 
   type ty = [
-    | `Opam of [ `Build of opam_build | `List_revdeps ] * package
+    | `Opam of [ `Build of opam_build | `List_revdeps of revdeps ] * package
   ] [@@deriving to_yojson]
 
   type t = {
     platform : Platform.t;
     ty : ty;
   }
+
+  let opam_version_to_string = function
+    | `V2_0 -> "2.0"
+    | `V2_1 -> "2.1"
 
   let opam ?revdep ~platform ~lower_bounds ~with_tests ~opam_version pkg =
     let ty = `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) in
@@ -38,16 +51,15 @@ module Spec = struct
     | None -> Fmt.string f (OpamPackage.to_string pkg)
 
   let pp_ty f = function
-    | `Opam (`List_revdeps, pkg) ->
-        Fmt.pf f "list revdeps of %s" (OpamPackage.to_string pkg)
+    | `Opam (`List_revdeps { opam_version }, pkg) ->
+        Fmt.pf f "list revdeps of %s, using opam %s"
+          (OpamPackage.to_string pkg)
+          (opam_version_to_string opam_version)
     | `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) ->
       let action = if with_tests then "test" else "build" in
       Fmt.pf f "%s %a%s, using opam %s" action (pp_pkg ?revdep) pkg
         (if lower_bounds then ", lower-bounds" else "")
-        (match opam_version with
-         | `V2_0 -> "2.0"
-         | `V2_1 -> "2.1"
-        )
+        (opam_version_to_string opam_version)
 end
 
 type t = {
@@ -125,7 +137,7 @@ module Op = struct
     let build_spec ~for_docker =
       let base = Image.hash base in
       match ty with
-      | `Opam (`List_revdeps, pkg) -> Opam_build.revdeps ~for_docker ~base ~variant ~pkg
+      | `Opam (`List_revdeps { opam_version }, pkg) -> Opam_build.revdeps ~for_docker ~opam_version ~base ~variant ~pkg
       | `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) -> Opam_build.spec ~for_docker ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_tests ~pkg
     in
     Current.Job.write job
@@ -148,8 +160,8 @@ module Op = struct
       let pkg =
         match ty with
         | `Opam (`Build { revdep = Some revdep; _ }, pkg) -> Printf.sprintf "%s-%s" (OpamPackage.to_string pkg) (OpamPackage.to_string revdep)
-        | `Opam (`List_revdeps, pkg)
-        | `Opam (`Build _, pkg) -> OpamPackage.to_string pkg
+        | `Opam (`List_revdeps { Spec.opam_version }, pkg)
+        | `Opam (`Build { opam_version; _ }, pkg) -> OpamPackage.to_string pkg ^ "@opam-" ^ Spec.opam_version_to_string opam_version
       in
       Printf.sprintf "%s-%s-%s" (Image.hash base) pkg (Git.Commit_id.hash commit)
     in
@@ -158,7 +170,7 @@ module Op = struct
     let build_pool = Current_ocluster.Connection.pool ?urgent ~job ~pool ~action ~cache_hint ~src connection in
     let buffer =
       match ty with
-      | `Opam (`List_revdeps, _) -> Some (Buffer.create 1024)
+      | `Opam (`List_revdeps _, _) -> Some (Buffer.create 1024)
       | _ -> None
     in
     Current.Job.start_with ~pool:build_pool job ~timeout ~level:Current.Level.Average >>= fun build_job ->
@@ -199,7 +211,7 @@ let v t ~label ~spec ~base ~master ~urgent commit =
   BC.run t { Op.Key.pool; commit; variant; ty } ()
   |> Current.Primitive.map_result (Result.map ignore) (* TODO: Create a separate type of cache that doesn't parse the output *)
 
-let list_revdeps t ~platform ~pkgopt ~base ~master ~after commit =
+let list_revdeps t ~platform ~opam_version ~pkgopt ~base ~master ~after commit =
   Current.component "list revdeps" |>
   let> {PackageOpt.pkg; urgent} = pkgopt
   and> base = base
@@ -208,7 +220,7 @@ let list_revdeps t ~platform ~pkgopt ~base ~master ~after commit =
   and> () = after in
   let t = { Op.config = t; master; urgent; base } in
   let { Platform.pool; variant; label = _ } = platform in
-  let ty = `Opam (`List_revdeps, pkg) in
+  let ty = `Opam (`List_revdeps { Spec.opam_version }, pkg) in
   BC.run t { Op.Key.pool; commit; variant; ty } ()
   |> Current.Primitive.map_result (Result.map (fun output ->
       String.split_on_char '\n' output |>

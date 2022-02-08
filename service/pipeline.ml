@@ -94,7 +94,7 @@ let revdep_spec ~platform ~opam_version ~revdep pkg =
    (using [spec] and [base], merging [source] into [master]). *)
 let test_revdeps ~ocluster ~opam_version ~master ~base ~platform ~pkgopt ~after source =
   let revdeps =
-    Build.list_revdeps ~base ocluster ~platform ~pkgopt ~master ~after source |>
+    Build.list_revdeps ~base ocluster ~platform ~opam_version ~pkgopt ~master ~after source |>
     Current.map OpamPackage.Set.elements
   in
   let pkg = Current.map (fun {PackageOpt.pkg = pkg; urgent = _} -> pkg) pkgopt in

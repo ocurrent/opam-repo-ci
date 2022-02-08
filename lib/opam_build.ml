@@ -105,12 +105,11 @@ let spec ~for_docker ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_te
     @ tests
   )
 
-let revdeps ~for_docker ~base ~variant ~pkg =
+let revdeps ~for_docker ~opam_version ~base ~variant ~pkg =
   let open Obuilder_spec in
   let pkg = Filename.quote (OpamPackage.to_string pkg) in
   Obuilder_spec.stage ~from:base (
-    (* TODO: Switch to opam 2.1 when https://github.com/ocaml/opam/issues/4311 is fixed *)
-    setup_repository ~variant ~for_docker ~opam_version:`V2_0
+    setup_repository ~variant ~for_docker ~opam_version
     @ [
       run "echo '@@@OUTPUT' && \
            opam list -s --color=never --depends-on %s --coinstallable-with %s --installable --all-versions --recursive --depopts && \
