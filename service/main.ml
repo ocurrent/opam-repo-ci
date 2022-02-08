@@ -32,6 +32,11 @@ let add_default_matching_log_rules () =
       let default_rules =
         let open Current.Log_matcher in
         [
+          { (* See lib/opam_build.ml *)
+            pattern = {|[\n]@@@FAILED-DEPENDS@@@[\n]|};
+            report = {|[SKIP] Dependency failed|};
+            score = 100;
+          };
           { (* Opam when the package or one of its dependencies has available: <non-compatible-condition> *)
             pattern = {|[\n]\[ERROR\] .+ unmet availability conditions: .+[\n]|};
             report = {|[SKIP] Package not available|};

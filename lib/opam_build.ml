@@ -26,7 +26,7 @@ let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
     run ~network "opam %s" (match opam_version with `V2_1 -> "update --depexts" | `V2_0 -> "depext -u");
     (* TODO: Replace by two calls to opam install + opam install -t using the OPAMDROPINSTALLEDPACKAGES feature *)
     run ~cache ~network
-      {|opam remove %s%s && opam install --deps-only%s %s && opam install -v%s %s;
+      {|opam remove %s%s && (opam install --deps-only%s %s || echo @@@FAILED-DEPENDS@@@) && opam install -v%s %s;
         res=$?;
         test "$res" != 31 && exit "$res";
         export OPAMCLI=2.0;
