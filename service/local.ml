@@ -49,7 +49,7 @@ let submission_service =
 
 let cmd =
   let doc = "Test opam-repo-ci on a local Git clone" in
-  Term.(term_result (const main $ Current.Config.cmdliner $ Current_web.cmdliner $ Capnp_setup.cmdliner $ submission_service $ Current_github.Api.cmdliner $ repo)),
-  Term.info "opam-repo-ci-local" ~doc
+  let info = Cmd.info "opam-repo-ci-local" ~doc in
+  Cmd.v info Term.(term_result (const main $ Current.Config.cmdliner $ Current_web.cmdliner $ Capnp_setup.cmdliner $ submission_service $ Current_github.Api.cmdliner $ repo))
 
-let () = Term.(exit @@ eval cmd)
+let () = exit @@ Cmd.eval cmd
