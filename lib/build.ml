@@ -151,28 +151,20 @@ module Op = struct
         | `Opam (`List_revdeps, pkg)
         | `Opam (`Build _, pkg) -> OpamPackage.to_string pkg
       in
-      Printf.sprintf "%s-%s" (Image.hash base) pkg
+      Printf.sprintf "%s-%s-%s" (Image.hash base) pkg (Git.Commit_id.hash commit)
     in
     Current.Job.log job "Using cache hint %S" cache_hint;
     Current.Job.log job "Using OBuilder spec:@.%s@." spec_str;
     let build_pool = Current_ocluster.Connection.pool ?urgent ~job ~pool ~action ~cache_hint ~src connection in
-    let is_nnpchecker = Option.equal String.equal variant.Variant.ocaml_variant (Some "nnpchecker") in
     let buffer =
       match ty with
       | `Opam (`List_revdeps, _) -> Some (Buffer.create 1024)
-      | _ when is_nnpchecker -> Some (Buffer.create 50_000)
       | _ -> None
     in
     Current.Job.start_with ~pool:build_pool job ~timeout ~level:Current.Level.Average >>= fun build_job ->
     Capability.with_ref build_job (run_job ?buffer ~job) >>!= fun (_ : string) ->
     match buffer with
     | None -> Lwt_result.return ""
-    | Some buffer when is_nnpchecker ->
-        (* TODO: Remove this hack when we switch to OCaml 4.13. See https://github.com/ocaml/ocaml/pull/10171 *)
-        begin match Astring.String.find_sub ~rev:true ~sub:"Out-of-heap pointer at " (Buffer.contents buffer) with
-        | None -> Lwt_result.return ""
-        | Some _ -> Lwt_result.fail (`Msg "Naked pointers detected")
-        end
     | Some buffer ->
       match Astring.String.cuts ~sep:"\n@@@OUTPUT\n" (Buffer.contents buffer) with
       | [_; output; _] -> Lwt_result.return output
@@ -207,25 +199,26 @@ let v t ~label ~spec ~base ~master ~urgent commit =
   BC.run t { Op.Key.pool; commit; variant; ty } ()
   |> Current.Primitive.map_result (Result.map ignore) (* TODO: Create a separate type of cache that doesn't parse the output *)
 
-let list_revdeps t ~platform ~pkgopt ~base ~master commit =
+let list_revdeps t ~platform ~pkgopt ~base ~master ~after commit =
   Current.component "list revdeps" |>
   let> {PackageOpt.pkg; urgent} = pkgopt
   and> base = base
   and> commit = commit
-  and> master = master in
+  and> master = master
+  and> () = after in
   let t = { Op.config = t; master; urgent; base } in
   let { Platform.pool; variant; label = _ } = platform in
   let ty = `Opam (`List_revdeps, pkg) in
   BC.run t { Op.Key.pool; commit; variant; ty } ()
   |> Current.Primitive.map_result (Result.map (fun output ->
       String.split_on_char '\n' output |>
-      List.filter_map (function
-          | "" -> None
+      List.fold_left (fun acc -> function
+          | "" -> acc
           | revdep ->
               let revdep = OpamPackage.of_string revdep in
               if OpamPackage.equal pkg revdep then
-                None (* NOTE: opam list --recursive --depends-on <pkg> also returns <pkg> itself *)
+                acc (* NOTE: opam list --recursive --depends-on <pkg> also returns <pkg> itself *)
               else
-                Some revdep
-        )
+                OpamPackage.Set.add revdep acc
+        ) OpamPackage.Set.empty
     ))

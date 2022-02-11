@@ -10,11 +10,13 @@ type build_status = [ `Not_started | `Pending | `Failed | `Passed ]
 val init : unit -> unit
 (** Ensure the database is initialised (for unit-tests). *)
 
+module Job_map : module type of Astring.String.Map
+
 val record :
   repo:Current_github.Repo_id.t ->
   hash:string ->
   status:build_status ->
-  (string * Current.job_id option) list ->
+  Current.job_id option Job_map.t ->
   unit
 (** [record ~repo ~hash jobs] updates the entry for [repo, hash] to point at [jobs]. *)
 

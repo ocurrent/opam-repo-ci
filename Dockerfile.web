@@ -1,9 +1,8 @@
-FROM ocaml/opam:debian-11-ocaml-4.12 AS build
+FROM ocaml/opam:debian-11-ocaml-4.13@sha256:41a176aa60a2573e6d99c41c9250f3aac726f97ee630a581d58cf31ce8cb9e58 AS build
 RUN sudo apt-get update && sudo apt-get install libev-dev capnproto m4 pkg-config libgmp-dev libffi-dev -y --no-install-recommends
 RUN cd ~/opam-repository && git pull origin master && git reset --hard dd31bfa892e6408a76cefd5a446edb1a757fe009 && opam update
 COPY --chown=opam \
 	ocurrent/current_rpc.opam \
-	ocurrent/current_ansi.opam \
 	/src/ocurrent/
 WORKDIR /src
 RUN opam pin -yn add ./ocurrent
@@ -13,7 +12,7 @@ ADD --chown=opam . .
 RUN opam config exec -- dune build ./_build/install/default/bin/opam-repo-ci-web
 
 FROM debian:11
-RUN apt-get update && apt-get install libev4 dumb-init -y --no-install-recommends
+RUN apt-get update && apt-get install ca-certificates libev4 dumb-init -y --no-install-recommends
 WORKDIR /
 ENTRYPOINT ["dumb-init", "/usr/local/bin/opam-repo-ci-web"]
 COPY --from=build /src/_build/install/default/bin/opam-repo-ci-web /usr/local/bin/

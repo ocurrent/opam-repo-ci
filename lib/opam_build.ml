@@ -45,6 +45,11 @@ let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
 let setup_repository ~variant ~for_docker ~opam_version =
   let open Obuilder_spec in
   user ~uid:1000 ~gid:1000 ::
+  run "for pkg in $(opam pin list --short); do opam pin remove \"$pkg\"; done" :: (* The ocaml/opam base images have a pin to their compiler package.
+                                                                                     Such pin is useless for opam 2.0 as we don't use --unlock-base,
+                                                                                     and causes issues for opam 2.1 as it allows to upgrade the compiler
+                                                                                     package (not what we want)
+                                                                                     See: https://github.com/ocaml/opam/issues/4501 *)
   run "opam repository remove -a multicore || true" :: (* We remove this non-standard repository
                                                           because we don't have access and it hosts
                                                           non-official packages *)

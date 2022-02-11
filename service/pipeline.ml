@@ -6,7 +6,7 @@ module Github = Current_github
 module Docker = Current_docker.Default
 module Common = Opam_repo_ci_api.Common
 
-let master_distro = Dockerfile_distro.resolve_alias Dockerfile_distro.master_distro
+let master_distro = (Dockerfile_distro.resolve_alias Dockerfile_distro.master_distro :> Dockerfile_distro.t)
 let default_compiler_full = Ocaml_version.Releases.latest
 let default_compiler = Ocaml_version.with_just_major_and_minor default_compiler_full
 
@@ -90,22 +90,17 @@ let revdep_spec ~platform ~opam_version ~revdep pkg =
   in
   Build.Spec.opam ~platform ~lower_bounds:false ~with_tests:true ~revdep ~opam_version pkg
 
-let combine_revdeps revdeps =
-  let map =
-    List.fold_left (fun set pkg -> OpamPackage.Set.add pkg set) OpamPackage.Set.empty revdeps
-  in
-  OpamPackage.Set.elements map
-
 (* List the revdeps of [pkg] (using [builder] and [image]) and test each one
    (using [spec] and [base], merging [source] into [master]). *)
-let test_revdeps ~ocluster ~opam_version ~master ~base ~platform ~pkgopt ~after:main_build source =
-  let revdeps = Build.list_revdeps ~base ocluster ~platform ~pkgopt ~master source in
-  let revdeps = Current.map combine_revdeps revdeps in
+let test_revdeps ~ocluster ~opam_version ~master ~base ~platform ~pkgopt ~after source =
+  let revdeps =
+    Build.list_revdeps ~base ocluster ~platform ~pkgopt ~master ~after source |>
+    Current.map OpamPackage.Set.elements
+  in
   let pkg = Current.map (fun {PackageOpt.pkg = pkg; urgent = _} -> pkg) pkgopt in
   let urgent = Current.map (fun {PackageOpt.pkg = _; urgent} -> urgent) pkgopt in
   let+ tests =
     revdeps
-    |> Current.gate ~on:main_build
     |> dep_list_map (module OpamPackage) (fun revdep ->
         let image =
           let spec = revdep_spec ~platform ~opam_version ~revdep pkg in
@@ -268,18 +263,19 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
   ]
 
 let summarise results =
-  results
-  |> Node.flatten (fun ~label ~job_id:_ ~result -> (label, result))
-  |> List.fold_left (fun (ok, pending, err, skip, lint) -> function
-      | _, Ok `Analysed -> (ok, pending, err, skip, lint)
-      | _, Ok `Linted -> (ok, pending, err, skip, lint + 1)
-      | _, Ok `Built -> (ok + 1, pending, err, skip, lint)
-      | _, Error `Msg m when Astring.String.is_prefix ~affix:"[SKIP]" m -> (ok, pending, err, skip + 1, lint)
-      | _, Error `Msg _ -> (ok, pending, err + 1, skip, lint)
-      | _, Error `Active _ -> (ok, pending + 1, err, skip, lint)
+  let results = Node.flatten (fun ~job_id:_ ~result -> result) results in
+  let (ok, pending, err, skip, lint) =
+    Index.Job_map.fold (fun _ result (ok, pending, err, skip, lint) ->
+      match result with
+      | Ok `Analysed -> (ok, pending, err, skip, lint)
+      | Ok `Linted -> (ok, pending, err, skip, lint + 1)
+      | Ok `Built -> (ok + 1, pending, err, skip, lint)
+      | Error `Msg m when Astring.String.is_prefix ~affix:"[SKIP]" m -> (ok, pending, err, skip + 1, lint)
+      | Error `Msg _ -> (ok, pending, err + 1, skip, lint)
+      | Error `Active _ -> (ok, pending + 1, err, skip, lint)
       (* TODO: Find a way to use the labels and error messages to display something more useful *)
-    ) (0, 0, 0, 0, 0)
-  |> fun (ok, pending, err, skip, lint) ->
+    ) results (0, 0, 0, 0, 0)
+  in
   let lint = if lint > 0 then "ok" else "failed" in
   if pending > 0 then Error (`Active `Running)
   else match ok, err, skip with
@@ -344,7 +340,7 @@ let test_repo ~ocluster ~push_status repo =
   in
   let index =
     let+ commit = head
-    and+ jobs = Current.map (Node.flatten (fun ~label ~job_id ~result:_ -> (label, job_id))) builds
+    and+ jobs = Current.map (Node.flatten (fun ~job_id ~result:_ -> job_id)) builds
     and+ status = status in
     let repo = Current_github.Api.Commit.repo_id commit in
     let hash = Current_github.Api.Commit.hash commit in

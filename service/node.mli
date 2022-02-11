@@ -1,3 +1,5 @@
+open Opam_repo_ci
+
 type action
 (** A result *)
 
@@ -24,10 +26,9 @@ val action : [ `Built | `Analysed | `Linted ] -> _ Current.t -> action Current.t
     is always successful and immediately available. *)
 
 val flatten :
-  (label:string ->
-   job_id:string option ->
+  (job_id:string option ->
    result:[ `Built | `Analysed | `Linted ] Current_term.Output.t -> 'a) ->
-  t -> 'a list
+  t -> 'a Index.Job_map.t
 (** [flatten f t] converts the tree to a list, applying [f] to each element. *)
 
 val dump : t Fmt.t

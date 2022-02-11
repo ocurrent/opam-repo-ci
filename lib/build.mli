@@ -31,5 +31,6 @@ val list_revdeps :
   pkgopt:PackageOpt.t Current.t ->
   base:Current_docker.Raw.Image.t Current.t ->
   master:Current_git.Commit.t Current.t ->
+  after:unit Current.t ->
   Current_git.Commit_id.t Current.t ->
-  OpamPackage.t list Current.t
+  OpamPackage.Set.t Current.t
