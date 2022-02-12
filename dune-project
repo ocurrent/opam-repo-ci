@@ -66,7 +66,7 @@
   current_rpc
   current_ansi
   prometheus-app
-  cmdliner
+  (cmdliner (>= 1.1.0))
   lwt
   (cohttp-lwt-unix (>= 2.2.0))
   (mirage-crypto-rng (>= 0.8.8))

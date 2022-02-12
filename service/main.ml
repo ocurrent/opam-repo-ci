@@ -116,8 +116,8 @@ let submission_service =
 
 let cmd =
   let doc = "Build OCaml projects on GitHub" in
-  Term.(term_result (const main $ Current.Config.cmdliner $ Current_web.cmdliner $
-                     Current_github.App.cmdliner $ Capnp_setup.cmdliner $ Current_github.Auth.cmdliner $ submission_service)),
-  Term.info "opam-repo-ci" ~doc
+  let info = Cmd.info "opam-repo-ci" ~doc in
+  Cmd.v info Term.(term_result (const main $ Current.Config.cmdliner $ Current_web.cmdliner $
+                     Current_github.App.cmdliner $ Capnp_setup.cmdliner $ Current_github.Auth.cmdliner $ submission_service))
 
-let () = Term.(exit @@ eval cmd)
+let () = exit @@ Cmd.eval cmd

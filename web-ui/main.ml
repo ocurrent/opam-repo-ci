@@ -70,9 +70,9 @@ let backend_cap =
     ~docv:"CAP"
     ["backend"]
 
-let cmd : unit Term.t * Term.info =
+let cmd =
   let doc = "A web front-end for opam-repo-ci" in
-  Term.(const main $ port $ backend_cap $ Prometheus_unix.opts),
-  Term.info "opam-repo-ci-web" ~doc
+  let info = Cmd.info "opam-repo-ci-web" ~doc in
+  Cmd.v info Term.(const main $ port $ backend_cap $ Prometheus_unix.opts)
 
-let () = Term.(exit @@ eval cmd)
+let () = exit @@ Cmd.eval cmd
