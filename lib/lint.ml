@@ -333,7 +333,7 @@ module Lint = struct
 
   let pp f _ = Fmt.string f "Lint"
 
-  let auto_cancel = false
+  let auto_cancel = true
   let latched = true
 end
 
