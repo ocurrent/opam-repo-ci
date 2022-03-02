@@ -136,7 +136,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
           match Variant.os variant with
           | `macOS ->
               Current.return (Build.MacOS (Variant.docker_tag variant))
-          | `linux -> (* TODO: Use docker images as base for both macOS and linux *)
+          | `linux | `windows -> (* TODO: Use docker images as base for both macOS and linux *)
               let+ repo_id =
                 Docker.peek ~schedule:weekly ~arch:(Ocaml_version.to_docker_arch arch)
                   ("ocaml/opam:" ^ Variant.docker_tag variant)
@@ -190,8 +190,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
       let variant = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(v, None) in
       build ~opam_version ~lower_bounds:true ~revdeps v variant
     )
-  in
-  let linux_distributions =
+  and linux_distributions =
     let build ~distro ~arch ~compiler =
       let variant = Variant.v ~arch ~distro ~compiler in
       let label = Fmt.str "%s-ocaml-%s" distro (Variant.pp_ocaml_version variant) in
@@ -210,8 +209,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
           build ~arch:`X86_64 ~distro ~compiler:(comp, None) :: acc
       ) acc (Distro.active_distros `X86_64)
     ) [] default_compilers
-  in
-  let macos =
+  and macos =
     let build ~distro ~arch ~compiler =
       let variant = Variant.v ~arch ~distro ~compiler in
       let label = Fmt.str "%s-%s" (Variant.docker_tag variant) (Ocaml_version.string_of_arch arch) in
@@ -224,8 +222,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
         build ~distro:homebrew ~arch ~compiler:(comp, None) :: acc
       ) acc [`Aarch64; `X86_64]
     ) [] default_compilers
-  in
-  let lint = Node.action `Linted lint
+  and lint = Node.action `Linted lint
   and extras =
     let build ~opam_version ~distro ~arch ~compiler label =
       let variant = Variant.v ~arch ~distro ~compiler in

@@ -34,6 +34,7 @@ let pool_of_arch variant =
   let os = match Variant.os variant with
     | `macOS -> "macos"
     | `linux -> "linux"
+    | `windows -> "windows"
   in
   let arch = match Variant.arch variant with
     | `X86_64 | `I386 -> "x86_64"

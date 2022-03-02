@@ -9,7 +9,7 @@ val pp_ocaml_version : t -> string
 val arch : t -> arch
 val docker_tag : t -> string
 val distribution : t -> string
-val os : t -> [`linux | `macOS]
+val os : t -> [`linux | `macOS | `windows]
 
 val pp : t Fmt.t
 
