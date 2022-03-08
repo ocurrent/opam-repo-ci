@@ -205,7 +205,9 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
       Dockerfile_distro.active_distros `X86_64 |>
       List.fold_left (fun acc distro ->
         if Dockerfile_distro.compare distro master_distro = 0 (* TODO: Add Dockerfile_distro.equal *)
-        || Dockerfile_distro.os_family_of_distro distro <> `Linux then (* TODO: Unlock this when Windows is ready *)
+        || Dockerfile_distro.os_family_of_distro distro <> `Linux (* TODO: Unlock this when Windows is ready *)
+        || Dockerfile_distro.compare distro (`CentOS `V7 : Dockerfile_distro.t) = 0
+        || Dockerfile_distro.compare distro (`OracleLinux `V7 : Dockerfile_distro.t) = 0 then
           acc
         else
           let distro = Dockerfile_distro.tag_of_distro distro in
@@ -224,9 +226,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
   in
   let+ analysis = Node.action `Analysed analysis
   and+ lint = Node.action `Linted lint
-  and+ compilers_2_0 = compilers ~opam_version:`V2_0
   and+ compilers_2_1 = compilers ~opam_version:`V2_1
-  and+ distributions_2_0 = distributions ~opam_version:`V2_0
   and+ distributions_2_1 = distributions ~opam_version:`V2_1
   and+ extras =
     let master_distro = Dockerfile_distro.tag_of_distro master_distro in
@@ -254,12 +254,6 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
       ) Ocaml_version.arches
     )
   in
-  let opam_2_0 =
-    [
-      Node.branch ~label:"compilers" compilers_2_0;
-      Node.branch ~label:"distributions" distributions_2_0;
-    ]
-  in
   let opam_2_1 =
     [
       Node.branch ~label:"compilers" compilers_2_1;
@@ -270,7 +264,6 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
   Node.root [
     Node.leaf ~label:"(analysis)" analysis;
     Node.leaf ~label:"(lint)" lint;
-    Node.branch ~label:"opam-2.0" opam_2_0;
     Node.branch ~label:"opam-2.1" opam_2_1;
   ]
 
