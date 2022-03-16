@@ -164,12 +164,12 @@ module Op = struct
     Current.Job.log job "Using cache hint %S" cache_hint;
     Current.Job.log job "Using OBuilder spec:@.%s@." spec_str;
     let build_pool = Current_ocluster.Connection.pool ?urgent ~job ~pool ~action ~cache_hint ~src connection in
+    Current.Job.start_with ~pool:build_pool job ~timeout ~level:Current.Level.Average >>= fun build_job ->
     let buffer =
       match ty with
       | `Opam (`List_revdeps, _) -> Some (Buffer.create 1024)
       | _ -> None
     in
-    Current.Job.start_with ~pool:build_pool job ~timeout ~level:Current.Level.Average >>= fun build_job ->
     Capability.with_ref build_job (run_job ?buffer ~job) >>!= fun (_ : string) ->
     match buffer with
     | None -> Lwt_result.return ""
