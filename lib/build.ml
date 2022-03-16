@@ -128,19 +128,19 @@ module Op = struct
       | `Opam (`List_revdeps, pkg) -> Opam_build.revdeps ~for_docker ~base ~variant ~pkg
       | `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) -> Opam_build.spec ~for_docker ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_tests ~pkg
     in
-    Current.Job.write job
-      (Fmt.str "@.\
-                To reproduce locally:@.@.\
-                %a@.\
-                git fetch origin master@.\
-                git merge %s@.\
-                cat > ../Dockerfile <<'END-OF-DOCKERFILE'@.\
-                \o033[34m%s\o033[0m@.\
-                END-OF-DOCKERFILE@.\
-                docker build -f ../Dockerfile .@.@."
-         Current_git.Commit_id.pp_user_clone commit
-         master
-         (Obuilder_spec.Docker.dockerfile_of_spec ~buildkit:false (build_spec ~for_docker:true)));
+    Current.Job.log job
+      "@.\
+       To reproduce locally:@.@.\
+       %a@.\
+       git fetch origin master@.\
+       git merge %s@.\
+       cat > ../Dockerfile <<'END-OF-DOCKERFILE'@.\
+       \o033[34m%s\o033[0m@.\
+       END-OF-DOCKERFILE@.\
+       docker build -f ../Dockerfile .@.@."
+      Current_git.Commit_id.pp_user_clone commit
+      master
+      (Obuilder_spec.Docker.dockerfile_of_spec ~buildkit:false (build_spec ~for_docker:true));
     let spec_str = Fmt.to_to_string Obuilder_spec.pp (build_spec ~for_docker:false) in
     let action = Cluster_api.Submission.obuilder_build spec_str in
     let src = (Git.Commit_id.repo commit, [master; Git.Commit_id.hash commit]) in
@@ -156,12 +156,12 @@ module Op = struct
     Current.Job.log job "Using cache hint %S" cache_hint;
     Current.Job.log job "Using OBuilder spec:@.%s@." spec_str;
     let build_pool = Current_ocluster.Connection.pool ?urgent ~job ~pool ~action ~cache_hint ~src connection in
+    Current.Job.start_with ~pool:build_pool job ~timeout ~level:Current.Level.Average >>= fun build_job ->
     let buffer =
       match ty with
       | `Opam (`List_revdeps, _) -> Some (Buffer.create 1024)
       | _ -> None
     in
-    Current.Job.start_with ~pool:build_pool job ~timeout ~level:Current.Level.Average >>= fun build_job ->
     Capability.with_ref build_job (run_job ?buffer ~job) >>!= fun (_ : string) ->
     match buffer with
     | None -> Lwt_result.return ""

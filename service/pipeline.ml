@@ -56,22 +56,6 @@ let with_label l t =
   let> v = t in
   Current.Primitive.const v
 
-(* [dep_list_map] is like [Current.list_map], except that the output is fixed to the empty list until
-   the input is successful. You must ensure that the status of the input is reported elsewhere. *)
-let dep_list_map (type a) (module M : Current_term.S.ORDERED with type t = a) ?collapse_key f input =
-  let results = Current.list_map ?collapse_key (module M) f input in
-  let+ state = Current.state ~hidden:true results
-  and+ input = Current.state ~hidden:true input
-  in
-  match input, state with
-  | Error _, _ -> []
-  | Ok _, Ok x -> x
-  (* The results of a [dep_list_map] are nodes, so they should always be ready and successful. *)
-  | Ok _, Error (`Msg m) -> failwith m
-  | Ok _, Error (`Active _) ->
-    Logs.warn (fun f -> f "dep_list_map: input is ready but output is pending!");
-    []
-
 let build_spec ~platform ~opam_version pkg =
   let+ pkg = pkg in
   Build.Spec.opam ~platform ~lower_bounds:false ~with_tests:false ~opam_version pkg
@@ -99,21 +83,21 @@ let test_revdeps ~ocluster ~opam_version ~master ~base ~platform ~pkgopt ~after 
   in
   let pkg = Current.map (fun {PackageOpt.pkg = pkg; urgent = _} -> pkg) pkgopt in
   let urgent = Current.map (fun {PackageOpt.pkg = _; urgent} -> urgent) pkgopt in
-  let+ tests =
+  let tests =
     revdeps
-    |> dep_list_map (module OpamPackage) (fun revdep ->
+    |> Node.list_map (module OpamPackage) (fun revdep ->
         let image =
           let spec = revdep_spec ~platform ~opam_version ~revdep pkg in
           Build.v ocluster ~label:"build" ~base ~spec ~master ~urgent source
         in
-        let+ label = Current.map OpamPackage.to_string revdep
-        and+ build = Node.action `Built image
+        let label = Current.map OpamPackage.to_string revdep
+        and build = Node.action `Built image
         in
-        Node.leaf ~label build
+        Node.leaf_dyn ~label build
       )
-  and+ list_revdeps = Node.action `Analysed revdeps
+  and list_revdeps = Node.action `Analysed revdeps
   in
-  [Node.actioned_branch ~label:"revdeps" list_revdeps tests]
+  Node.actioned_branch ~label:"revdeps" list_revdeps [tests]
 
 let get_significant_available_pkg = function
   | pkg, Analyse.Analysis.New -> Some {PackageOpt.pkg; urgent = None}
@@ -136,7 +120,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
       and+ pkgs = pkgs in
       pkgs
     in
-    pkgs |> dep_list_map ~collapse_key:"pkg" (module PackageOpt) (fun pkgopt ->
+    pkgs |> Node.list_map ~collapse_key:"pkg" (module PackageOpt) (fun pkgopt ->
         let pkg = Current.map (fun {PackageOpt.pkg; urgent = _} -> pkg) pkgopt in
         let urgent = Current.return None in
         let base =
@@ -153,94 +137,87 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
           let spec = test_spec ~platform ~opam_version pkg in
           Build.v ocluster ~label:"test" ~base ~spec ~master ~urgent source
         in
-        let+ pkg = pkg
-        and+ build = Node.action `Built image
-        and+ tests = Node.action `Built tests
-        and+ lower_bounds_check =
+        let build = Node.action `Built image
+        and tests = Node.action `Built tests
+        and lower_bounds_check =
           match opam_version, lower_bounds with
           | `V2_1, true ->
             let action =
               let spec = lower_bounds_spec ~platform ~opam_version pkg in
               Build.v ocluster ~label:"lower-bounds" ~base ~spec ~master ~urgent source
             in
-            let+ action = Node.action `Built action in
-            [Node.leaf ~label:"lower-bounds" action]
+            let action = Node.action `Built action in
+            Node.leaf ~label:"lower-bounds" action
           | `V2_0, true
           | (`V2_1 | `V2_0), false ->
-            Current.return []
-        and+ revdeps =
+            Node.empty
+        and revdeps =
           if revdeps then test_revdeps ~ocluster ~opam_version ~master ~base ~platform ~pkgopt source ~after:image
-          else Current.return []
+          else Node.empty
         in
-        let label = OpamPackage.to_string pkg in
-        Node.actioned_branch ~label build (
-          Node.leaf ~label:"tests" tests ::
-          lower_bounds_check @
-          revdeps
-        )
+        let label = Current.map OpamPackage.to_string pkg in
+        Node.actioned_branch_dyn ~label build [
+          Node.leaf ~label:"tests" tests;
+          lower_bounds_check;
+          revdeps;
+        ]
       )
-    |> Current.map (Node.branch ~label)
-    |> Current.collapse ~key:"platform" ~value:label ~input:analysis
+    |> (fun x -> Node.branch ~label [x])
+    |> Node.collapse ~key:"platform" ~value:label ~input:analysis
   in
   let compilers ~opam_version =
-    Current.list_seq begin
-      let master_distro = Dockerfile_distro.tag_of_distro master_distro in
-      (Ocaml_version.Releases.recent @ Ocaml_version.Releases.unreleased_betas) |>
-      List.map (fun v ->
-        let v = Ocaml_version.with_just_major_and_minor v in
-        let revdeps = Ocaml_version.equal v default_compiler in (* TODO: Remove this when the cluster is ready *)
-        let v = Ocaml_version.to_string v in
-        let variant = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(v, None) in
-        build ~opam_version ~lower_bounds:true ~revdeps v variant
-      )
-    end
+    let master_distro = Dockerfile_distro.tag_of_distro master_distro in
+    (Ocaml_version.Releases.recent @ Ocaml_version.Releases.unreleased_betas) |>
+    List.map (fun v ->
+      let v = Ocaml_version.with_just_major_and_minor v in
+      let revdeps = Ocaml_version.equal v default_compiler in (* TODO: Remove this when the cluster is ready *)
+      let v = Ocaml_version.to_string v in
+      let variant = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(v, None) in
+      build ~opam_version ~lower_bounds:true ~revdeps v variant
+    )
   in
   let distributions ~opam_version =
-    Current.list_seq begin
-      let default_compiler = Ocaml_version.to_string default_compiler in
-      Dockerfile_distro.active_distros `X86_64 |>
-      List.fold_left (fun acc distro ->
-        if Dockerfile_distro.compare distro master_distro = 0 (* TODO: Add Dockerfile_distro.equal *)
-        || Dockerfile_distro.os_family_of_distro distro <> `Linux then (* TODO: Unlock this when Windows is ready *)
-          acc
-        else
-          let distro = Dockerfile_distro.tag_of_distro distro in
-          let variant = Variant.v ~arch:`X86_64 ~distro ~compiler:(default_compiler, None) in
-          build ~opam_version ~lower_bounds:false ~revdeps:false distro variant :: acc
-      ) []
-    end
+    let default_compiler = Ocaml_version.to_string default_compiler in
+    Dockerfile_distro.active_distros `X86_64 |>
+    List.fold_left (fun acc distro ->
+      if Dockerfile_distro.compare distro master_distro = 0 (* TODO: Add Dockerfile_distro.equal *)
+      || Dockerfile_distro.os_family_of_distro distro <> `Linux then (* TODO: Unlock this when Windows is ready *)
+        acc
+      else
+        let distro = Dockerfile_distro.tag_of_distro distro in
+        let variant = Variant.v ~arch:`X86_64 ~distro ~compiler:(default_compiler, None) in
+        build ~opam_version ~lower_bounds:false ~revdeps:false distro variant :: acc
+    ) []
   in
-  let+ analysis = Node.action `Analysed analysis
-  and+ lint = Node.action `Linted lint
-  and+ compilers_2_0 = compilers ~opam_version:`V2_0
-  and+ compilers_2_1 = compilers ~opam_version:`V2_1
-  and+ distributions_2_0 = distributions ~opam_version:`V2_0
-  and+ distributions_2_1 = distributions ~opam_version:`V2_1
-  and+ extras =
+  let analysis = Node.action `Analysed analysis
+  and lint = Node.action `Linted lint
+  and compilers_2_0 = compilers ~opam_version:`V2_0
+  and compilers_2_1 = compilers ~opam_version:`V2_1
+  and distributions_2_0 = distributions ~opam_version:`V2_0
+  and distributions_2_1 = distributions ~opam_version:`V2_1
+  and extras =
     let master_distro = Dockerfile_distro.tag_of_distro master_distro in
     let default_comp = Ocaml_version.to_string default_compiler in
-    Current.list_seq (
-      (* TODO: Remove this when OCaml 5.00 is merged and available in a docker image *)
-      build ~opam_version:`V2_1 ~lower_bounds:false ~revdeps:false "domains" (Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:("4.12", Some "domains")) ::
-      build ~opam_version:`V2_1 ~lower_bounds:false ~revdeps:false "domains-effects" (Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:("4.12", Some "domains-effects")) ::
-      List.filter_map (fun v ->
-        match Ocaml_version.extra v with
-        | None -> None
-        | Some label ->
-            (* TODO: This should be in ocaml-version or ocaml-dockerfile *)
-            (* TODO: The same code is used in docker-base-images *)
-            let label = String.map (function '+' -> '-' | c -> c) label in
-            let variant = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(default_comp, Some label) in
-            Some (build ~opam_version:`V2_1 ~lower_bounds:false ~revdeps:false label variant)
-      ) (Ocaml_version.Opam.V2.switches `X86_64 default_compiler_full) @
-      List.filter_map (function
-        | `X86_64 -> None
-        | arch ->
-            let label = Ocaml_version.to_opam_arch arch in
-            let variant = Variant.v ~arch ~distro:master_distro ~compiler:(default_comp, None) in
-            Some (build ~opam_version:`V2_1 ~lower_bounds:false ~revdeps:false label variant)
-      ) Ocaml_version.arches
-    )
+    (* TODO: Remove this when OCaml 5.00 is merged and available in a docker image *)
+    build ~opam_version:`V2_1 ~lower_bounds:false ~revdeps:false "domains" (Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:("4.12", Some "domains")) ::
+    build ~opam_version:`V2_1 ~lower_bounds:false ~revdeps:false "domains-effects" (Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:("4.12", Some "domains-effects")) ::
+    List.filter_map (fun v ->
+      match Ocaml_version.extra v with
+      | None -> None
+      | Some label ->
+          (* TODO: This should be in ocaml-version or ocaml-dockerfile *)
+          (* TODO: The same code is used in docker-base-images *)
+          let label = String.map (function '+' -> '-' | c -> c) label in
+          let variant = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(default_comp, Some label) in
+          Some (build ~opam_version:`V2_1 ~lower_bounds:false ~revdeps:false label variant)
+    ) (Ocaml_version.Opam.V2.switches `X86_64 default_compiler_full) @
+    List.filter_map (function
+      | `X86_64 -> None
+      | arch ->
+          let label = Ocaml_version.to_opam_arch arch in
+          let variant = Variant.v ~arch ~distro:master_distro ~compiler:(default_comp, None) in
+          Some (build ~opam_version:`V2_1 ~lower_bounds:false ~revdeps:false label variant)
+    ) Ocaml_version.arches
   in
   let opam_2_0 =
     [
@@ -262,28 +239,46 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
     Node.branch ~label:"opam-2.1" opam_2_1;
   ]
 
-let summarise results =
-  let results = Node.flatten (fun ~job_id:_ ~result -> result) results in
-  let (ok, pending, err, skip, lint) =
-    Index.Job_map.fold (fun _ result (ok, pending, err, skip, lint) ->
-      match result with
-      | Ok `Analysed -> (ok, pending, err, skip, lint)
-      | Ok `Linted -> (ok, pending, err, skip, lint + 1)
-      | Ok `Built -> (ok + 1, pending, err, skip, lint)
-      | Error `Msg m when Astring.String.is_prefix ~affix:"[SKIP]" m -> (ok, pending, err, skip + 1, lint)
-      | Error `Msg _ -> (ok, pending, err + 1, skip, lint)
-      | Error `Active _ -> (ok, pending + 1, err, skip, lint)
-      (* TODO: Find a way to use the labels and error messages to display something more useful *)
-    ) results (0, 0, 0, 0, 0)
-  in
-  let lint = if lint > 0 then "ok" else "failed" in
-  if pending > 0 then Error (`Active `Running)
-  else match ok, err, skip with
-    | 0, 0, 0 -> Ok "No build was necessary"
-    | 0, 0, _skip -> Error (`Msg "Everything was skipped")
-    | ok, 0, 0 -> Ok (Fmt.str "%d jobs passed" ok)
-    | ok, 0, skip -> Ok (Fmt.str "%d jobs passed, %d jobs skipped" ok skip)
-    | ok, err, skip -> Error (`Msg (Fmt.str "%d jobs failed, lint: %s, %d jobs skipped, %d jobs passed" err lint skip ok))
+
+module Summary = struct
+  type t = { ok: int; pending: int; err: int; skip: int; lint: int }
+
+  let merge a b =
+    {
+      ok = a.ok + b.ok;
+      pending = a.pending + b.pending;
+      err = a.err + b.err;
+      skip = a.skip + b.skip;
+      lint = a.lint + b.lint;
+    }
+
+  let empty = { ok = 0; pending = 0; err = 0; skip = 0; lint = 0 }
+  let ok = { empty with ok = 1 }
+  let pending = { empty with pending = 1 }
+  let err = { empty with err = 1 }
+  let skip = { empty with skip = 1 }
+  let lint = { empty with lint = 1 }
+
+  let of_current t =
+    let+ result = Current.state ~hidden:true t in
+    match result with
+    | Ok `Analysed -> empty
+    | Ok `Linted -> lint
+    | Ok `Built -> ok
+    | Error `Msg m when Astring.String.is_prefix ~affix:"[SKIP]" m -> skip
+    | Error `Msg _ -> err
+    | Error `Active _ -> pending
+
+  let to_string { ok; pending; err; skip; lint } =
+    let lint = if lint > 0 then "ok" else "failed" in
+    if pending > 0 then Error (`Active `Running)
+    else match ok, err, skip with
+      | 0, 0, 0 -> Ok "No build was necessary"
+      | 0, 0, _skip -> Error (`Msg "Everything was skipped")
+      | ok, 0, 0 -> Ok (Fmt.str "%d jobs passed" ok)
+      | ok, 0, skip -> Ok (Fmt.str "%d jobs passed, %d jobs skipped" ok skip)
+      | ok, err, skip -> Error (`Msg (Fmt.str "%d jobs failed, lint: %s, %d jobs skipped, %d jobs passed" err lint skip ok))
+end
 
 (* An in-memory-only latch of the last successful value. *)
 let latch ~label x =
@@ -317,12 +312,10 @@ let get_prs repo =
   in
   master, prs
 
-let test_repo ~ocluster ~push_status repo =
-  let master, prs = get_prs repo in
-  let master = latch ~label:"master" master in  (* Don't cancel builds while fetching updates to this *)
-  let prs = set_active_refs ~repo prs in
-  prs |> Current.list_iter ~collapse_key:"pr" (module Github.Api.Commit) @@ fun head ->
+let test_pr ~ocluster ~master ~head =
+  let repo = Current.map Current_github.Api.Commit.repo_id head in
   let commit_id = Current.map Github.Api.Commit.id head in
+  let hash = Current.map Git.Commit_id.hash commit_id in
   let src = Git.fetch commit_id in
   let analysis = Analyse.examine ~master src in
   let lint =
@@ -330,28 +323,49 @@ let test_repo ~ocluster ~push_status repo =
     Lint.check ~master ~packages src
   in
   let builds = build_with_cluster ~ocluster ~analysis ~lint ~master commit_id in
-  let summary = Current.map summarise builds in
+  let+ repo = repo
+  and+ hash = hash
+  and+ summary =
+    Node.flatten builds
+      ~map:{ Node.f = fun ~label kind job ->
+              let db_record =
+                let+ repo = repo
+                and+ hash = hash
+                and+ variant = label
+                and+ job_id = Node.job_id job
+                in
+                Index.record_job ~repo ~hash ~variant ~job_id
+              in
+              let result =
+                let+ _ = job
+                and+ () = db_record
+                in
+                kind
+              in
+              Summary.of_current result
+      }
+      ~merge:Summary.merge
+      ~empty:Summary.empty
+  in
+  let summary = Summary.to_string summary in
   let status =
-    let+ summary = summary in
     match summary with
     | Ok _ -> `Passed
     | Error (`Active `Running) -> `Pending
     | Error (`Msg _) -> `Failed
   in
-  let index =
-    let+ commit = head
-    and+ jobs = Current.map (Node.flatten (fun ~job_id ~result:_ -> job_id)) builds
-    and+ status = status in
-    let repo = Current_github.Api.Commit.repo_id commit in
-    let hash = Current_github.Api.Commit.hash commit in
-    Index.record ~repo ~hash ~status jobs
-  and set_github_status =
-    summary
+  Index.set_status ~repo ~hash status;
+  summary
+
+let test_repo ~ocluster ~push_status repo =
+  let master, prs = get_prs repo in
+  let master = latch ~label:"master" master in  (* Don't cancel builds while fetching updates to this *)
+  let prs = set_active_refs ~repo prs in
+  prs |> Current.list_iter ~collapse_key:"pr" (module Github.Api.Commit) @@ fun head ->
+    test_pr ~ocluster ~master ~head
     |> github_status_of_state ~head
     |> (if push_status then Github.Api.Commit.set_status head "opam-ci"
         else Current.ignore_value)
-  in
-  Current.all [index; set_github_status]
 
 let local_test ~ocluster repo () =
   let { Github.Repo_id.owner; name = _ } = Github.Api.Repo.id repo in
