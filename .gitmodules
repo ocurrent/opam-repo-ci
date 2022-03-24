@@ -14,3 +14,7 @@
 	path = ocaml-version
 	url = https://github.com/ocurrent/ocaml-version.git
 	branch = master
+[submodule "current_incr"]
+	path = current_incr
+	url = https://github.com/art-w/current_incr.git
+	branch = depth
