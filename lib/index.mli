@@ -10,15 +10,13 @@ type build_status = [ `Not_started | `Pending | `Failed | `Passed ]
 val init : unit -> unit
 (** Ensure the database is initialised (for unit-tests). *)
 
-module Job_map : module type of Astring.String.Map
-
-val record :
+val record_job :
   repo:Current_github.Repo_id.t ->
   hash:string ->
-  status:build_status ->
-  Current.job_id option Job_map.t ->
+  variant:string ->
+  job_id:Current.job_id option ->
   unit
-(** [record ~repo ~hash jobs] updates the entry for [repo, hash] to point at [jobs]. *)
+(** [record_job ~repo ~hash ~variant ~job_id] creates or updates the entry for [repo, hash, variant] to point at [job_id]. *)
 
 val is_known_repo : owner:string -> name:string -> bool
 (** [is_known_repo ~owner ~name] is [true] iff there is an entry for a commit in repository [owner/name]. *)
@@ -38,6 +36,14 @@ val get_status:
   hash:string ->
   build_status
 (** [get_status ~owner ~name ~hash] is the latest status for this combination. *)
+
+val set_status:
+  repo:Current_github.Repo_id.t ->
+  hash:string ->
+  build_status ->
+  unit
+(** [set_status ~repo ~hash status] set the latest build [status] of [repo, hash]. *)
+
 
 val get_full_hash : owner:string -> name:string -> string -> (string, [> `Ambiguous | `Unknown | `Invalid]) result
 (** [get_full_hash ~owner ~name short_hash] returns the full hash for [short_hash]. *)

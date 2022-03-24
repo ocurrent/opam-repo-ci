@@ -3,16 +3,12 @@ module Log = (val Logs.src_log src : Logs.LOG)
 
 module Db = Current.Db
 
-module Job_map = Astring.String.Map
-
 type t = {
   db : Sqlite3.db;
   record_job : Sqlite3.stmt;
-  remove : Sqlite3.stmt;
   repo_exists : Sqlite3.stmt;
   get_jobs : Sqlite3.stmt;
   get_job : Sqlite3.stmt;
-  get_job_ids : Sqlite3.stmt;
   list_repos : Sqlite3.stmt;
   full_hash : Sqlite3.stmt;
 }
@@ -45,8 +41,6 @@ CREATE TABLE IF NOT EXISTS ci_build_index (
   let record_job = Sqlite3.prepare db "INSERT OR REPLACE INTO ci_build_index \
                                      (owner, name, hash, variant, job_id) \
                                      VALUES (?, ?, ?, ?, ?)" in
-  let remove = Sqlite3.prepare db "DELETE FROM ci_build_index \
-                                     WHERE owner = ? AND name = ? AND hash = ? AND variant = ?" in
   let list_repos = Sqlite3.prepare db "SELECT DISTINCT name FROM ci_build_index WHERE owner = ?" in
   let repo_exists = Sqlite3.prepare db "SELECT EXISTS (SELECT 1 FROM ci_build_index \
                                                        WHERE owner = ? AND name = ?)" in
@@ -56,32 +50,20 @@ CREATE TABLE IF NOT EXISTS ci_build_index (
                                      WHERE ci_build_index.owner = ? AND ci_build_index.name = ? AND ci_build_index.hash = ?" in
   let get_job = Sqlite3.prepare db "SELECT job_id FROM ci_build_index \
                                      WHERE owner = ? AND name = ? AND hash = ? AND variant = ?" in
-  let get_job_ids = Sqlite3.prepare db "SELECT variant, job_id FROM ci_build_index \
-                                     WHERE owner = ? AND name = ? AND hash = ?" in
   let full_hash = Sqlite3.prepare db "SELECT DISTINCT hash FROM ci_build_index \
                                       WHERE owner = ? AND name = ? AND hash LIKE ?" in
       {
         db;
         record_job;
-        remove;
         repo_exists;
         get_jobs;
         get_job;
-        get_job_ids;
         list_repos;
         full_hash
       }
 )
 
 let init () = ignore (Lazy.force db)
-
-let get_job_ids t ~owner ~name ~hash =
-  Db.query t.get_job_ids Sqlite3.Data.[ TEXT owner; TEXT name; TEXT hash ]
-  |> List.fold_left begin fun acc -> function
-  | Sqlite3.Data.[ TEXT variant; NULL ] -> Job_map.add variant None acc
-  | Sqlite3.Data.[ TEXT variant; TEXT id ] -> Job_map.add variant (Some id) acc
-  | row -> Fmt.failwith "get_job_ids: invalid row %a" Db.dump_row row
-  end Job_map.empty
 
 module Status_cache = struct
   let cache = Hashtbl.create 1_000
@@ -102,40 +84,20 @@ end
 
 let get_status = Status_cache.find
 
-let record ~repo ~hash ~status jobs =
+let set_status ~repo ~hash status =
   let { Current_github.Repo_id.owner; name } = repo in
-  let t = Lazy.force db in
-  let () = Status_cache.add ~owner ~name ~hash status in
-  let previous = get_job_ids t ~owner ~name ~hash in
-  let merge variant prev job =
-    let set job_id =
-      Log.info (fun f -> f "@[<h>Index.record %s/%s %s %s -> %a@]"
-                   owner name (Astring.String.with_range ~len:6 hash) variant Fmt.(option ~none:(any "-") string) job_id);
-      match job_id with
-      | None -> Db.exec t.record_job Sqlite3.Data.[ TEXT owner; TEXT name; TEXT hash; TEXT variant; NULL ]
-      | Some id -> Db.exec t.record_job Sqlite3.Data.[ TEXT owner; TEXT name; TEXT hash; TEXT variant; TEXT id ]
-    in
-    let update j1 j2 =
-      match j1, j2 with
-      | Some j1, Some j2 when j1 = j2 -> ()
-      | None, None -> ()
-      | _, j2 -> set j2
-    in
-    let remove () =
-      Log.info (fun f -> f "@[<h>Index.record %s/%s %s %s REMOVED@]"
-                   owner name (Astring.String.with_range ~len:6 hash) variant);
-      Db.exec t.remove Sqlite3.Data.[ TEXT owner; TEXT name; TEXT hash; TEXT variant ]
-    in
-    begin match prev, job with
-      | Some j1, Some j2 -> update j1 j2
-      | None, Some j2 -> set j2
-      | Some _, None -> remove ()
-      | None, None -> assert false
-    end;
-    None
+  Status_cache.add ~owner ~name ~hash status
+
+let record_job ~repo ~hash ~variant ~job_id =
+  let { Current_github.Repo_id.owner; name } = repo in
+  Log.info (fun f -> f "@[<h>Index.record %s/%s %s %s -> %a@]"
+               owner name (Astring.String.with_range ~len:6 hash) variant Fmt.(option ~none:(any "-") string) job_id);
+  let job_id = match job_id with
+    | None -> Sqlite3.Data.NULL
+    | Some id -> Sqlite3.Data.TEXT id
   in
-  let _ : [`Empty] Job_map.t = Job_map.merge merge previous jobs in
-  ()
+  let t = Lazy.force db in
+  Db.exec t.record_job Sqlite3.Data.[ TEXT owner; TEXT name; TEXT hash; TEXT variant; job_id ]
 
 let is_known_repo ~owner ~name =
   let t = Lazy.force db in
