@@ -197,7 +197,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
       ) []
     in
     let macos_distributions =
-      Variant.macos_distributions |>
+      (* Variant.macos_distributions *) [] |> (* TODO: TMP (machines are broken) *)
       List.map (fun distro ->
         let variant = Variant.v ~arch:`X86_64 ~distro ~compiler:(default_compiler, None) in
         build ~opam_version ~lower_bounds:false ~revdeps:false distro variant
