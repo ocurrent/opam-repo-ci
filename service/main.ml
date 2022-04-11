@@ -55,6 +55,11 @@ let add_default_matching_log_rules () =
         report = {|\1 not found|};
         score = 50;
       };
+      { (* OCaml errors *)
+        pattern = {|[\n]# Error: (.+)[\n]|};
+        report = {|\1|};
+        score = 45;
+      };
       { (* OCaml Exceptions *)
         pattern = {|[\n]# Exception: (.+)[\n]|};
         report = {|\1|};
