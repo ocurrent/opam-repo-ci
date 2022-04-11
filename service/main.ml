@@ -58,6 +58,11 @@ let add_default_matching_log_rules () =
             report = {|\1 not found|};
             score = 50;
           };
+          { (* OCaml Exceptions *)
+            pattern = {|[\n]# Exception: (.+)[\n]|};
+            report = {|\1|};
+            score = 45;
+          };
           { (* Generic errors caught by opam (e.g. cargo) *)
             pattern = {|[\n]# error: (.+)[\n]|};
             report = {|\1|};
