@@ -65,6 +65,11 @@ let add_default_matching_log_rules () =
         report = {|\1|};
         score = 45;
       };
+      { (* Opam errors *)
+        pattern = {|[\n][ERROR] (.+)[\n]|};
+        report = {|\1|};
+        score = 44;
+      };
       { (* Generic errors caught by opam (e.g. cargo) *)
         pattern = {|[\n]# error: (.+)[\n]|};
         report = {|\1|};
