@@ -50,6 +50,11 @@ let add_default_matching_log_rules () =
         report = {|[SKIP] Failure ignored|};
         score = 100;
       };
+      { (* Opam error: checksum does not match *)
+        pattern = {|[\n]\[ERROR\] (Failed to get sources of .+: Bad checksum)[\n]|};
+        report = {|\1|};
+        score = 60;
+      };
       { (* e.g. build: ["bash"] on platforms without bash will result in this error *)
         pattern = {|[\n]# bwrap: execvp (.+): No such file or directory[\n]|};
         report = {|\1 not found|};
