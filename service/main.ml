@@ -44,6 +44,11 @@ let add_default_matching_log_rules () =
         report = {|[SKIP] Package not available|};
         score = 100;
       };
+      { (* Opam 2.1 when a system package is not available on the current platform *)
+        pattern = {|[\n]\[ERROR\] Package .+ depends on the unavailable system package '.+'\. You can use `--no-depexts' to attempt installation anyway\.[\n]|};
+        report = {|[SKIP] Package not available|};
+        score = 100;
+      };
       { (* Ignore failures on failing packages when the platform being tested is contained in the x-ci-accept-failures optional field *)
         (* See lib/opam_build.ml corresponding bash command printing this exact line *)
         pattern = {|[\n]A package failed and has been disabled for CI using the 'x-ci-accept-failures' field\.[\n]|};
