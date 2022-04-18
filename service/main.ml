@@ -50,8 +50,8 @@ let add_default_matching_log_rules () =
         report = {|[SKIP] Failure ignored|};
         score = 100;
       };
-      { (* Opam error: checksum does not match *)
-        pattern = {|[\n]\[ERROR\] (Failed to get sources of .+: Bad checksum)[\n]|};
+      { (* Generic opam fetching error *)
+        pattern = {|[\n]\[ERROR\] (Failed to get sources of .+: .+)[\n]|};
         report = {|\1|};
         score = 60;
       };
