@@ -91,7 +91,7 @@ let add_default_matching_log_rules () =
         score = 25;
       };
       { (* Opam errors *)
-        pattern = {|[\n]\[ERROR\] (.+)\.[\n]|};
+        pattern = {|[\n]\[ERROR\] (.+)[\n]|};
         report = {|\1|};
         score = 20;
       };
