@@ -45,7 +45,7 @@ let add_default_matching_log_rules () =
         score = 100;
       };
       { (* Opam 2.1 when a system package is not available on the current platform *)
-        pattern = {|[\n]\[ERROR\] Package .+ depends on the unavailable system package '.+'\. You can use `--no-depexts' to attempt installation anyway\.[\n]|};
+        pattern = {|[\n]\[ERROR\] Package .+ depends on the unavailable system package.+\. You can use `--no-depexts' to attempt installation anyway\.[\n]|};
         report = {|[SKIP] Package not available|};
         score = 100;
       };
