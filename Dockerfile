@@ -20,7 +20,7 @@ RUN opam pin add -yn current_docker.dev "./ocurrent" && \
     opam pin add -yn current.dev "./ocurrent" && \
     opam pin add -yn current_rpc.dev "./ocurrent" && \
     opam pin add -yn current_slack.dev "./ocurrent" && \
-    opam pin add -yn current_web.dev "./ocurrent" &&
+    opam pin add -yn current_web.dev "./ocurrent" && \
     opam pin add -yn ocaml-version.dev "./ocaml-version"
 COPY --chown=opam opam-repo-ci-service.opam opam-repo-ci-api.opam /src/
 RUN opam install -y --deps-only .
