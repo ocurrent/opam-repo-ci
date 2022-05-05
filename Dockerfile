@@ -10,6 +10,9 @@ COPY --chown=opam \
 	ocurrent/current_slack.opam \
 	ocurrent/current_web.opam \
 	/src/ocurrent/
+COPY --chown=opam \
+	ocaml-version/ocaml-version.opam \
+	/src/ocaml-version/
 WORKDIR /src
 RUN opam pin add -yn current_docker.dev "./ocurrent" && \
     opam pin add -yn current_github.dev "./ocurrent" && \
@@ -17,7 +20,8 @@ RUN opam pin add -yn current_docker.dev "./ocurrent" && \
     opam pin add -yn current.dev "./ocurrent" && \
     opam pin add -yn current_rpc.dev "./ocurrent" && \
     opam pin add -yn current_slack.dev "./ocurrent" && \
-    opam pin add -yn current_web.dev "./ocurrent"
+    opam pin add -yn current_web.dev "./ocurrent" &&
+    opam pin add -yn ocaml-version.dev "./ocaml-version"
 COPY --chown=opam opam-repo-ci-service.opam opam-repo-ci-api.opam /src/
 RUN opam install -y --deps-only .
 ADD --chown=opam . .
