@@ -38,6 +38,7 @@
   current_docker
   current_web
   current_rpc
+  obuilder-spec
   memtrace
   (capnp-rpc-lwt (>= 0.8.0))
   (capnp-rpc-unix (>= 0.8.0))
