@@ -7,11 +7,12 @@ module Server = Cohttp_lwt_unix.Server
 module Response = Cohttp.Response.Make(Server.IO)
 module Transfer_IO = Cohttp__Transfer_io.Make(Server.IO)
 
+let headers = Cohttp.Header.init_with "Content-Type" "text/html; charset=utf-8"
+
 let normal_response x =
   x >|= fun x -> `Response x
 
 let respond_error status body =
-  let headers = Cohttp.Header.init_with "Content-Type" "text/plain" in
   Server.respond_error ~status ~headers ~body () |> normal_response
 
 let (>>!=) x f =
@@ -261,11 +262,25 @@ let repo_handle ~meth ~owner ~name ~repo path =
     Client.Commit.jobs commit >>!= fun jobs ->
     refs >>!= fun refs ->
     commit_status >>!= fun commit_status ->
-    let body = Template.instance ([
+    let can_cancel = List.fold_left (fun accum job_info ->
+      accum ||
+        match job_info.Client.outcome with
+        | Active | NotStarted -> true
+        | Aborted | Failed _ | Passed | Undefined _ -> false) false jobs
+    in
+    let buttons =
+      if can_cancel then Tyxml.Html.[
+          form ~a:[a_action (hash ^ "/cancel"); a_method `Post] [
+            input ~a:[a_input_type `Submit; a_value "Cancel"] ()
+          ]
+      ] else []
+    in
+    let body = Template.instance Tyxml.Html.([
         breadcrumbs ["github", "github";
                      owner, owner;
                      name, name] (short_hash hash);
         link_github_refs ~owner ~name refs;
+        div buttons;
       ] @ show_status commit_status @ link_jobs ~owner ~name ~hash jobs)
     in
     Server.respond_string ~status:`OK ~body () |> normal_response
@@ -308,6 +323,68 @@ let repo_handle ~meth ~owner ~name ~repo path =
         Server.respond_redirect ~uri () |> normal_response
     | Error { Capnp_rpc.Exception.reason; _ } ->
         Server.respond_error ~body:reason () |> normal_response
+    end
+  | `POST, ["commit"; hash; "cancel"] ->
+    let can_cancel (commit: Client.Commit.t) (job_i: Client.job_info) =
+      match job_i.outcome with
+      | Active | NotStarted ->
+          let variant = job_i.variant in
+          Capability.with_ref (Client.Commit.job_of_variant commit variant) @@ fun job ->
+          Current_rpc.Job.status job |> Lwt.map (function
+              | Ok s -> if s.Current_rpc.Job.can_cancel then Some (job_i, job) else None
+              | Error (`Capnp ex) -> Log.info (fun f -> f "Error fetching job status: %a" Capnp_rpc.Error.pp ex); None
+            )
+      | Aborted | Failed _ | Passed | Undefined _ -> Lwt.return None
+    in
+    let cancel_many (commit: Client.Commit.t) (job_infos : Client.job_info list) =
+      let open Lwt.Infix in
+      Lwt_list.filter_map_p (fun job_info -> can_cancel commit job_info) job_infos >>= fun l ->
+        Lwt_list.map_p (fun (ji, j) -> Current_rpc.Job.cancel j |> Lwt_result.map @@ fun () -> ji) l >>= fun x ->
+          let success = ref [] in
+          let failed = ref 0 in
+          let log_error r =
+          match r with
+          | Ok(ji) -> success := ji :: !success
+          | Error (`Capnp ex) ->
+            incr failed;
+            Log.err (fun f -> f "Error cancelling job: %a" Capnp_rpc.Error.pp ex)
+          in
+          let _ = List.map log_error x in
+          Lwt.return (!success, !failed)
+    in
+    Capability.with_ref (Client.Repo.commit_of_hash repo hash) @@ fun commit ->
+    let refs = Client.Commit.refs commit in
+    refs >>!= fun refs ->
+    Client.Commit.jobs commit >>!= fun jobs ->
+      begin cancel_many commit jobs >>= fun (success, failed) ->
+        let open Tyxml.Html in
+        let uri = commit_url ~owner ~name hash in
+        let format_job_info ji =
+          li [span [txt @@ Fmt.str "Cancelling job: %s" ji.Client.variant]]
+        in
+        let success_msg =
+          if List.length success > 0
+          then ul (List.map format_job_info success)
+          else div [span [txt @@ Fmt.str "No jobs were cancelled."]]
+        in
+        let fail_msg = match failed with
+        | n when n <= 0 -> div []
+        | 1 ->  div [span [txt @@ Fmt.str "1 job could not be cancelled. Check logs for more detail."]]
+        | n ->  div [span [txt @@ Fmt.str "%d jobs could not be cancelled. Check logs for more detail." n]]
+        in
+        let return_link =
+          a ~a:[a_href (uri)] [txt @@ Fmt.str "Return to %s" (short_hash hash)]
+        in
+        let body = Template.instance [
+          breadcrumbs ["github", "github";
+                      owner, owner;
+                      name, name] (short_hash hash);
+          link_github_refs ~owner ~name refs;
+          success_msg;
+          fail_msg;
+          return_link;
+          ] in
+        Server.respond_string ~status:`OK ~headers ~body () |> normal_response
     end
   | _ ->
     Server.respond_not_found () |> normal_response
