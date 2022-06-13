@@ -337,24 +337,19 @@ let repo_handle ~meth ~owner ~name ~repo path =
       | Aborted | Failed _ | Passed | Undefined _ -> Lwt.return None
     in
     let cancel_many (commit: Client.Commit.t) (job_infos : Client.job_info list) =
-      let open Lwt.Infix in
-      Lwt_list.filter_map_p (fun job_info -> can_cancel commit job_info) job_infos >>= fun l ->
-        Lwt_list.map_p (fun (ji, j) -> Current_rpc.Job.cancel j |> Lwt_result.map @@ fun () -> ji) l >>= fun x ->
-          let success = ref [] in
-          let failed = ref 0 in
-          let log_error r =
-          match r with
-          | Ok(ji) -> success := ji :: !success
-          | Error (`Capnp ex) ->
-            incr failed;
-            Log.err (fun f -> f "Error cancelling job: %a" Capnp_rpc.Error.pp ex)
-          in
-          let _ = List.map log_error x in
-          Lwt.return (!success, !failed)
+      Lwt_list.fold_left_s (fun (success, failed) job_info ->
+        can_cancel commit job_info >>= function
+        | None -> Lwt.return (success, failed)
+        | Some (ji, j) ->
+            Current_rpc.Job.cancel j >|= function
+            | Ok () -> (ji :: success, failed)
+            | Error (`Capnp ex) ->
+                Log.err (fun f -> f "Error cancelling job: %a" Capnp_rpc.Error.pp ex);
+                (success, succ failed)
+      ) ([], 0) job_infos
     in
     Capability.with_ref (Client.Repo.commit_of_hash repo hash) @@ fun commit ->
-    let refs = Client.Commit.refs commit in
-    refs >>!= fun refs ->
+    Client.Commit.refs commit >>!= fun refs ->
     Client.Commit.jobs commit >>!= fun jobs ->
       begin cancel_many commit jobs >>= fun (success, failed) ->
         let open Tyxml.Html in
@@ -363,29 +358,28 @@ let repo_handle ~meth ~owner ~name ~repo path =
           li [span [txt @@ Fmt.str "Cancelling job: %s" ji.Client.variant]]
         in
         let success_msg =
-          if List.length success > 0
-          then ul (List.map format_job_info success)
-          else div [span [txt @@ Fmt.str "No jobs were cancelled."]]
+          match success with
+          | [] -> div [span [txt "No jobs were cancelled."]]
+          | success -> ul (List.map format_job_info success)
         in
         let fail_msg = match failed with
-        | n when n <= 0 -> div []
-        | 1 ->  div [span [txt @@ Fmt.str "1 job could not be cancelled. Check logs for more detail."]]
-        | n ->  div [span [txt @@ Fmt.str "%d jobs could not be cancelled. Check logs for more detail." n]]
+          | 0 -> div []
+          | n -> div [span [txt @@ Fmt.str "%d job%s could not be cancelled. Check logs for more detail." n (if n >= 1 then "s" else "")]]
         in
         let return_link =
-          a ~a:[a_href (uri)] [txt @@ Fmt.str "Return to %s" (short_hash hash)]
+          a ~a:[a_href uri] [txt @@ Fmt.str "Return to %s" (short_hash hash)]
         in
         let body = Template.instance [
-          breadcrumbs ["github", "github";
-                      owner, owner;
-                      name, name] (short_hash hash);
-          link_github_refs ~owner ~name refs;
-          success_msg;
-          fail_msg;
-          return_link;
+            breadcrumbs ["github", "github";
+                         owner, owner;
+                         name, name] (short_hash hash);
+            link_github_refs ~owner ~name refs;
+            success_msg;
+            fail_msg;
+            return_link;
           ] in
         Server.respond_string ~status:`OK ~headers ~body () |> normal_response
-    end
+      end
   | _ ->
     Server.respond_not_found () |> normal_response
 
