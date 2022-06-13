@@ -220,9 +220,6 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
     let master_distro = Dockerfile_distro.tag_of_distro master_distro in
     let default_comp = Ocaml_version.to_string default_compiler in
     Current.list_seq (
-      (* TODO: Remove this when OCaml 5.00 is merged and available in a docker image *)
-      build ~opam_version:`V2_1 ~lower_bounds:false ~revdeps:false "domains" (Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:("4.12", Some "domains")) ::
-      build ~opam_version:`V2_1 ~lower_bounds:false ~revdeps:false "domains-effects" (Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:("4.12", Some "domains-effects")) ::
       List.filter_map (fun v ->
         match Ocaml_version.extra v with
         | None -> None
