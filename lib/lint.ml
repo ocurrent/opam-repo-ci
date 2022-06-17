@@ -118,6 +118,9 @@ module Check = struct
         | exn -> Lwt.fail exn
         end
 
+  let is_dune name =
+    OpamPackage.Name.equal name (OpamPackage.Name.of_string "dune")
+
   let get_dune_constraint opam =
     let get_max = function
       | None, None -> None
@@ -140,7 +143,7 @@ module Check = struct
     in
     let rec aux = function
       | OpamFormula.Atom (pkg, constr) ->
-          if OpamPackage.Name.equal pkg (OpamPackage.Name.of_string "dune") then
+          if is_dune pkg then
             Some (Option.value ~default:"1.0" (get_lower_bound constr))
           else
             None
@@ -160,7 +163,11 @@ module Check = struct
         | _, Error msg -> (pkg, FailedToDownload msg) :: errors
         | None, Ok None -> errors
         | Some _, Ok None -> (pkg, DuneProjectMissing) :: errors
-        | None, Ok (Some _) -> (pkg, DuneConstraintMissing) :: errors
+        | None, Ok (Some _) ->
+          if is_dune (OpamPackage.name pkg) then
+            errors
+          else
+            (pkg, DuneConstraintMissing) :: errors
         | Some dep, Ok (Some ver) ->
             if OpamVersionCompare.compare dep ver >= 0 then
               errors
