@@ -232,7 +232,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
       ) (Ocaml_version.Opam.V2.switches `X86_64 default_compiler_full) @
       List.filter_map (function
         | `X86_64 -> None
-        | `Riscv64 -> None
+        | `Riscv64 -> None (* TODO: unlock this one when more machines are available *)
         | arch ->
             let label = Ocaml_version.to_opam_arch arch in
             let variant = Variant.v ~arch ~distro:master_distro ~compiler:(default_comp, None) in
