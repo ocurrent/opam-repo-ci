@@ -73,13 +73,18 @@ CREATE TABLE IF NOT EXISTS ci_build_index (
 
 let init () = ignore (Lazy.force db)
 
-let get_job_ids t ~owner ~name ~hash =
+let get_job_ids_with_variant t ~owner ~name ~hash =
   Db.query t.get_job_ids Sqlite3.Data.[ TEXT owner; TEXT name; TEXT hash ]
   |> List.fold_left begin fun acc -> function
   | Sqlite3.Data.[ TEXT variant; NULL ] -> Job_map.add variant None acc
   | Sqlite3.Data.[ TEXT variant; TEXT id ] -> Job_map.add variant (Some id) acc
   | row -> Fmt.failwith "get_job_ids: invalid row %a" Db.dump_row row
   end Job_map.empty
+
+let get_job_ids ~owner ~name ~hash =
+  let t = Lazy.force db in
+  get_job_ids_with_variant t ~owner ~name ~hash
+  |> Job_map.bindings |> List.filter_map snd
 
 module Status_cache = struct
   let cache = Hashtbl.create 1_000
@@ -104,7 +109,7 @@ let record ~repo ~hash ~status jobs =
   let { Current_github.Repo_id.owner; name } = repo in
   let t = Lazy.force db in
   let () = Status_cache.add ~owner ~name ~hash status in
-  let previous = get_job_ids t ~owner ~name ~hash in
+  let previous = get_job_ids_with_variant t ~owner ~name ~hash in
   let merge variant prev job =
     let set job_id =
       Log.info (fun f -> f "@[<h>Index.record %s/%s %s %s -> %a@]"
