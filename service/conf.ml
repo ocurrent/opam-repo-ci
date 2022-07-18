@@ -27,3 +27,4 @@ let pool_of_arch = function
   | `Aarch32 | `Aarch64 -> "linux-arm64"
   | `Ppc64le -> "linux-ppc64"
   | `S390x -> "linux-s390x"
+  | `Riscv64 -> "linux-riscv64"
