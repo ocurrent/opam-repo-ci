@@ -6,18 +6,19 @@ authors: ["talex5@gmail.com"]
 homepage: "https://github.com/ocurrent/opam-repo-ci"
 bug-reports: "https://github.com/ocurrent/opam-repo-ci/issues"
 depends: [
-  "dune" {>= "1.11"}
+  "dune" {>= "3.3"}
   "ocaml" {>= "4.12.0"}
   "current_rpc"
   "capnp" {>= "3.4.0"}
   "capnp-rpc-lwt"
   "dockerfile"
+  "odoc" {with-doc}
 ]
 conflicts: [
   "conduit-lwt-unix" {< "4.0.1"}
 ]
 build: [
-  ["dune" "subst"] {pinned}
+  ["dune" "subst"] {dev}
   [
     "dune"
     "build"

@@ -1,4 +1,4 @@
-(lang dune 2.0)
+(lang dune 3.3)
 (name opam-repo-ci)
 (generate_opam_files true)
 (source (github ocurrent/opam-repo-ci))
@@ -10,7 +10,7 @@
  (conflicts
   (conduit-lwt-unix (< 4.0.1)))
  (depends
-  (dune (>= "1.11"))
+  dune
   (ocaml (>= "4.12.0"))
   current_rpc
   (capnp (>= 3.4.0))
@@ -31,7 +31,7 @@
   (mirage-crypto-rng (>= 0.8.8))
   logs
   (fmt (>= 0.8.7))
-  (dune (>= "1.11"))
+  dune
   (ocaml (>= "4.12.0"))
   current_git
   current_github
@@ -85,7 +85,7 @@
  (depends
   logs
   (fmt (>= 0.8.7))
-  (dune (>= "1.11"))
+  dune
   (ocaml (>= "4.12.0"))
   current_rpc
   capnp-rpc-unix

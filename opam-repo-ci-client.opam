@@ -8,18 +8,19 @@ bug-reports: "https://github.com/ocurrent/opam-repo-ci/issues"
 depends: [
   "logs"
   "fmt" {>= "0.8.7"}
-  "dune" {>= "1.11"}
+  "dune" {>= "3.3"}
   "ocaml" {>= "4.12.0"}
   "current_rpc"
   "capnp-rpc-unix"
   "opam-repo-ci-api"
   "dockerfile"
+  "odoc" {with-doc}
 ]
 conflicts: [
   "conduit-lwt-unix" {< "4.0.1"}
 ]
 build: [
-  ["dune" "subst"] {pinned}
+  ["dune" "subst"] {dev}
   [
     "dune"
     "build"

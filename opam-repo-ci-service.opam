@@ -14,7 +14,7 @@ depends: [
   "mirage-crypto-rng" {>= "0.8.8"}
   "logs"
   "fmt" {>= "0.8.7"}
-  "dune" {>= "1.11"}
+  "dune" {>= "3.3"}
   "ocaml" {>= "4.12.0"}
   "current_git"
   "current_github"
@@ -36,13 +36,14 @@ depends: [
   "ocaml-version" {>= "2.4.0"}
   "alcotest" {>= "1.0.0" & with-test}
   "alcotest-lwt" {>= "1.0.1" & with-test}
+  "odoc" {with-doc}
 ]
 conflicts: [
   "ocaml-migrate-parsetree" {= "1.7.1"}
   "conduit-lwt-unix" {< "4.0.1"}
 ]
 build: [
-  ["dune" "subst"] {pinned}
+  ["dune" "subst"] {dev}
   [
     "dune"
     "build"
