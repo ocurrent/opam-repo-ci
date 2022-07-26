@@ -5,6 +5,8 @@ module Db = Current.Db
 
 module Job_map = Astring.String.Map
 
+type job_ids = Current.job_id option Job_map.t
+
 type t = {
   record_job : Sqlite3.stmt;
   remove : Sqlite3.stmt;
@@ -105,10 +107,12 @@ end
 
 let get_status = Status_cache.find
 
-let record ~repo ~hash ~status jobs =
+let set_status ~owner ~name ~hash status =
+  Status_cache.add ~owner ~name ~hash status
+
+let record ~repo ~hash jobs =
   let { Current_github.Repo_id.owner; name } = repo in
   let t = Lazy.force db in
-  let () = Status_cache.add ~owner ~name ~hash status in
   let previous = get_job_ids_with_variant t ~owner ~name ~hash in
   let merge variant prev job =
     let set job_id =
