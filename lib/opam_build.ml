@@ -80,9 +80,6 @@ let setup_repository ~variant ~for_docker ~opam_version =
   (match home_dir with Some home_dir -> [workdir home_dir] | None -> []) @
   (* TODO: macOS seems to have a bug in (copy ...) so I am forced to remove the (workdir ...) here.
      Otherwise the "opam pin" after the "opam repository set-url" will fail (cannot find the new package for some reason) *)
-  run "opam repository remove -a multicore || true" :: (* We remove this non-standard repository
-                                                          because we don't have access and it hosts
-                                                          non-official packages *)
   run "%s -f %s/bin/opam-%s %s/bin/opam" ln prefix opam_version_str prefix ::
   run "opam init --reinit%s -ni" opamrc ::
   env "OPAMDOWNLOADJOBS" "1" :: (* Try to avoid github spam detection *)
