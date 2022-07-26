@@ -207,11 +207,12 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
   in
   let analysis = Node.action `Analysed analysis
   and lint = Node.action `Linted lint
-  and compilers_2_1 = compilers ~opam_version:`V2_1
-  and distributions_2_1 = distributions ~opam_version:`V2_1
   and extras =
     let master_distro = Dockerfile_distro.tag_of_distro master_distro in
     let default_comp = Ocaml_version.to_string default_compiler in
+    let default_variant = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(default_comp, None) in
+    build ~opam_version:`V2_0 ~lower_bounds:false ~revdeps:false "opam-2.0" default_variant ::
+    build ~opam_version:`V2_1 ~lower_bounds:false ~revdeps:false "opam-2.1" default_variant ::
     List.filter_map (fun v ->
       match Ocaml_version.extra v with
       | None -> None
