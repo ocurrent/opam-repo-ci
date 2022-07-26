@@ -27,8 +27,12 @@ module Spec = struct
     opam_version : [`V2_0 | `V2_1 | `Dev];
   } [@@deriving to_yojson]
 
+  type list_revdeps = {
+    opam_version : [`V2_0 | `V2_1 | `Dev];
+  } [@@deriving to_yojson]
+
   type ty = [
-    | `Opam of [ `Build of opam_build | `List_revdeps ] * package
+    | `Opam of [ `Build of opam_build | `List_revdeps of list_revdeps ] * package
   ] [@@deriving to_yojson]
 
   type t = {
@@ -45,18 +49,20 @@ module Spec = struct
     | Some revdep -> Fmt.pf f "%s with %s" (OpamPackage.to_string revdep) (OpamPackage.to_string pkg)
     | None -> Fmt.string f (OpamPackage.to_string pkg)
 
+  let pp_opam_version = function
+    | `V2_0 -> "2.0"
+    | `V2_1 -> "2.1"
+    | `Dev -> "dev"
+
   let pp_ty f = function
-    | `Opam (`List_revdeps, pkg) ->
-        Fmt.pf f "list revdeps of %s" (OpamPackage.to_string pkg)
+    | `Opam (`List_revdeps {opam_version}, pkg) ->
+        Fmt.pf f "list revdeps of %s, using opam %s" (OpamPackage.to_string pkg)
+          (pp_opam_version opam_version)
     | `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) ->
       let action = if with_tests then "test" else "build" in
       Fmt.pf f "%s %a%s, using opam %s" action (pp_pkg ?revdep) pkg
         (if lower_bounds then ", lower-bounds" else "")
-        (match opam_version with
-         | `V2_0 -> "2.0"
-         | `V2_1 -> "2.1"
-         | `Dev -> "dev"
-        )
+        (pp_opam_version opam_version)
 end
 
 type t = {
@@ -134,7 +140,7 @@ module Op = struct
     let build_spec ~for_docker =
       let base = base_to_string base in
       match ty with
-      | `Opam (`List_revdeps, pkg) -> Opam_build.revdeps ~for_docker ~base ~variant ~pkg
+      | `Opam (`List_revdeps { opam_version }, pkg) -> Opam_build.revdeps ~for_docker ~opam_version ~base ~variant ~pkg
       | `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) -> Opam_build.spec ~for_docker ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_tests ~pkg
     in
     Current.Job.write job
@@ -157,7 +163,7 @@ module Op = struct
       let pkg =
         match ty with
         | `Opam (`Build { revdep = Some revdep; _ }, pkg) -> Printf.sprintf "%s-%s" (OpamPackage.to_string pkg) (OpamPackage.to_string revdep)
-        | `Opam (`List_revdeps, pkg)
+        | `Opam (`List_revdeps _, pkg)
         | `Opam (`Build _, pkg) -> OpamPackage.to_string pkg
       in
       Printf.sprintf "%s-%s-%s" (base_to_string base) pkg (Git.Commit_id.hash commit)
@@ -168,7 +174,7 @@ module Op = struct
     Current.Job.start_with ~pool:build_pool job ~timeout ~level:Current.Level.Average >>= fun build_job ->
     let buffer =
       match ty with
-      | `Opam (`List_revdeps, _) -> Some (Buffer.create 1024)
+      | `Opam (`List_revdeps _, _) -> Some (Buffer.create 1024)
       | _ -> None
     in
     Capability.with_ref build_job (run_job ?buffer ~job) >>!= fun (_ : string) ->
@@ -208,7 +214,7 @@ let v t ~label ~spec ~base ~master ~urgent commit =
   BC.run t { Op.Key.pool; commit; variant; ty } ()
   |> Current.Primitive.map_result (Result.map ignore) (* TODO: Create a separate type of cache that doesn't parse the output *)
 
-let list_revdeps t ~platform ~pkgopt ~base ~master ~after commit =
+let list_revdeps t ~platform ~opam_version ~pkgopt ~base ~master ~after commit =
   Current.component "list revdeps" |>
   let> {PackageOpt.pkg; urgent} = pkgopt
   and> base = base
@@ -217,7 +223,7 @@ let list_revdeps t ~platform ~pkgopt ~base ~master ~after commit =
   and> () = after in
   let t = { Op.config = t; master; urgent; base } in
   let { Platform.pool; variant; label = _ } = platform in
-  let ty = `Opam (`List_revdeps, pkg) in
+  let ty = `Opam (`List_revdeps {Spec.opam_version}, pkg) in
   BC.run t { Op.Key.pool; commit; variant; ty } ()
   |> Current.Primitive.map_result (Result.map (fun output ->
       String.split_on_char '\n' output |>
