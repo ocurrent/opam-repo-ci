@@ -1,6 +1,6 @@
 val spec :
   for_docker:bool ->
-  opam_version:[`V2_0 | `V2_1] ->
+  opam_version:[`V2_0 | `V2_1 | `Dev] ->
   base:string ->
   variant:Variant.t ->
   revdep:OpamPackage.t option ->
