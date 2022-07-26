@@ -16,6 +16,7 @@ depends: [
   "fmt" {>= "0.8.7"}
   "dune" {>= "3.3"}
   "ocaml" {>= "4.12.0"}
+  "current_incr" {>= "0.6.0"} # see https://github.com/ocurrent/opam-repo-ci/pull/161
   "current_git"
   "current_github"
   "current_docker"
