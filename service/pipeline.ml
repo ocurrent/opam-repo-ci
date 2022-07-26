@@ -186,7 +186,9 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
       Dockerfile_distro.active_distros `X86_64 |>
       List.fold_left (fun acc distro ->
         if Dockerfile_distro.compare distro master_distro = 0 (* TODO: Add Dockerfile_distro.equal *)
-        || Dockerfile_distro.os_family_of_distro distro <> `Linux then (* TODO: Unlock this when Windows is ready *)
+        || Dockerfile_distro.os_family_of_distro distro <> `Linux (* TODO: Unlock this when Windows is ready *)
+        || Dockerfile_distro.compare distro (`CentOS `V7 : Dockerfile_distro.t) = 0 (* TODO: Remove when it has been removed in ocaml-dockerfile *)
+        || Dockerfile_distro.compare distro (`OracleLinux `V7 : Dockerfile_distro.t) = 0 then
           acc
         else
           let distro = Dockerfile_distro.tag_of_distro distro in
