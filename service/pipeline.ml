@@ -205,9 +205,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
   in
   let analysis = Node.action `Analysed analysis
   and lint = Node.action `Linted lint
-  and compilers_2_0 = compilers ~opam_version:`V2_0
   and compilers_2_1 = compilers ~opam_version:`V2_1
-  and distributions_2_0 = distributions ~opam_version:`V2_0
   and distributions_2_1 = distributions ~opam_version:`V2_1
   and extras =
     let master_distro = Dockerfile_distro.tag_of_distro master_distro in
@@ -231,12 +229,6 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
           Some (build ~opam_version:`V2_1 ~lower_bounds:false ~revdeps:false label variant)
     ) Ocaml_version.arches
   in
-  let opam_2_0 =
-    [
-      Node.branch ~label:"compilers" compilers_2_0;
-      Node.branch ~label:"distributions" distributions_2_0;
-    ]
-  in
   let opam_2_1 =
     [
       Node.branch ~label:"compilers" compilers_2_1;
@@ -247,7 +239,6 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
   Node.root [
     Node.leaf ~label:"(analysis)" analysis;
     Node.leaf ~label:"(lint)" lint;
-    Node.branch ~label:"opam-2.0" opam_2_0;
     Node.branch ~label:"opam-2.1" opam_2_1;
   ]
 
