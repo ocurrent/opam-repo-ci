@@ -9,6 +9,7 @@ module Common = Opam_repo_ci_api.Common
 let master_distro = (Dockerfile_distro.resolve_alias Dockerfile_distro.master_distro :> Dockerfile_distro.t)
 let default_compiler_full = Ocaml_version.Releases.latest
 let default_compiler = Ocaml_version.with_just_major_and_minor default_compiler_full
+let opam_version = `Dev
 
 let weekly = Current_cache.Schedule.v ~valid_for:(Duration.of_day 7) ()
 
@@ -144,16 +145,14 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
         let build = Node.action `Built image
         and tests = Node.action `Built tests
         and lower_bounds_check =
-          match opam_version, lower_bounds with
-          | `V2_1, true ->
+          if lower_bounds then
             let action =
               let spec = lower_bounds_spec ~platform ~opam_version pkg in
               Build.v ocluster ~label:"lower-bounds" ~base ~spec ~master ~urgent source
             in
             let action = Node.action `Built action in
             Node.leaf ~label:"lower-bounds" action
-          | `V2_0, true
-          | (`V2_1 | `V2_0), false ->
+          else
             Node.empty
         and revdeps =
           if revdeps then test_revdeps ~ocluster ~opam_version ~master ~base ~platform ~pkgopt source ~after:image
@@ -169,7 +168,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
     |> (fun x -> Node.branch ~label [x])
     |> Node.collapse ~key:"platform" ~value:label ~input:analysis
   in
-  let compilers ~opam_version =
+  let compilers =
     let master_distro = Dockerfile_distro.tag_of_distro master_distro in
     (Ocaml_version.Releases.recent @ Ocaml_version.Releases.unreleased_betas) |>
     List.map (fun v ->
@@ -180,7 +179,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
       build ~opam_version ~lower_bounds:true ~revdeps v variant
     )
   in
-  let distributions ~opam_version =
+  let distributions =
     let default_compiler = Ocaml_version.to_string default_compiler in
     let linux_distributions =
       Dockerfile_distro.active_distros `X86_64 |>
@@ -221,7 +220,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
           (* TODO: The same code is used in docker-base-images *)
           let label = String.map (function '+' -> '-' | c -> c) label in
           let variant = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(default_comp, Some label) in
-          Some (build ~opam_version:`V2_1 ~lower_bounds:false ~revdeps:false label variant)
+          Some (build ~opam_version ~lower_bounds:false ~revdeps:false label variant)
     ) (Ocaml_version.Opam.V2.switches `X86_64 default_compiler_full) @
     List.filter_map (function
       | `X86_64 -> None
@@ -229,20 +228,15 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
       | arch ->
           let label = Ocaml_version.to_opam_arch arch in
           let variant = Variant.v ~arch ~distro:master_distro ~compiler:(default_comp, None) in
-          Some (build ~opam_version:`V2_1 ~lower_bounds:false ~revdeps:false label variant)
+          Some (build ~opam_version ~lower_bounds:false ~revdeps:false label variant)
     ) Ocaml_version.arches
-  in
-  let opam_2_1 =
-    [
-      Node.branch ~label:"compilers" compilers_2_1;
-      Node.branch ~label:"distributions" distributions_2_1;
-      Node.branch ~label:"extras" extras;
-    ]
   in
   Node.root [
     Node.leaf ~label:"(analysis)" analysis;
     Node.leaf ~label:"(lint)" lint;
-    Node.branch ~label:"opam-2.1" opam_2_1;
+    Node.branch ~label:"compilers" compilers;
+    Node.branch ~label:"distributions" distributions;
+    Node.branch ~label:"extras" extras;
   ]
 
 

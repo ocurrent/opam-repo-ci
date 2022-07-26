@@ -24,7 +24,7 @@ module Spec = struct
     revdep : package option;
     with_tests : bool;
     lower_bounds : bool;
-    opam_version : [`V2_0 | `V2_1];
+    opam_version : [`V2_0 | `V2_1 | `Dev];
   } [@@deriving to_yojson]
 
   type ty = [
@@ -55,6 +55,7 @@ module Spec = struct
         (match opam_version with
          | `V2_0 -> "2.0"
          | `V2_1 -> "2.1"
+         | `Dev -> "dev"
         )
 end
 

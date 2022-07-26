@@ -23,7 +23,7 @@ let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
    else
      []
   ) @ [
-    run ~network "opam %s" (match opam_version with `V2_1 -> "update --depexts" | `V2_0 -> "depext -u");
+    run ~network "opam %s" (match opam_version with `V2_1 | `Dev -> "update --depexts" | `V2_0 -> "depext -u");
     (* TODO: Replace by two calls to opam install + opam install -t using the OPAMDROPINSTALLEDPACKAGES feature *)
     run ~cache ~network
       {|opam remove %s%s && opam install --deps-only%s %s && opam install -v%s %s;
@@ -38,7 +38,7 @@ let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
           fi;
         done;
         exit 1|}
-      pkg (match opam_version with `V2_1 -> "" | `V2_0 -> " && opam depext"^with_tests_opt^" "^pkg) with_tests_opt pkg with_tests_opt pkg
+      pkg (match opam_version with `V2_1 | `Dev -> "" | `V2_0 -> " && opam depext"^with_tests_opt^" "^pkg) with_tests_opt pkg with_tests_opt pkg
       (Variant.distribution variant)
   ]
 
@@ -59,6 +59,10 @@ let setup_repository ~variant ~for_docker ~opam_version =
   let opam_version_str = match opam_version with
     | `V2_0 -> "2.0"
     | `V2_1 -> "2.1"
+    | `Dev ->
+        match Variant.os variant with
+        | `macOS -> "2.1" (* TODO: Remove that when macOS has a proper up-to-date docker image *)
+        | `linux -> "dev"
   in
   let opam_repo_args = match Variant.os variant with
     | `macOS -> " -k local" (* TODO: (copy ...) do not copy the content of .git or something like that and make the subsequent opam pin fail *)

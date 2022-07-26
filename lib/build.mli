@@ -6,7 +6,7 @@ module Spec : sig
     platform:Platform.t ->
     lower_bounds:bool ->
     with_tests:bool ->
-    opam_version:[`V2_0 | `V2_1] ->
+    opam_version:[`V2_0 | `V2_1 | `Dev] ->
     OpamPackage.t ->
     t
 end
