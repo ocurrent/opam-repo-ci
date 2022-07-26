@@ -340,7 +340,7 @@ let repo_handle ~meth ~owner ~name ~repo path =
     in
     let cancel_many (commit: Client.Commit.t) (job_infos : Client.job_info list) =
       Lwt_list.fold_left_s (fun (success, failed) job_info ->
-        can_cancel commit job_info >>= function
+        can_cancel commit job_info >>= function (* TODO: Can we replace these two calls to the scheduler with only one call to just cancel? *)
         | None -> Lwt.return (success, failed)
         | Some (ji, j) ->
             Current_rpc.Job.cancel j >|= function
