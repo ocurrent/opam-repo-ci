@@ -44,7 +44,38 @@ let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
 
 let setup_repository ~variant ~for_docker ~opam_version =
   let open Obuilder_spec in
+  let home_dir = match Variant.os variant with
+    | `macOS -> None
+    | `linux -> Some "/home/opam"
+  in
+  let prefix = match Variant.os variant with
+    | `macOS -> "~/local"
+    | `linux -> "/usr"
+  in
+  let ln = match Variant.os variant with
+    | `macOS -> "ln"
+    | `linux -> "sudo ln"
+  in
+  let opam_version_str = match opam_version with
+    | `V2_0 -> "2.0"
+    | `V2_1 -> "2.1"
+  in
+  let opam_repo_args = match Variant.os variant with
+    | `macOS -> " -k local" (* TODO: (copy ...) do not copy the content of .git or something like that and make the subsequent opam pin fail *)
+    | `linux -> ""
+  in
+  let opamrc = match Variant.os variant with
+    (* NOTE: [for_docker] is required because docker does not support bubblewrap in docker build *)
+    (* docker run has --privileged but docker build does not have it *)
+    (* so we need to remove the part re-enabling the sandbox. *)
+    | `linux when not for_docker -> " --config .opamrc-sandbox"
+    | `macOS | `linux -> ""
+    (* TODO: On macOS, the sandbox is always (and should be) enabled by default but does not have those ~/.opamrc-sandbox files *)
+  in
   user ~uid:1000 ~gid:1000 ::
+  (match home_dir with Some home_dir -> [workdir home_dir] | None -> []) @
+  (* TODO: macOS seems to have a bug in (copy ...) so I am forced to remove the (workdir ...) here.
+     Otherwise the "opam pin" after the "opam repository set-url" will fail (cannot find the new package for some reason) *)
   run "for pkg in $(opam pin list --short); do opam pin remove \"$pkg\"; done" :: (* The ocaml/opam base images have a pin to their compiler package.
                                                                                      Such pin is useless for opam 2.0 as we don't use --unlock-base,
                                                                                      and causes issues for opam 2.1 as it allows to upgrade the compiler
@@ -53,28 +84,16 @@ let setup_repository ~variant ~for_docker ~opam_version =
   run "opam repository remove -a multicore || true" :: (* We remove this non-standard repository
                                                           because we don't have access and it hosts
                                                           non-official packages *)
-  run "sudo ln -f /usr/bin/opam-%s /usr/bin/opam"
-    (match opam_version with
-     | `V2_0 -> "2.0"
-     | `V2_1 -> "2.1"
-    ) ::
-  (* NOTE: [for_docker] is required because docker does not support bubblewrap in docker build *)
-  (* docker run has --privileged but docker build does not have it *)
-  (* so we need to remove the part re-enabling the sandbox. *)
-  (* NOTE: On alpine-3.12 bwrap fails with "capset failed: Operation not permitted". *)
-  let sandboxing_not_supported =
-    let distro = variant.Variant.distribution in
-    String.equal distro (Dockerfile_distro.tag_of_distro (`Alpine `V3_12)) ||
-    for_docker
-  in
-  run "opam init --reinit%s -ni" (if sandboxing_not_supported then "" else " --config ~/.opamrc-sandbox") ::
+  run "%s -f %s/bin/opam-%s %s/bin/opam" ln prefix opam_version_str prefix ::
+  run "opam init --reinit%s -ni" opamrc ::
   env "OPAMDOWNLOADJOBS" "1" :: (* Try to avoid github spam detection *)
   env "OPAMERRLOGLEN" "0" :: (* Show the whole log if it fails *)
   env "OPAMSOLVERTIMEOUT" "500" :: (* Increase timeout. Poor mccs is doing its best *)
   env "OPAMPRECISETRACKING" "1" :: (* Mitigate https://github.com/ocaml/opam/issues/3997 *)
   [
-    copy ["."] ~dst:"/src/";
-    run "opam repository set-url --strict default file:///src";
+    run "rm -rf opam-repository/";
+    copy ["."] ~dst:"opam-repository/";
+    run "opam repository set-url%s --strict default opam-repository/" opam_repo_args;
   ]
 
 let set_personality ~variant =

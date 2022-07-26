@@ -20,5 +20,17 @@ let distribution t = t.distribution
 
 let pp f t = Fmt.pf f "%s/%s" (docker_tag t) (Ocaml_version.string_of_arch t.arch)
 
+let macos_distributions = [
+  "macos-homebrew";
+  (* TODO: Add macos-macports *)
+]
+
+(* TODO: Remove that when macOS uses ocaml-dockerfile *)
+let os {distribution; _} =
+  if List.exists (String.equal distribution) macos_distributions then
+    `macOS
+  else
+    `linux
+
 let v ~arch ~distro ~compiler:(ocaml_version, ocaml_variant) =
   { arch; distribution = distro; ocaml_version; ocaml_variant }
