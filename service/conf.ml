@@ -20,7 +20,8 @@ module Capnp = struct
 end
 
 (** Maximum time for one build. *)
-let build_timeout = Duration.of_hour 1
+(* TODO: Put back to 1 hour when the cluster issue has been fixed (see https://github.com/ocurrent/ocluster/issues/114) *)
+let build_timeout = Duration.of_hour 2
 
 let pool_of_arch variant =
   let open Opam_repo_ci in
