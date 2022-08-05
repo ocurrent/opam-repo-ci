@@ -14,7 +14,10 @@ let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
        env "OPAMEXTERNALSOLVER" "builtin-0install";
      ]
    else
-     []
+     [
+       (* TODO: Hot fix https://github.com/ocaml/opam/issues/5224 *)
+       env "OPAMCRITERIA" "-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+     ]
   ) @
   (if pin then
      let version =
