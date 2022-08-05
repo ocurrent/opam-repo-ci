@@ -105,6 +105,8 @@ end = struct
     | _::_, t::ts -> t :: add k x ts
 end
 
+let is_skip = Astring.String.is_prefix ~affix:"[SKIP]"
+
 let statuses ss =
   let open Tyxml.Html in
   let status (s, elms1) elms2 =
@@ -112,7 +114,7 @@ let statuses ss =
       match (s : Client.State.t) with
       | NotStarted -> "not-started"
       | Aborted -> "aborted"
-      | Failed m when Astring.String.is_prefix ~affix:"[SKIP]" m -> "skipped"
+      | Failed m when is_skip m -> "skipped"
       | Failed _ -> "failed"
       | Passed -> "passed"
       | Active -> "active"
@@ -170,7 +172,7 @@ let link_github_refs ~owner ~name =
     )
 
 let is_error = function
-  | { Client.outcome = Failed msg; _ } -> not (Astring.String.is_prefix ~affix:"[SKIP]" msg)
+  | { Client.outcome = Failed msg; _ } -> not (is_skip msg)
   | _ -> false
 
 let show_status =
@@ -254,8 +256,9 @@ let can_cancel job_info =
 
 let can_rebuild job_info =
   match job_info.Client.outcome with
-  | Aborted | Failed _ -> true
-  | Active | NotStarted | Passed | Undefined _ -> false
+  | Aborted -> true
+  | Failed m when not (is_skip m) -> true
+  | Failed _ | Active | NotStarted | Passed | Undefined _ -> false
 
 let repo_handle ~meth ~owner ~name ~repo path =
   match meth, path with
