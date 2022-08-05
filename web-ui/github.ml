@@ -332,10 +332,7 @@ let repo_handle ~meth ~owner ~name ~repo path =
       | Active | NotStarted ->
           let variant = job_i.variant in
           Capability.with_ref (Client.Commit.job_of_variant commit variant) @@ fun job ->
-          Current_rpc.Job.status job |> Lwt.map (function
-              | Ok s -> if s.Current_rpc.Job.can_cancel then Some (job_i, job) else None
-              | Error (`Capnp ex) -> Log.info (fun f -> f "Error fetching job status: %a" Capnp_rpc.Error.pp ex); None
-            )
+          Lwt.return (Some (job_i, job))
       | Aborted | Failed _ | Passed | Undefined _ -> Lwt.return None
     in
     let cancel_many (commit: Client.Commit.t) (job_infos : Client.job_info list) =
