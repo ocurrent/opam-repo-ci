@@ -10,13 +10,17 @@ let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
   let open Obuilder_spec in
   (if lower_bounds then
      [
-       env "OPAMCRITERIA" "+removed,+count[version-lag,solution]";
+       env "OPAMCRITERIA"        "+removed,+count[version-lag,solution]";
+       env "OPAMFIXUPCRITERIA"   "+removed,+count[version-lag,solution]";
+       env "OPAMUPGRADECRITERIA" "+removed,+count[version-lag,solution]";
        env "OPAMEXTERNALSOLVER" "builtin-0install";
      ]
    else
      [
        (* TODO: Hot fix https://github.com/ocaml/opam/issues/5224 *)
-       env "OPAMCRITERIA" "-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+       env "OPAMCRITERIA"        "-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+       env "OPAMFIXUPCRITERIA"   "-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+       env "OPAMUPGRADECRITERIA" "-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
      ]
   ) @
   (if pin then
