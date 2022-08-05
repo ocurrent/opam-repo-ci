@@ -247,6 +247,16 @@ let stream_logs job ~owner ~name ~refs ~hash ~variant ~status (data, next) write
   in
   aux next
 
+let can_cancel job_info =
+  match job_info.Client.outcome with
+  | Active | NotStarted -> true
+  | Aborted | Failed _ | Passed | Undefined _ -> false
+
+let can_rebuild job_info =
+  match job_info.Client.outcome with
+  | Aborted | Failed _ -> true
+  | Active | NotStarted | Passed | Undefined _ -> false
+
 let repo_handle ~meth ~owner ~name ~repo path =
   match meth, path with
   | `GET, [] ->
@@ -264,18 +274,26 @@ let repo_handle ~meth ~owner ~name ~repo path =
     Client.Commit.jobs commit >>!= fun jobs ->
     refs >>!= fun refs ->
     commit_status >>!= fun commit_status ->
-    let can_cancel = List.fold_left (fun accum job_info ->
-      accum ||
-        match job_info.Client.outcome with
-        | Active | NotStarted -> true
-        | Aborted | Failed _ | Passed | Undefined _ -> false) false jobs
-    in
+    let can_cancel = List.exists can_cancel jobs in
+    let can_rebuild = List.exists can_rebuild jobs in
+    let buttons = Tyxml.Html.[
+      form ~a:[a_action (hash ^ "/rebuild-all"); a_method `Post] [
+        input ~a:[a_input_type `Submit; a_value "Rebuild All"] ()
+      ]
+    ] in
     let buttons =
-      if can_cancel then Tyxml.Html.[
+      if can_cancel then Tyxml.Html.(
           form ~a:[a_action (hash ^ "/cancel"); a_method `Post] [
             input ~a:[a_input_type `Submit; a_value "Cancel"] ()
           ]
-      ] else []
+      ) :: buttons else buttons
+    in
+    let buttons =
+      if can_rebuild then Tyxml.Html.(
+          form ~a:[a_action (hash ^ "/rebuild-failed"); a_method `Post] [
+            input ~a:[a_input_type `Submit; a_value "Rebuild Failed"] ()
+          ]
+      ) :: buttons else buttons
     in
     let body = Template.instance Tyxml.Html.([
         breadcrumbs ["github", "github";
@@ -326,18 +344,77 @@ let repo_handle ~meth ~owner ~name ~repo path =
     | Error { Capnp_rpc.Exception.reason; _ } ->
         Server.respond_error ~body:reason () |> normal_response
     end
+  | `POST, ["commit"; hash; ("rebuild-all" as rebuild_mode)]
+  | `POST, ["commit"; hash; ("rebuild-failed" as rebuild_mode)] ->
+    let rebuild_all =
+      match rebuild_mode with
+      | "rebuild-all" -> true
+      | "rebuild-failed" -> false
+      | _ -> assert false
+    in
+    let can_rebuild (commit: Client.Commit.t) (job_i: Client.job_info) =
+      if rebuild_all || can_rebuild job_i then
+        let variant = job_i.variant in
+        Capability.with_ref (Client.Commit.job_of_variant commit variant) @@ fun job ->
+        Lwt.return (Some (job_i, job))
+      else Lwt.return None
+    in
+    let rebuild_many (commit: Client.Commit.t) (job_infos : Client.job_info list) =
+      Lwt_list.fold_left_s (fun (success, failed) job_info ->
+        can_rebuild commit job_info >>= function
+        | None -> Lwt.return (success, failed)
+        | Some (ji, j) ->
+            Capability.with_ref (Current_rpc.Job.rebuild j) @@ fun new_job ->
+            Capability.await_settled new_job >|= function
+            | Ok () -> (ji :: success, failed)
+            | Error { Capnp_rpc.Exception.reason; _ } ->
+                Log.err (fun f -> f "Error rebuilding job: %s" reason);
+                (success, succ failed)
+      ) ([], 0) job_infos
+    in
+    Capability.with_ref (Client.Repo.commit_of_hash repo hash) @@ fun commit ->
+    Client.Commit.refs commit >>!= fun refs ->
+    Client.Commit.jobs commit >>!= fun jobs ->
+      begin rebuild_many commit jobs >>= fun (success, failed) ->
+        let open Tyxml.Html in
+        let uri = commit_url ~owner ~name hash in
+        let format_job_info ji =
+          li [span [txt @@ Fmt.str "Rebuild job: %s" ji.Client.variant]]
+        in
+        let success_msg =
+          match success with
+          | [] -> div [span [txt "No jobs were rebuilt."]]
+          | success -> ul (List.map format_job_info success)
+        in
+        let fail_msg = match failed with
+          | 0 -> div []
+          | n -> div [span [txt @@ Fmt.str "%d job%s could not be rebuilt. Check logs for more detail." n (if n >= 1 then "s" else "")]]
+        in
+        let return_link =
+          a ~a:[a_href uri] [txt @@ Fmt.str "Return to %s" (short_hash hash)]
+        in
+        let body = Template.instance [
+            breadcrumbs ["github", "github";
+                         owner, owner;
+                         name, name] (short_hash hash);
+            link_github_refs ~owner ~name refs;
+            success_msg;
+            fail_msg;
+            return_link;
+          ] in
+        Server.respond_string ~status:`OK ~headers ~body () |> normal_response
+      end
   | `POST, ["commit"; hash; "cancel"] ->
     let can_cancel (commit: Client.Commit.t) (job_i: Client.job_info) =
-      match job_i.outcome with
-      | Active | NotStarted ->
-          let variant = job_i.variant in
-          Capability.with_ref (Client.Commit.job_of_variant commit variant) @@ fun job ->
-          Lwt.return (Some (job_i, job))
-      | Aborted | Failed _ | Passed | Undefined _ -> Lwt.return None
+      if can_cancel job_i then
+        let variant = job_i.variant in
+        Capability.with_ref (Client.Commit.job_of_variant commit variant) @@ fun job ->
+        Lwt.return (Some (job_i, job))
+      else Lwt.return None
     in
     let cancel_many (commit: Client.Commit.t) (job_infos : Client.job_info list) =
       Lwt_list.fold_left_s (fun (success, failed) job_info ->
-        can_cancel commit job_info >>= function (* TODO: Can we replace these two calls to the scheduler with only one call to just cancel? *)
+        can_cancel commit job_info >>= function
         | None -> Lwt.return (success, failed)
         | Some (ji, j) ->
             Current_rpc.Job.cancel j >|= function
