@@ -356,7 +356,8 @@ let repo_handle ~meth ~owner ~name ~repo path =
       | _ -> assert false
     in
     let can_rebuild (commit: Client.Commit.t) (job_i: Client.job_info) =
-      if rebuild_all || can_rebuild job_i then
+      (* TODO: Remove the (analysis) magic string *)
+      if (rebuild_all && job_i.Client.variant <> "(analysis)") || can_rebuild job_i then
         let variant = job_i.variant in
         Capability.with_ref (Client.Commit.job_of_variant commit variant) @@ fun job ->
         Lwt.return (Some (job_i, job))
