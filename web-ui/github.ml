@@ -355,9 +355,14 @@ let repo_handle ~meth ~owner ~name ~repo path =
       | "rebuild-failed" -> false
       | _ -> assert false
     in
-    let can_rebuild (commit: Client.Commit.t) (job_i: Client.job_info) =
+    let is_a_job_triggering_other_jobs variant =
       (* TODO: Remove the (analysis) magic string *)
-      if (rebuild_all && job_i.Client.variant <> "(analysis)") || can_rebuild job_i then
+      (* TODO: Same for revdeps *)
+      String.equal variant "(analysis)" &&
+      Astring.String.is_suffix ~affix:",revdeps" variant
+    in
+    let can_rebuild (commit: Client.Commit.t) (job_i: Client.job_info) =
+      if (rebuild_all && not (is_a_job_triggering_other_jobs job_i.Client.variant)) || can_rebuild job_i then
         let variant = job_i.variant in
         Capability.with_ref (Client.Commit.job_of_variant commit variant) @@ fun job ->
         Lwt.return (Some (job_i, job))
