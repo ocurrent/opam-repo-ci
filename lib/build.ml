@@ -148,7 +148,7 @@ module Op = struct
                 To reproduce locally:@.@.\
                 %a@.\
                 git fetch origin master@.\
-                git merge %s@.\
+                git --no-edit merge %s@.\
                 cat > ../Dockerfile <<'END-OF-DOCKERFILE'@.\
                 \o033[34m%s\o033[0m@.\
                 END-OF-DOCKERFILE@.\
