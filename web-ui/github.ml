@@ -276,7 +276,11 @@ let repo_handle ~meth ~owner ~name ~repo path =
     commit_status >>!= fun commit_status ->
     let can_cancel = List.exists can_cancel jobs in
     let can_rebuild = List.exists can_rebuild jobs in
-    let buttons = [] in
+    let buttons = Tyxml.Html.[
+      form ~a:[a_action (hash ^ "/rebuild-all"); a_method `Post] [
+        input ~a:[a_input_type `Submit; a_value "Rebuild All"] ()
+      ]
+    ] in
     let buttons =
       if can_cancel then Tyxml.Html.(
           form ~a:[a_action (hash ^ "/cancel"); a_method `Post] [
@@ -286,8 +290,8 @@ let repo_handle ~meth ~owner ~name ~repo path =
     in
     let buttons =
       if can_rebuild then Tyxml.Html.(
-          form ~a:[a_action (hash ^ "/rebuild"); a_method `Post] [
-            input ~a:[a_input_type `Submit; a_value "Rebuild"] ()
+          form ~a:[a_action (hash ^ "/rebuild-failed"); a_method `Post] [
+            input ~a:[a_input_type `Submit; a_value "Rebuild Failed"] ()
           ]
       ) :: buttons else buttons
     in
@@ -340,9 +344,16 @@ let repo_handle ~meth ~owner ~name ~repo path =
     | Error { Capnp_rpc.Exception.reason; _ } ->
         Server.respond_error ~body:reason () |> normal_response
     end
-  | `POST, ["commit"; hash; "rebuild"] ->
+  | `POST, ["commit"; hash; ("rebuild-all" as rebuild_mode)]
+  | `POST, ["commit"; hash; ("rebuild-failed" as rebuild_mode)] ->
+    let rebuild_all =
+      match rebuild_mode with
+      | "rebuild-all" -> true
+      | "rebuild-failed" -> false
+      | _ -> assert false
+    in
     let can_rebuild (commit: Client.Commit.t) (job_i: Client.job_info) =
-      if can_rebuild job_i then
+      if rebuild_all || can_rebuild job_i then
         let variant = job_i.variant in
         Capability.with_ref (Client.Commit.job_of_variant commit variant) @@ fun job ->
         Lwt.return (Some (job_i, job))
