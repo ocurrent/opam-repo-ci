@@ -247,6 +247,16 @@ let stream_logs job ~owner ~name ~refs ~hash ~variant ~status (data, next) write
   in
   aux next
 
+let can_cancel job_info =
+  match job_info.Client.outcome with
+  | Active | NotStarted -> true
+  | Aborted | Failed _ | Passed | Undefined _ -> false
+
+let can_rebuild job_info =
+  match job_info.Client.outcome with
+  | Aborted | Failed _ -> true
+  | Active | NotStarted | Passed | Undefined _ -> false
+
 let repo_handle ~meth ~owner ~name ~repo path =
   match meth, path with
   | `GET, [] ->
@@ -264,24 +274,15 @@ let repo_handle ~meth ~owner ~name ~repo path =
     Client.Commit.jobs commit >>!= fun jobs ->
     refs >>!= fun refs ->
     commit_status >>!= fun commit_status ->
-    let can_cancel = List.fold_left (fun accum job_info ->
-      accum ||
-        match job_info.Client.outcome with
-        | Active | NotStarted -> true
-        | Aborted | Failed _ | Passed | Undefined _ -> false) false jobs
-    in
+    let can_cancel = List.exists can_cancel jobs in
+    let can_rebuild = List.exists can_rebuild jobs in
+    let buttons = [] in
     let buttons =
-      if can_cancel then Tyxml.Html.[
+      if can_cancel then Tyxml.Html.(
           form ~a:[a_action (hash ^ "/cancel"); a_method `Post] [
             input ~a:[a_input_type `Submit; a_value "Cancel"] ()
           ]
-      ] else []
-    in
-    let can_rebuild = List.fold_left (fun accum job_info ->
-      accum ||
-        match job_info.Client.outcome with
-        | Aborted | Failed _ -> true
-        | Active | NotStarted | Passed | Undefined _ -> false) false jobs
+      ) :: buttons else buttons
     in
     let buttons =
       if can_rebuild then Tyxml.Html.(
@@ -341,12 +342,11 @@ let repo_handle ~meth ~owner ~name ~repo path =
     end
   | `POST, ["commit"; hash; "rebuild"] ->
     let can_rebuild (commit: Client.Commit.t) (job_i: Client.job_info) =
-      match job_i.outcome with
-      | Aborted | Failed _ ->
-          let variant = job_i.variant in
-          Capability.with_ref (Client.Commit.job_of_variant commit variant) @@ fun job ->
-          Lwt.return (Some (job_i, job))
-      | Active | NotStarted | Passed | Undefined _ -> Lwt.return None
+      if can_rebuild job_i then
+        let variant = job_i.variant in
+        Capability.with_ref (Client.Commit.job_of_variant commit variant) @@ fun job ->
+        Lwt.return (Some (job_i, job))
+      else Lwt.return None
     in
     let rebuild_many (commit: Client.Commit.t) (job_infos : Client.job_info list) =
       Lwt_list.fold_left_s (fun (success, failed) job_info ->
@@ -395,12 +395,11 @@ let repo_handle ~meth ~owner ~name ~repo path =
       end
   | `POST, ["commit"; hash; "cancel"] ->
     let can_cancel (commit: Client.Commit.t) (job_i: Client.job_info) =
-      match job_i.outcome with
-      | Active | NotStarted ->
-          let variant = job_i.variant in
-          Capability.with_ref (Client.Commit.job_of_variant commit variant) @@ fun job ->
-          Lwt.return (Some (job_i, job))
-      | Aborted | Failed _ | Passed | Undefined _ -> Lwt.return None
+      if can_cancel job_i then
+        let variant = job_i.variant in
+        Capability.with_ref (Client.Commit.job_of_variant commit variant) @@ fun job ->
+        Lwt.return (Some (job_i, job))
+      else Lwt.return None
     in
     let cancel_many (commit: Client.Commit.t) (job_infos : Client.job_info list) =
       Lwt_list.fold_left_s (fun (success, failed) job_info ->
