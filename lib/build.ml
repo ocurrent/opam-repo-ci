@@ -146,6 +146,7 @@ module Op = struct
     Current.Job.write job
       (Fmt.str "@.\
                 To reproduce locally:@.@.\
+                cd $(mktemp -d)@.\
                 %a@.\
                 git fetch origin master@.\
                 git merge --no-edit %s@.\
