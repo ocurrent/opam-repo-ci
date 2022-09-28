@@ -5,8 +5,9 @@ module Git = Current_git
 module Github = Current_github
 module Docker = Current_docker.Default
 module Common = Opam_repo_ci_api.Common
+module Distro = Dockerfile_opam.Distro
 
-let master_distro = (Dockerfile_distro.resolve_alias Dockerfile_distro.master_distro :> Dockerfile_distro.t)
+let master_distro = (Distro.resolve_alias Distro.master_distro :> Distro.t)
 let default_compiler_full = Ocaml_version.Releases.latest
 let default_compiler = Ocaml_version.with_just_major_and_minor default_compiler_full
 let opam_version = `Dev
@@ -169,7 +170,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
     |> Node.collapse ~key:"platform" ~value:label ~input:analysis
   in
   let compilers =
-    let master_distro = Dockerfile_distro.tag_of_distro master_distro in
+    let master_distro = Distro.tag_of_distro master_distro in
     (Ocaml_version.Releases.recent @ Ocaml_version.Releases.unreleased_betas) |>
     List.map (fun v ->
       let v = Ocaml_version.with_just_major_and_minor v in
@@ -182,15 +183,15 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
   let distributions =
     let default_compiler = Ocaml_version.to_string default_compiler in
     let linux_distributions =
-      Dockerfile_distro.active_distros `X86_64 |>
+      Distro.active_distros `X86_64 |>
       List.fold_left (fun acc distro ->
-        if Dockerfile_distro.compare distro master_distro = 0 (* TODO: Add Dockerfile_distro.equal *)
-        || Dockerfile_distro.os_family_of_distro distro <> `Linux (* TODO: Unlock this when Windows is ready *)
-        || Dockerfile_distro.compare distro (`CentOS `V7 : Dockerfile_distro.t) = 0 (* TODO: Remove when it has been removed in ocaml-dockerfile *)
-        || Dockerfile_distro.compare distro (`OracleLinux `V7 : Dockerfile_distro.t) = 0 then
+        if Distro.compare distro master_distro = 0 (* TODO: Add Distro.equal *)
+        || Distro.os_family_of_distro distro <> `Linux (* TODO: Unlock this when Windows is ready *)
+        || Distro.compare distro (`CentOS `V7 : Distro.t) = 0 (* TODO: Remove when it has been removed in ocaml-dockerfile *)
+        || Distro.compare distro (`OracleLinux `V7 : Distro.t) = 0 then
           acc
         else
-          let distro = Dockerfile_distro.tag_of_distro distro in
+          let distro = Distro.tag_of_distro distro in
           let variant = Variant.v ~arch:`X86_64 ~distro ~compiler:(default_compiler, None) in
           build ~opam_version ~lower_bounds:false ~revdeps:false distro variant :: acc
       ) []
@@ -207,7 +208,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
   let analysis = Node.action `Analysed analysis
   and lint = Node.action `Linted lint
   and extras =
-    let master_distro = Dockerfile_distro.tag_of_distro master_distro in
+    let master_distro = Distro.tag_of_distro master_distro in
     let default_comp = Ocaml_version.to_string default_compiler in
     let default_variant = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(default_comp, None) in
     build ~opam_version:`V2_0 ~lower_bounds:false ~revdeps:false "opam-2.0" default_variant ::
