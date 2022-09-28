@@ -3,7 +3,13 @@ let profile =
   | Some "production" -> `Production
   | Some "staging" -> `Staging
   | Some "dev" | None -> `Dev
-  | Some x -> Fmt.failwith "Unknown $PROFILE setting %S" x
+  | Some x -> Fmt.failwith "Unknown $CI_PROFILE setting %S" x
+
+let cmdliner_envs =
+  let doc = Printf.sprintf "CI profile settings, must be %s. Defaults to $(b,dev)."
+              (Cmdliner.Arg.doc_alts [ "dev"; "production"; "staging" ])
+  in
+  [ Cmdliner.Cmd.Env.info "CI_PROFILE" ~doc ]
 
 module Capnp = struct
   (* Cap'n Proto RPC is enabled by passing --capnp-public-address. These values are hard-coded

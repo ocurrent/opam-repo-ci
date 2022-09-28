@@ -148,7 +148,7 @@ let submission_service =
 
 let cmd =
   let doc = "Build OCaml projects on GitHub" in
-  let info = Cmd.info "opam-repo-ci" ~doc in
+  let info = Cmd.info "opam-repo-ci" ~doc ~envs:Conf.cmdliner_envs in
   Cmd.v info Term.(term_result (const main $ Current.Config.cmdliner $ Current_web.cmdliner $
                      Current_github.App.cmdliner $ Capnp_setup.cmdliner $ Current_github.Auth.cmdliner $ submission_service))
 
