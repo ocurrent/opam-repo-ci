@@ -358,7 +358,7 @@ let repo_handle ~meth ~owner ~name ~repo path =
     let is_a_job_triggering_other_jobs variant =
       (* TODO: Remove the (analysis) magic string *)
       (* TODO: Same for revdeps *)
-      String.equal variant "(analysis)" &&
+      String.equal variant "(analysis)" ||
       Astring.String.is_suffix ~affix:",revdeps" variant
     in
     let can_rebuild (commit: Client.Commit.t) (job_i: Client.job_info) =
