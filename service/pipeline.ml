@@ -197,11 +197,17 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
       ) []
     in
     let macos_distributions =
-      Variant.macos_distributions |>
-      List.map (fun distro ->
-        let variant = Variant.v ~arch:`X86_64 ~distro ~compiler:(default_compiler, None) in
-        build ~opam_version ~lower_bounds:false ~revdeps:false distro variant
-      )
+      (Variant.macos_distributions |>
+       List.map (fun distro ->
+         let variant = Variant.v ~arch:`X86_64 ~distro ~compiler:(default_compiler, None) in
+         build ~opam_version ~lower_bounds:false ~revdeps:false distro variant
+       )) @
+      (* TODO: Have a more general approach for this *)
+      (Variant.macos_distributions |>
+       List.map (fun distro ->
+         let variant = Variant.v ~arch:`X86_64 ~distro ~compiler:("5.0", None) in
+         build ~opam_version ~lower_bounds:false ~revdeps:false (distro^"-ocaml-5.0") variant
+       ))
     in
     macos_distributions @ linux_distributions
   in
