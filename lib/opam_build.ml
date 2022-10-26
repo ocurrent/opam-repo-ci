@@ -85,7 +85,7 @@ let setup_repository ~variant ~for_docker ~opam_version =
     | `macOS | `linux -> ""
     (* TODO: On macOS, the sandbox is always (and should be) enabled by default but does not have those ~/.opamrc-sandbox files *)
   in
-  user ~uid:1000 ~gid:1000 ::
+  user_unix ~uid:1000 ~gid:1000 ::
   (match home_dir with Some home_dir -> [workdir home_dir] | None -> []) @
   (* TODO: macOS seems to have a bug in (copy ...) so I am forced to remove the (workdir ...) here.
      Otherwise the "opam pin" after the "opam repository set-url" will fail (cannot find the new package for some reason) *)
