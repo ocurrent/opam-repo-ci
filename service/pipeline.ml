@@ -301,7 +301,7 @@ end = struct
     in f x y
 
   let merge (j1, s1) (j2, s2) =
-    let impossible name _ _ = Printf.kprintf failwith "Two jobs have the same name %S" name in
+    let impossible name _ _ = Printf.ksprintf failwith "Two jobs have the same name %S" name in
     map2 (Index.Job_map.union impossible) j1 j2,
     map2 Summary.merge s1 s2
 end
