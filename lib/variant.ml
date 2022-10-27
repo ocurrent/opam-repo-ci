@@ -20,8 +20,10 @@ let distribution t = t.distribution
 
 let pp f t = Fmt.pf f "%s/%s" (docker_tag t) (Ocaml_version.string_of_arch t.arch)
 
+let macos_homebrew = "macos-homebrew"
+
 let macos_distributions = [
-  "macos-homebrew";
+  macos_homebrew;
   (* TODO: Add macos-macports *)
 ]
 
