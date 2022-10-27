@@ -180,36 +180,34 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
       build ~opam_version ~lower_bounds:true ~revdeps v variant
     )
   in
-  let distributions =
+  let linux_distributions =
     let default_compiler = Ocaml_version.to_string default_compiler in
-    let linux_distributions =
-      Distro.active_distros `X86_64 |>
-      List.fold_left (fun acc distro ->
-        if Distro.compare distro master_distro = 0 (* TODO: Add Distro.equal *)
-        || Distro.os_family_of_distro distro <> `Linux (* TODO: Unlock this when Windows is ready *)
-        || Distro.compare distro (`CentOS `V7 : Distro.t) = 0 (* TODO: Remove when it has been removed in ocaml-dockerfile *)
-        || Distro.compare distro (`OracleLinux `V7 : Distro.t) = 0 then
-          acc
-        else
-          let distro = Distro.tag_of_distro distro in
-          let variant = Variant.v ~arch:`X86_64 ~distro ~compiler:(default_compiler, None) in
-          build ~opam_version ~lower_bounds:false ~revdeps:false distro variant :: acc
-      ) []
+    Distro.active_distros `X86_64 |>
+    List.fold_left (fun acc distro ->
+      if Distro.compare distro master_distro = 0 (* TODO: Add Distro.equal *)
+      || Distro.os_family_of_distro distro <> `Linux (* TODO: Unlock this when Windows is ready *)
+      || Distro.compare distro (`CentOS `V7 : Distro.t) = 0 (* TODO: Remove when it has been removed in ocaml-dockerfile *)
+      || Distro.compare distro (`OracleLinux `V7 : Distro.t) = 0 then
+        acc
+      else
+        let distro = Distro.tag_of_distro distro in
+        let variant = Variant.v ~arch:`X86_64 ~distro ~compiler:(default_compiler, None) in
+        build ~opam_version ~lower_bounds:false ~revdeps:false distro variant :: acc
+    ) []
+  in
+  let macos =
+    let build_macos ~distro ~arch ~compiler =
+      let variant = Variant.v ~arch ~distro ~compiler in
+      let label = Fmt.str "%s-%s" (Variant.docker_tag variant) (Ocaml_version.string_of_arch arch) in
+      build ~opam_version ~lower_bounds:false ~revdeps:false label variant
     in
-    let macos_distributions =
-      (Variant.macos_distributions |>
-       List.map (fun distro ->
-         let variant = Variant.v ~arch:`X86_64 ~distro ~compiler:(default_compiler, None) in
-         build ~opam_version ~lower_bounds:false ~revdeps:false distro variant
-       )) @
-      (* TODO: Have a more general approach for this *)
-      (Variant.macos_distributions |>
-       List.map (fun distro ->
-         let variant = Variant.v ~arch:`X86_64 ~distro ~compiler:("5.0", None) in
-         build ~opam_version ~lower_bounds:false ~revdeps:false (distro^"-ocaml-5.0") variant
-       ))
-    in
-    macos_distributions @ linux_distributions
+    (* TODO: Do something less manual when the macOS setup has been automated *)
+    let homebrew = Variant.macos_homebrew in
+    [
+      build_macos ~distro:homebrew ~arch:`X86_64 ~compiler:("4.14", None);
+      build_macos ~distro:homebrew ~arch:`Aarch64 ~compiler:("4.14", None);
+      build_macos ~distro:homebrew ~arch:`X86_64 ~compiler:("5.0", None);
+    ]
   in
   let analysis = Node.action `Analysed analysis
   and lint = Node.action `Linted lint
@@ -242,7 +240,8 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
     Node.leaf ~label:"(analysis)" analysis;
     Node.leaf ~label:"(lint)" lint;
     Node.branch ~label:"compilers" compilers;
-    Node.branch ~label:"distributions" distributions;
+    Node.branch ~label:"distributions" linux_distributions;
+    Node.branch ~label:"macos" macos;
     Node.branch ~label:"extras" extras;
   ]
 
