@@ -33,8 +33,13 @@ module Analysis = struct
     | UnsignificantlyChanged
   [@@deriving yojson]
 
+  type data = {
+    kind : kind;
+    has_tests : bool;
+  } [@@deriving yojson]
+
   type t = {
-    packages : (OpamPackage.t * kind) list;
+    packages : (OpamPackage.t * data) list;
   }
   [@@deriving yojson]
 
@@ -173,6 +178,44 @@ module Analysis = struct
       ) OpamPackage.Map.empty
     >|= Result.ok
 
+  let has_tests opam =
+    let has_with_test_variable () =
+      let exception With_test_found in
+      let aux variable =
+        if OpamVariable.Full.is_global variable then
+          match OpamVariable.to_string (OpamVariable.Full.variable variable) with
+          | "with-test" -> raise With_test_found
+          | _ -> variable
+        else
+          variable
+      in
+      try
+        let _ : OpamFile.OPAM.t =
+          OpamFileTools.map_all_variables aux opam
+        in
+        false
+      with With_test_found -> true
+    in
+    match OpamFile.OPAM.run_test opam with
+    | [] -> has_with_test_variable ()
+    | _::_ -> true
+
+  let package_to_path pkg =
+    let name = OpamPackage.Name.to_string (OpamPackage.name pkg) in
+    let version = OpamPackage.Version.to_string (OpamPackage.version pkg) in
+    let ( // ) = Fpath.( / ) in
+    Fpath.v "packages" // name // (name^"."^version) // "opam"
+
+  let map_has_tests ~dir (pkg, kind) =
+    let path = Fpath.to_string (package_to_path pkg) in
+    get_opam ~cwd:dir path >|= function
+    | Error () -> assert false
+    | Ok content ->
+        let filename = OpamFile.make (OpamFilename.raw path) in
+        let content = OpamFile.OPAM.read_from_string ~filename content in
+        let has_tests = has_tests content in
+        (pkg, {kind; has_tests})
+
   let of_dir ~job ~master dir =
     let master = Current_git.Commit.hash master in
     let cmd = "", [| "git"; "merge"; "-q"; "--"; master |] in
@@ -182,7 +225,9 @@ module Analysis = struct
       Lwt_result.fail (`Msg "Cannot merge to master - please rebase!")
     | Ok () ->
       find_changed_packages ~job ~master dir >>!= fun packages ->
-      let r = { packages = OpamPackage.Map.bindings packages } in
+      let packages = OpamPackage.Map.bindings packages in
+      Lwt_list.map_s (map_has_tests ~dir) packages >>= fun packages ->
+      let r = { packages } in
       Current.Job.log job "@[<v2>Results:@,%a@]" Yojson.Safe.(pretty_print ~std:true) (to_yojson r);
       Lwt.return (Ok r)
 end

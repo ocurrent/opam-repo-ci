@@ -85,6 +85,14 @@ let list_map ordered ?collapse_key fn input ~ctx =
     Logs.warn (fun f -> f "Node.list_map: input is ready but output is pending!");
     ctx.empty
 
+module Bool = struct
+  include Bool
+  let pp = Fmt.bool
+end
+
+let bool_map fn input =
+  let input = Current.map (fun x -> if x then [x] else []) input in
+  list_map (module Bool) (fun _ -> fn ()) input
 
 let collapse ~key ~value ~input t ~ctx =
   Current.collapse ~key ~value ~input (t ~ctx)
