@@ -39,6 +39,8 @@ val branch_dyn : label:string Current.t -> 'a t list -> 'a t
 val list_map : (module Current_term.S.ORDERED with type t = 'a) -> ?collapse_key:string -> ('a Current.t -> 'b t) -> 'a list Current.t -> 'b t
 (** [list_map ord ?collapse_key f lst] is the dynamic list [Current.list_map ord ?collapse_key f lst], except that its output is fixed to [empty] until the input [lst] is successful. You must ensure that the status of the input [lst] is reported elsewhere. *)
 
+val bool_map : (unit -> 'a t) -> bool Current.t -> 'a t
+
 val collapse : key:string -> value:string -> input:_ Current.t -> 'a t -> 'a t
 (** [collapse ~key ~value ~input t] performs [Current.collapse]. *)
 

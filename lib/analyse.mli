@@ -6,10 +6,15 @@ module Analysis : sig
     | UnsignificantlyChanged
   [@@deriving yojson]
 
+  type data = {
+    kind : kind;
+    has_tests : bool;
+  } [@@deriving yojson]
+
   type t [@@deriving yojson]
 
   val get_opam : cwd:Fpath.t -> string -> (string, unit) result Lwt.t
-  val packages : t -> (OpamPackage.t * kind) list
+  val packages : t -> (OpamPackage.t * data) list
   val is_duniverse : t -> bool
 end
 

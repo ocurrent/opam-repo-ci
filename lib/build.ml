@@ -220,7 +220,7 @@ let v t ~label ~spec ~base ~master ~urgent commit =
 
 let list_revdeps t ~platform ~opam_version ~pkgopt ~base ~master ~after commit =
   Current.component "list revdeps" |>
-  let> {PackageOpt.pkg; urgent} = pkgopt
+  let> {PackageOpt.pkg; urgent; has_tests = _} = pkgopt
   and> base = base
   and> commit = commit
   and> master = master
