@@ -8,8 +8,8 @@ module Common = Opam_repo_ci_api.Common
 module Distro = Dockerfile_opam.Distro
 
 let master_distro = (Distro.resolve_alias Distro.master_distro :> Distro.t)
-let default_compiler_full = Ocaml_version.Releases.latest
-let default_compiler = Ocaml_version.with_just_major_and_minor default_compiler_full
+let default_compilers_full = Ocaml_version.Releases.[v4_14; v5_0] (* NOTE: Should probably stay with list length 2 *)
+let default_compilers = List.map Ocaml_version.with_just_major_and_minor default_compilers_full
 let opam_version = `Dev
 
 let weekly = Current_cache.Schedule.v ~valid_for:(Duration.of_day 7) ()
@@ -179,67 +179,77 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
     (Ocaml_version.Releases.recent @ Ocaml_version.Releases.unreleased_betas) |>
     List.map (fun v ->
       let v = Ocaml_version.with_just_major_and_minor v in
-      let revdeps = Ocaml_version.equal v default_compiler in (* TODO: Remove this when the cluster is ready *)
+      let revdeps = List.exists (Ocaml_version.equal v) default_compilers in (* TODO: Remove this when the cluster is ready *)
       let v = Ocaml_version.to_string v in
       let variant = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(v, None) in
       build ~opam_version ~lower_bounds:true ~revdeps v variant
     )
   in
   let linux_distributions =
-    let default_compiler = Ocaml_version.to_string default_compiler in
-    Distro.active_distros `X86_64 |>
-    List.fold_left (fun acc distro ->
-      if Distro.compare distro master_distro = 0 (* TODO: Add Distro.equal *)
-      || Distro.os_family_of_distro distro <> `Linux (* TODO: Unlock this when Windows is ready *)
-      || Distro.compare distro (`CentOS `V7 : Distro.t) = 0 (* TODO: Remove when it has been removed in ocaml-dockerfile *)
-      || Distro.compare distro (`OracleLinux `V7 : Distro.t) = 0 then
-        acc
-      else
-        let distro = Distro.tag_of_distro distro in
-        let variant = Variant.v ~arch:`X86_64 ~distro ~compiler:(default_compiler, None) in
-        build ~opam_version ~lower_bounds:false ~revdeps:false distro variant :: acc
-    ) []
+    let build ~distro ~arch ~compiler =
+      let variant = Variant.v ~arch ~distro ~compiler in
+      let label = Fmt.str "%s-ocaml-%s" distro (Variant.pp_ocaml_version variant) in
+      build ~opam_version ~lower_bounds:false ~revdeps:false label variant
+    in
+    List.fold_left (fun acc comp ->
+      let comp = Ocaml_version.to_string comp in
+      List.fold_left (fun acc distro ->
+        if Distro.compare distro master_distro = 0 (* TODO: Add Distro.equal *)
+        || Distro.os_family_of_distro distro <> `Linux (* TODO: Unlock this when Windows is ready *)
+        || Distro.compare distro (`CentOS `V7 : Distro.t) = 0 (* TODO: Remove when it has been removed in ocaml-dockerfile *)
+        || Distro.compare distro (`OracleLinux `V7 : Distro.t) = 0 then
+          acc
+        else
+          let distro = Distro.tag_of_distro distro in
+          build ~arch:`X86_64 ~distro ~compiler:(comp, None) :: acc
+      ) acc (Distro.active_distros `X86_64)
+    ) [] default_compilers
   in
   let macos =
-    let build_macos ~distro ~arch ~compiler =
+    let build ~distro ~arch ~compiler =
       let variant = Variant.v ~arch ~distro ~compiler in
       let label = Fmt.str "%s-%s" (Variant.docker_tag variant) (Ocaml_version.string_of_arch arch) in
       build ~opam_version ~lower_bounds:false ~revdeps:false label variant
     in
-    (* TODO: Do something less manual when the macOS setup has been automated *)
     let homebrew = Variant.macos_homebrew in
-    [
-      build_macos ~distro:homebrew ~arch:`X86_64 ~compiler:("4.14", None);
-      build_macos ~distro:homebrew ~arch:`Aarch64 ~compiler:("4.14", None);
-      build_macos ~distro:homebrew ~arch:`X86_64 ~compiler:("5.0", None);
-    ]
+    List.fold_left (fun acc comp ->
+      let comp = Ocaml_version.to_string comp in
+      List.fold_left (fun acc arch ->
+        build ~distro:homebrew ~arch ~compiler:(comp, None) :: acc
+      ) acc [`Aarch64; `X86_64]
+    ) [] default_compilers
   in
   let analysis = Node.action `Analysed analysis
   and lint = Node.action `Linted lint
   and extras =
+    let build ~opam_version ~distro ~arch ~compiler label =
+      let variant = Variant.v ~arch ~distro ~compiler in
+      let label = Fmt.str "%s-ocaml-%s" label (Variant.pp_ocaml_version variant) in
+      build ~opam_version ~lower_bounds:false ~revdeps:false label variant
+    in
     let master_distro = Distro.tag_of_distro master_distro in
-    let default_comp = Ocaml_version.to_string default_compiler in
-    let default_variant = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(default_comp, None) in
-    build ~opam_version:`V2_0 ~lower_bounds:false ~revdeps:false "opam-2.0" default_variant ::
-    build ~opam_version:`V2_1 ~lower_bounds:false ~revdeps:false "opam-2.1" default_variant ::
-    List.filter_map (fun v ->
-      match Ocaml_version.extra v with
-      | None -> None
-      | Some label ->
-          (* TODO: This should be in ocaml-version or ocaml-dockerfile *)
-          (* TODO: The same code is used in docker-base-images *)
-          let label = String.map (function '+' -> '-' | c -> c) label in
-          let variant = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(default_comp, Some label) in
-          Some (build ~opam_version ~lower_bounds:false ~revdeps:false label variant)
-    ) (Ocaml_version.Opam.V2.switches `X86_64 default_compiler_full) @
-    List.filter_map (function
-      | `X86_64 -> None
-      | `Riscv64 -> None (* TODO: unlock this one when more machines are available *)
-      | arch ->
-          let label = Ocaml_version.to_opam_arch arch in
-          let variant = Variant.v ~arch ~distro:master_distro ~compiler:(default_comp, None) in
-          Some (build ~opam_version ~lower_bounds:false ~revdeps:false label variant)
-    ) Ocaml_version.arches
+    List.fold_left (fun acc comp_full ->
+      let comp = Ocaml_version.to_string (Ocaml_version.with_just_major_and_minor comp_full) in
+      build ~opam_version:`V2_0 ~arch:`X86_64 ~distro:master_distro ~compiler:(comp, None) "opam-2.0" ::
+      build ~opam_version:`V2_1 ~arch:`X86_64 ~distro:master_distro ~compiler:(comp, None) "opam-2.1" ::
+      List.filter_map (fun v ->
+        match Ocaml_version.extra v with
+        | None -> None
+        | Some label ->
+            (* TODO: This should be in ocaml-version or ocaml-dockerfile *)
+            (* TODO: The same code is used in docker-base-images *)
+            let label = String.map (function '+' -> '-' | c -> c) label in
+            Some (build ~opam_version ~arch:`X86_64 ~distro:master_distro ~compiler:(comp, Some label) label)
+      ) (Ocaml_version.Opam.V2.switches `X86_64 comp_full) @
+      List.filter_map (function
+        | `X86_64 -> None
+        | `Riscv64 -> None (* TODO: unlock this one when more machines are available *)
+        | arch ->
+            let label = Ocaml_version.to_opam_arch arch in
+            Some (build ~opam_version ~arch ~distro:master_distro ~compiler:(comp, None) label)
+      ) Ocaml_version.arches @
+      acc
+    ) [] default_compilers_full
   in
   Node.root [
     Node.leaf ~label:"(analysis)" analysis;

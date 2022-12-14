@@ -9,13 +9,16 @@ type t = {
   arch : arch;
 } [@@deriving to_yojson]
 
-let arch t = t.arch
-let docker_tag t =
+let pp_ocaml_version t =
   let variant = match t.ocaml_variant with
     | None -> ""
     | Some variant -> "-"^variant
   in
-  t.distribution^"-ocaml-"^t.ocaml_version^variant
+  t.ocaml_version^variant
+
+let arch t = t.arch
+let docker_tag t =
+  t.distribution^"-ocaml-"^pp_ocaml_version t
 let distribution t = t.distribution
 
 let pp f t = Fmt.pf f "%s/%s" (docker_tag t) (Ocaml_version.string_of_arch t.arch)
