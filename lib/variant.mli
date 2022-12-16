@@ -4,6 +4,8 @@ type t [@@deriving to_yojson]
 
 val v : arch:arch -> distro:string -> compiler:(string * string option) -> t
 
+val pp_ocaml_version : t -> string
+
 val arch : t -> arch
 val docker_tag : t -> string
 val distribution : t -> string
