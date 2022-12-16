@@ -224,7 +224,8 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
   and extras =
     let build ~opam_version ~distro ~arch ~compiler label =
       let variant = Variant.v ~arch ~distro ~compiler in
-      let label = Fmt.str "%s-ocaml-%s" label (Variant.pp_ocaml_version variant) in
+      let label = if String.equal label "" then "" else label^"-" in
+      let label = Fmt.str "%socaml-%s" label (Variant.pp_ocaml_version variant) in
       build ~opam_version ~lower_bounds:false ~revdeps:false label variant
     in
     let master_distro = Distro.tag_of_distro master_distro in
@@ -239,7 +240,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
             (* TODO: This should be in ocaml-version or ocaml-dockerfile *)
             (* TODO: The same code is used in docker-base-images *)
             let label = String.map (function '+' -> '-' | c -> c) label in
-            Some (build ~opam_version ~arch:`X86_64 ~distro:master_distro ~compiler:(comp, Some label) label)
+            Some (build ~opam_version ~arch:`X86_64 ~distro:master_distro ~compiler:(comp, Some label) "")
       ) (Ocaml_version.Opam.V2.switches `X86_64 comp_full) @
       List.filter_map (function
         | `X86_64 -> None
