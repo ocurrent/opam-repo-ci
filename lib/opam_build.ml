@@ -46,9 +46,12 @@ let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
             echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
           fi;
         done;
+        partial_fails=$(echo "$failed" | grep -Fvx "%s" | tr '\n' ' ');
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
         exit 1|}
       (match opam_version with `V2_1 | `Dev -> "" | `V2_0 -> fmt "opam depext%s %s && " with_tests_opt pkg) with_tests_opt pkg
       (Variant.distribution variant)
+      pkg
   ]
 
 let setup_repository ~variant ~for_docker ~opam_version =
