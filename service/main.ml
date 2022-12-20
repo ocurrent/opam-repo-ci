@@ -65,6 +65,11 @@ let add_default_matching_log_rules () =
         report = {|[SKIP] Failure ignored|};
         score = 100;
       };
+      { (* Catches failures when building dependencies *)
+        pattern = {|[\n]opam-repo-ci detected dependencies failing: (.*)[\n]|};
+        report = {|\1 failed to build|};
+        score = 75;
+      };
       { (* e.g. build: ["bash"] on platforms without bash will result in this error *)
         pattern = {|[\n]# bwrap: execvp (.+): No such file or directory[\n]|};
         report = {|\1 not found|};
