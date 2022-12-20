@@ -41,12 +41,13 @@ let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
         export OPAMCLI=2.0;
         build_dir=$(opam var prefix)/.opam-switch/build;
         failed=$(ls "$build_dir");
+        partial_fails="";
         for pkg in $failed; do
           if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"%s\""; then
             echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
           fi;
+          test "$pkg" != '%s' && partial_fails="$partial_fails $pkg";
         done;
-        partial_fails=$(echo "$failed" | grep -Fvx "%s" | tr '\n' ' ');
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
         exit 1|}
       (match opam_version with `V2_1 | `Dev -> "" | `V2_0 -> fmt "opam depext%s %s && " with_tests_opt pkg) with_tests_opt pkg
