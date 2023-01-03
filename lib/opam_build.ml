@@ -106,6 +106,7 @@ let setup_repository ~variant ~for_docker ~local ~opam_version =
        run "opam switch remove \"$(opam switch show)\"";
        run "mkdir '%s' && opam switch create './%s' --packages '%s'"
          dirname dirname packages;
+       run "echo '(lang dune 1.0)' > '%s'/dune-project" dirname;
      ]
    else []) @
   [
