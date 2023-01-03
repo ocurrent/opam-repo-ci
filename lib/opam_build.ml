@@ -100,13 +100,18 @@ let setup_repository ~variant ~for_docker ~local ~opam_version =
   env "OPAMSOLVERTIMEOUT" "500" :: (* Increase timeout. Poor mccs is doing its best *)
   env "OPAMPRECISETRACKING" "1" :: (* Mitigate https://github.com/ocaml/opam/issues/3997 *)
   (if local then
+     (* TODO: Check global switch parent directory with spaces on Windows *)
+     (* NOTE: Check that the package supports directories with spaces *)
      let dirname = "directory with space" in
      let packages = Variant.packages variant in
      [
        run "opam switch remove \"$(opam switch show)\"";
        run "mkdir '%s' && opam switch create './%s' --packages '%s'"
          dirname dirname packages;
-       run "echo '(lang dune 1.0)' > '%s'/dune-project" dirname;
+       (* NOTE: Check that the package supports being inside a dune project by
+          having a dune-project file in the parent directory and having a required dune version
+          too high so the call to dune would fail. *)
+       run "echo '(lang dune 9999.0)' > '%s'/dune-project" dirname;
      ]
    else []) @
   [
