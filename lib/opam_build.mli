@@ -1,5 +1,6 @@
 val spec :
   for_docker:bool ->
+  local:bool ->
   opam_version:[`V2_0 | `V2_1 | `Dev] ->
   base:string ->
   variant:Variant.t ->
@@ -11,6 +12,7 @@ val spec :
 
 val revdeps :
   for_docker:bool ->
+  local:bool ->
   opam_version:[`V2_0 | `V2_1 | `Dev] ->
   base:string ->
   variant:Variant.t ->

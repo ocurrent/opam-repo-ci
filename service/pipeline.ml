@@ -58,29 +58,29 @@ let with_label l t =
   let> v = t in
   Current.Primitive.const v
 
-let build_spec ~platform ~opam_version pkg =
+let build_spec ~platform ~local ~opam_version pkg =
   let+ pkg = pkg in
-  Build.Spec.opam ~platform ~lower_bounds:false ~with_tests:false ~opam_version pkg
+  Build.Spec.opam ~platform ~lower_bounds:false ~with_tests:false ~local ~opam_version pkg
 
-let test_spec ~platform ~opam_version pkg =
+let test_spec ~platform ~local ~opam_version pkg =
   let+ pkg = pkg in
-  Build.Spec.opam ~platform ~lower_bounds:false ~with_tests:true ~opam_version pkg
+  Build.Spec.opam ~platform ~lower_bounds:false ~with_tests:true ~local ~opam_version pkg
 
-let lower_bounds_spec ~platform ~opam_version pkg =
+let lower_bounds_spec ~platform ~local ~opam_version pkg =
   let+ pkg = pkg in
-  Build.Spec.opam ~platform ~lower_bounds:true ~with_tests:false ~opam_version pkg
+  Build.Spec.opam ~platform ~lower_bounds:true ~with_tests:false ~local ~opam_version pkg
 
-let revdep_spec ~platform ~opam_version ~revdep pkg =
+let revdep_spec ~platform ~local ~opam_version ~revdep pkg =
   let+ revdep = revdep
   and+ pkg = pkg
   in
-  Build.Spec.opam ~platform ~lower_bounds:false ~with_tests:true ~revdep ~opam_version pkg
+  Build.Spec.opam ~platform ~lower_bounds:false ~with_tests:true ~revdep ~local ~opam_version pkg
 
 (* List the revdeps of [pkg] (using [builder] and [image]) and test each one
    (using [spec] and [base], merging [source] into [master]). *)
-let test_revdeps ~ocluster ~opam_version ~master ~base ~platform ~pkgopt ~after source =
+let test_revdeps ~ocluster ~local ~opam_version ~master ~base ~platform ~pkgopt ~after source =
   let revdeps =
-    Build.list_revdeps ~opam_version ~base ocluster ~platform ~pkgopt ~master ~after source |>
+    Build.list_revdeps ~local ~opam_version ~base ocluster ~platform ~pkgopt ~master ~after source |>
     Current.map OpamPackage.Set.elements
   in
   let pkg = Current.map (fun {PackageOpt.pkg = pkg; urgent = _; has_tests = _} -> pkg) pkgopt in
@@ -89,7 +89,7 @@ let test_revdeps ~ocluster ~opam_version ~master ~base ~platform ~pkgopt ~after 
     revdeps
     |> Node.list_map (module OpamPackage) (fun revdep ->
         let image =
-          let spec = revdep_spec ~platform ~opam_version ~revdep pkg in
+          let spec = revdep_spec ~platform ~local ~opam_version ~revdep pkg in
           Build.v ocluster ~label:"build" ~base ~spec ~master ~urgent source
         in
         let label = Current.map OpamPackage.to_string revdep
@@ -109,7 +109,7 @@ let get_significant_available_pkg = function
 let build_with_cluster ~ocluster ~analysis ~lint ~master source =
   let pkgs = Current.map Analyse.Analysis.packages analysis in
   let pkgs = Current.map (List.filter_map get_significant_available_pkg) pkgs in
-  let build ~opam_version ~lower_bounds ~revdeps label variant =
+  let build ?(local=false) ~opam_version ~lower_bounds ~revdeps label variant =
     let arch = Variant.arch variant in
     let pool = Conf.pool_of_arch variant in
     let platform = {Platform.label; pool; variant} in
@@ -138,13 +138,13 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
               Build.Docker (Current_docker.Raw.Image.of_hash repo_id)
         in
         let image =
-          let spec = build_spec ~platform ~opam_version pkg in
+          let spec = build_spec ~platform ~local ~opam_version pkg in
           Build.v ocluster ~label:"build" ~base ~spec ~master ~urgent source in
         let build = Node.action `Built image
         and tests =
           Node.bool_map (fun () ->
             let action =
-              let spec = test_spec ~platform ~opam_version pkg in
+              let spec = test_spec ~platform ~local ~opam_version pkg in
               Build.v ocluster ~label:"test" ~base ~spec ~master ~urgent source
             in
             let action = Node.action `Built action in
@@ -153,7 +153,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
         and lower_bounds_check =
           if lower_bounds then
             let action =
-              let spec = lower_bounds_spec ~platform ~opam_version pkg in
+              let spec = lower_bounds_spec ~platform ~local ~opam_version pkg in
               Build.v ocluster ~label:"lower-bounds" ~base ~spec ~master ~urgent source
             in
             let action = Node.action `Built action in
@@ -161,7 +161,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
           else
             Node.empty
         and revdeps =
-          if revdeps then test_revdeps ~ocluster ~opam_version ~master ~base ~platform ~pkgopt source ~after:image
+          if revdeps then test_revdeps ~ocluster ~local ~opam_version ~master ~base ~platform ~pkgopt source ~after:image
           else Node.empty
         in
         let label = Current.map OpamPackage.to_string pkg in
@@ -222,17 +222,18 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
   let analysis = Node.action `Analysed analysis
   and lint = Node.action `Linted lint
   and extras =
-    let build ~opam_version ~distro ~arch ~compiler label =
+    let build ?local ~opam_version ~distro ~arch ~compiler label =
       let variant = Variant.v ~arch ~distro ~compiler in
       let label = if String.equal label "" then "" else label^"-" in
       let label = Fmt.str "%socaml-%s" label (Variant.pp_ocaml_version variant) in
-      build ~opam_version ~lower_bounds:false ~revdeps:false label variant
+      build ?local ~opam_version ~lower_bounds:false ~revdeps:false label variant
     in
     let master_distro = Distro.tag_of_distro master_distro in
     List.fold_left (fun acc comp_full ->
       let comp = Ocaml_version.to_string (Ocaml_version.with_just_major_and_minor comp_full) in
       build ~opam_version:`V2_0 ~arch:`X86_64 ~distro:master_distro ~compiler:(comp, None) "opam-2.0" ::
       build ~opam_version:`V2_1 ~arch:`X86_64 ~distro:master_distro ~compiler:(comp, None) "opam-2.1" ::
+      build ~local:true ~opam_version ~arch:`X86_64 ~distro:master_distro ~compiler:(comp, None) "local-switch" ::
       List.filter_map (fun v ->
         match Ocaml_version.extra v with
         | None -> None

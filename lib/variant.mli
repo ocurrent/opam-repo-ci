@@ -11,6 +11,8 @@ val docker_tag : t -> string
 val distribution : t -> string
 val os : t -> [`linux | `macOS]
 
+val packages : t -> string
+
 val pp : t Fmt.t
 
 val macos_homebrew : string

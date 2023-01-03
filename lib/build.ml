@@ -24,10 +24,12 @@ module Spec = struct
     revdep : package option;
     with_tests : bool;
     lower_bounds : bool;
+    local : bool;
     opam_version : [`V2_0 | `V2_1 | `Dev];
   } [@@deriving to_yojson]
 
   type list_revdeps = {
+    local : bool;
     opam_version : [`V2_0 | `V2_1 | `Dev];
   } [@@deriving to_yojson]
 
@@ -40,8 +42,8 @@ module Spec = struct
     ty : ty;
   }
 
-  let opam ?revdep ~platform ~lower_bounds ~with_tests ~opam_version pkg =
-    let ty = `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) in
+  let opam ?revdep ~platform ~lower_bounds ~with_tests ~local ~opam_version pkg =
+    let ty = `Opam (`Build { revdep; lower_bounds; with_tests; local; opam_version }, pkg) in
     { platform; ty }
 
   let pp_pkg ?revdep f pkg =
@@ -55,14 +57,16 @@ module Spec = struct
     | `Dev -> "dev"
 
   let pp_ty f = function
-    | `Opam (`List_revdeps {opam_version}, pkg) ->
-        Fmt.pf f "list revdeps of %s, using opam %s" (OpamPackage.to_string pkg)
+    | `Opam (`List_revdeps {local; opam_version}, pkg) ->
+        Fmt.pf f "list revdeps of %s, using opam %s%s" (OpamPackage.to_string pkg)
           (pp_opam_version opam_version)
-    | `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) ->
+          (if local then ", using a local switch" else "")
+    | `Opam (`Build { revdep; lower_bounds; with_tests; local; opam_version }, pkg) ->
       let action = if with_tests then "test" else "build" in
-      Fmt.pf f "%s %a%s, using opam %s" action (pp_pkg ?revdep) pkg
+      Fmt.pf f "%s %a%s, using opam %s%s" action (pp_pkg ?revdep) pkg
         (if lower_bounds then ", lower-bounds" else "")
         (pp_opam_version opam_version)
+          (if local then ", using a local switch" else "")
 end
 
 type t = {
@@ -143,8 +147,8 @@ module Op = struct
     let build_spec ~for_docker =
       let base = base_to_string base in
       match ty with
-      | `Opam (`List_revdeps { opam_version }, pkg) -> Opam_build.revdeps ~for_docker ~opam_version ~base ~variant ~pkg
-      | `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) -> Opam_build.spec ~for_docker ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_tests ~pkg
+      | `Opam (`List_revdeps { local; opam_version }, pkg) -> Opam_build.revdeps ~for_docker ~local ~opam_version ~base ~variant ~pkg
+      | `Opam (`Build { revdep; lower_bounds; with_tests; local; opam_version }, pkg) -> Opam_build.spec ~for_docker ~local ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_tests ~pkg
     in
     Current.Job.write job
       (Fmt.str "@.\
@@ -218,7 +222,8 @@ let v t ~label ~spec ~base ~master ~urgent commit =
   BC.run t { Op.Key.pool; commit; variant; ty } ()
   |> Current.Primitive.map_result (Result.map ignore) (* TODO: Create a separate type of cache that doesn't parse the output *)
 
-let list_revdeps t ~platform ~opam_version ~pkgopt ~base ~master ~after commit =
+(* TODO: Remove the duplicated opam_version parameter (already contained in t) *)
+let list_revdeps t ~platform ~local ~opam_version ~pkgopt ~base ~master ~after commit =
   Current.component "list revdeps" |>
   let> {PackageOpt.pkg; urgent; has_tests = _} = pkgopt
   and> base = base
@@ -227,7 +232,7 @@ let list_revdeps t ~platform ~opam_version ~pkgopt ~base ~master ~after commit =
   and> () = after in
   let t = { Op.config = t; master; urgent; base } in
   let { Platform.pool; variant; label = _ } = platform in
-  let ty = `Opam (`List_revdeps {Spec.opam_version}, pkg) in
+  let ty = `Opam (`List_revdeps {Spec.local; opam_version}, pkg) in
   BC.run t { Op.Key.pool; commit; variant; ty } ()
   |> Current.Primitive.map_result (Result.map (fun output ->
       String.split_on_char '\n' output |>

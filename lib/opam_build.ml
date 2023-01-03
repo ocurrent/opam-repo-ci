@@ -55,7 +55,7 @@ let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
       pkg
   ]
 
-let setup_repository ~variant ~for_docker ~opam_version =
+let setup_repository ~variant ~for_docker ~local ~opam_version =
   let open Obuilder_spec in
   let home_dir = match Variant.os variant with
     | `macOS -> None
@@ -99,6 +99,15 @@ let setup_repository ~variant ~for_docker ~opam_version =
   env "OPAMERRLOGLEN" "0" :: (* Show the whole log if it fails *)
   env "OPAMSOLVERTIMEOUT" "500" :: (* Increase timeout. Poor mccs is doing its best *)
   env "OPAMPRECISETRACKING" "1" :: (* Mitigate https://github.com/ocaml/opam/issues/3997 *)
+  (if local then
+     let dirname = "directory with space" in
+     let packages = Variant.packages variant in
+     [
+       run "opam switch remove \"$(opam switch show)\"";
+       run "mkdir '%s' && opam switch create './%s' --packages '%s'"
+         dirname dirname packages;
+     ]
+   else []) @
   [
     run "rm -rf opam-repository/";
     copy ["."] ~dst:"opam-repository/";
@@ -111,7 +120,7 @@ let set_personality ~variant =
   else
     []
 
-let spec ~for_docker ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_tests ~pkg =
+let spec ~for_docker ~local ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_tests ~pkg =
   let opam_install = opam_install ~variant ~opam_version in
   let revdep = match revdep with
     | None -> []
@@ -126,18 +135,18 @@ let spec ~for_docker ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_te
   in
   Obuilder_spec.stage ~from:base (
     set_personality ~variant
-    @ setup_repository ~variant ~for_docker ~opam_version
+    @ setup_repository ~variant ~for_docker ~local ~opam_version
     @ opam_install ~pin:true ~lower_bounds:false ~with_tests:false ~pkg
     @ lower_bounds
     @ revdep
     @ tests
   )
 
-let revdeps ~for_docker ~opam_version ~base ~variant ~pkg =
+let revdeps ~for_docker ~local ~opam_version ~base ~variant ~pkg =
   let open Obuilder_spec in
   let pkg = Filename.quote (OpamPackage.to_string pkg) in
   Obuilder_spec.stage ~from:base (
-    setup_repository ~variant ~for_docker ~opam_version
+    setup_repository ~variant ~for_docker ~local ~opam_version
     @ [
       run "echo '@@@OUTPUT' && \
            opam list -s --color=never --depends-on %s --coinstallable-with %s --installable --all-versions --recursive --depopts && \

@@ -21,6 +21,16 @@ let docker_tag t =
   t.distribution^"-ocaml-"^pp_ocaml_version t
 let distribution t = t.distribution
 
+let packages t =
+  let version = Ocaml_version.with_patch (Ocaml_version.of_string_exn t.ocaml_version) (Some 0) in
+  let comp =
+    let name, version = Ocaml_version.Opam.V2.package version in
+    name^"."^version
+  in
+  match Ocaml_version.Opam.V2.additional_packages version with
+  | [] -> comp
+  | extras -> comp^","^String.concat "," extras
+
 let pp f t = Fmt.pf f "%s/%s" (docker_tag t) (Ocaml_version.string_of_arch t.arch)
 
 let macos_homebrew = "macos-homebrew"
