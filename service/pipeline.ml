@@ -23,10 +23,16 @@ let github_status_of_state ~head result =
   let { Github.Repo_id.owner; name } = Github.Api.Commit.repo_id head in
   let hash = Github.Api.Commit.hash head in
   let url = url ~owner ~name ~hash in
-  match result with
-  | Ok m              -> Github.Api.Status.v ~url `Success ~description:("Passed - "^m)
-  | Error (`Active _) -> Github.Api.Status.v ~url `Pending
-  | Error (`Msg m)    -> Github.Api.Status.v ~url `Failure ~description:("Failed - "^m)
+  let lint_status = match result with
+    | true, _ -> Some (Github.Api.Status.v `Success ~description:"Passed")
+    | false, _ -> None
+  in
+  let main_status = match result with
+    | _, Ok m              -> Github.Api.Status.v ~url `Success ~description:("Passed - "^m)
+    | _, Error (`Active _) -> Github.Api.Status.v ~url `Pending
+    | _, Error (`Msg m)    -> Github.Api.Status.v ~url `Failure ~description:("Failed - "^m)
+  in
+  (lint_status, main_status)
 
 let set_active_installations installations =
   let+ installations = installations in
@@ -292,14 +298,17 @@ module Summary = struct
     | Error `Active _ -> pending
 
   let to_string { ok; pending; err; skip; lint } =
-    let lint = if lint > 0 then "ok" else "failed" in
-    if pending > 0 then Error (`Active `Running)
-    else match ok, err, skip with
-      | 0, 0, 0 -> Ok "No build was necessary"
-      | 0, 0, _skip -> Error (`Msg "Everything was skipped")
-      | ok, 0, 0 -> Ok (Fmt.str "%d jobs passed" ok)
-      | ok, 0, skip -> Ok (Fmt.str "%d jobs passed, %d jobs skipped" ok skip)
-      | ok, err, skip -> Error (`Msg (Fmt.str "%d jobs failed, lint: %s, %d jobs skipped, %d jobs passed" err lint skip ok))
+    let lint = lint > 0 in
+    let main_jobs =
+      if pending > 0 then Error (`Active `Running)
+      else match ok, err, skip with
+        | 0, 0, 0 -> Ok "No build was necessary"
+        | 0, 0, _skip -> Error (`Msg "Everything was skipped")
+        | ok, 0, 0 -> Ok (Fmt.str "%d jobs passed" ok)
+        | ok, 0, skip -> Ok (Fmt.str "%d jobs passed, %d jobs skipped" ok skip)
+        | ok, err, skip -> Error (`Msg (Fmt.str "%d jobs failed, %d jobs skipped, %d jobs passed" err skip ok))
+    in
+    (lint, main_jobs)
 end
 
 module Results : sig
@@ -401,14 +410,20 @@ let test_pr ~ocluster ~master ~head =
     let summary = Summary.to_string summary in
     let status =
       match summary with
-      | Ok _ -> `Passed
-      | Error (`Active `Running) -> `Pending
-      | Error (`Msg _) -> `Failed
+      | _, Ok _ -> `Passed
+      | _, Error (`Active `Running) -> `Pending
+      | _, Error (`Msg _) -> `Failed
     in
     Index.set_status ~owner ~name ~hash status;
     summary
   in
   summary
+
+let github_set_statuses ~head statuses =
+  let+ () = Current.option_iter (Github.Api.Commit.set_status head "opam-repo-ci (linter)") (Current.map fst statuses)
+  and+ () = Github.Api.Commit.set_status head "opam-ci" (Current.map snd statuses) (* TODO: Change to opam-repo-ci *)
+  in
+  ()
 
 let test_repo ~ocluster ~push_status repo =
   let master, prs = get_prs repo in
@@ -417,7 +432,7 @@ let test_repo ~ocluster ~push_status repo =
   prs |> Current.list_iter ~collapse_key:"pr" (module Github.Api.Commit) @@ fun head ->
     test_pr ~ocluster ~master ~head
     |> github_status_of_state ~head
-    |> (if push_status then Github.Api.Commit.set_status head "opam-ci"
+    |> (if push_status then github_set_statuses ~head
         else Current.ignore_value)
 
 let local_test ~ocluster repo () =
