@@ -354,12 +354,23 @@ let get_prs repo =
   in
   master, prs
 
+let analyze ~master src =
+  let analysis = Analyse.examine ~master src in
+  let master_analysis =
+    Current.pair master analysis
+    |> Current.cutoff (* keep the old master if the analysis hasn't changed *)
+       ~eq:(fun (_, old_analysis) (_, new_analysis) ->
+              Analyse.Analysis.equal old_analysis new_analysis)
+    |> latch ~label:"analysis" (* ignore errors from a rerun *)
+  in
+  Current.map fst master_analysis, Current.map snd master_analysis
+
 let test_pr ~ocluster ~master ~head =
   let repo = Current.map Current_github.Api.Commit.repo_id head in
   let commit_id = Current.map Github.Api.Commit.id head in
   let hash = Current.map Git.Commit_id.hash commit_id in
   let src = Git.fetch commit_id in
-  let analysis = Analyse.examine ~master src in
+  let master, analysis = analyze ~master src in
   let lint =
     let packages =
       Current.map (fun x ->

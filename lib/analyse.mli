@@ -16,6 +16,7 @@ module Analysis : sig
   val get_opam : cwd:Fpath.t -> string -> (string, unit) result Lwt.t
   val packages : t -> (OpamPackage.t * data) list
   val is_duniverse : t -> bool
+  val equal : t -> t -> bool
 end
 
 val examine :
