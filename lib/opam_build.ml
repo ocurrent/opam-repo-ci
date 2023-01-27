@@ -37,8 +37,17 @@ let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
      []
   ) @ [
     run ~network "opam %s || true" (match opam_version with `V2_1 | `Dev -> "update --depexts" | `V2_0 -> "depext -u");
+  ] @
+  (if with_tests then [
+     (* TODO: Remove this hack when https://github.com/ocurrent/obuilder/issues/77 is fixed *)
+     (* NOTE: This hack will fail for packages that have src: "git+https://..." *)
+     run ~network "(%sopam reinstall --with-test %s) || true"
+       (match opam_version with `V2_1 | `Dev -> "" | `V2_0 -> fmt "opam depext%s %s && " with_tests_opt pkg) pkg
+   ] else []) @ [
     (* TODO: Replace by two calls to opam install + opam install -t using the OPAMDROPINSTALLEDPACKAGES feature *)
-    run ~cache ~network
+    (* NOTE: See above for the ~network:(if with_tests ...) hack *)
+    (* NOTE: We cannot use the cache as concurrent access to the cache might overwrite it and the required archives might not be available anymore at this point *)
+    run ~cache:(if with_tests then [] else cache) ~network:(if with_tests then [] else network)
       {|%sopam reinstall%s %s;
         res=$?;
         test "$res" != 31 && exit "$res";
