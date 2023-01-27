@@ -335,8 +335,9 @@ end
 let latch ~label x =
   let prev = ref (Error (`Active `Ready), None) in
   Current.component "latch %s" label |>
-  let> x = Current.state ~hidden:true x in
-  Result.iter (fun x -> prev := Ok x, None) x;
+  let> x = Current.state ~hidden:true x
+  and> meta = Current.Analysis.metadata x in
+  Result.iter (fun x -> prev := Ok x, meta) x;
   Current_incr.const !prev
 
 let get_prs repo =
@@ -363,12 +364,17 @@ let get_prs repo =
   in
   master, prs
 
+let analyze ~master src =
+  Analyse.examine ~master src
+  |> Current.cutoff ~eq:Analyse.Analysis.equal
+  |> latch ~label:"analysis" (* ignore errors from a rerun *)
+
 let test_pr ~ocluster ~master ~head =
   let repo = Current.map Current_github.Api.Commit.repo_id head in
   let commit_id = Current.map Github.Api.Commit.id head in
   let hash = Current.map Git.Commit_id.hash commit_id in
   let src = Git.fetch commit_id in
-  let analysis = Analyse.examine ~master src in
+  let analysis = analyze ~master src in
   let lint =
     let packages =
       Current.map (fun x ->
