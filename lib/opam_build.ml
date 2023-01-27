@@ -48,7 +48,7 @@ let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
     (* NOTE: See above for the ~network:(if with_tests ...) hack *)
     (* NOTE: We cannot use the cache as concurrent access to the cache might overwrite it and the required archives might not be available anymore at this point *)
     run ~cache:(if with_tests then [] else cache) ~network:(if with_tests then [] else network)
-      {|%sopam reinstall%s %s;
+      {|%sopam reinstall%s%s %s;
         res=$?;
         test "$res" != 31 && exit "$res";
         export OPAMCLI=2.0;
@@ -63,7 +63,7 @@ let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
         done;
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
         exit 1|}
-      (match opam_version with `V2_1 | `Dev -> "" | `V2_0 -> fmt "opam depext%s %s && " with_tests_opt pkg) with_tests_opt pkg
+      (match opam_version with `V2_1 | `Dev -> "" | `V2_0 -> fmt "opam depext%s %s && " with_tests_opt pkg) with_tests_opt (if with_tests then " --verbose" else "") pkg
       (Variant.distribution variant)
       pkg
   ]
