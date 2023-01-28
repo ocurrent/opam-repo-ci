@@ -7,3 +7,5 @@ var
 .*.swp
 .vscode
 capnp-secrets
+dev/conf.env
+dev/*.pem

@@ -118,8 +118,11 @@ let main config mode app capnp_address github_auth submission_uri =
   add_default_matching_log_rules ();
   Lwt_main.run begin
     let listen_address = Capnp_rpc_unix.Network.Location.tcp ~host:"0.0.0.0" ~port:Conf.Capnp.internal_port in
-    Capnp_setup.run ~listen_address capnp_address >>= fun (vat, rpc_engine_resolver) ->
-    let ocluster = Capnp_rpc_unix.Vat.import_exn vat submission_uri in
+    Capnp_setup.run ~listen_address capnp_address >>= fun (_vat, rpc_engine_resolver) ->
+    let ocluster =
+      let vat = Capnp_rpc_unix.client_only_vat () in
+      Capnp_rpc_unix.Vat.import_exn vat submission_uri
+    in
     let engine = Current.Engine.create ~config (Pipeline.v ~ocluster ~app) in
     rpc_engine_resolver |> Option.iter (fun r -> Capability.resolve_ok r (Api_impl.make_ci ~engine));
     let authn = Option.map Current_github.Auth.make_login_uri github_auth in
