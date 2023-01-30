@@ -354,23 +354,24 @@ let get_prs repo =
   in
   master, prs
 
-let latch_analysis x = (* TODO: switch to Current.cutoff by removing this commit *)
-  let prev = ref (Error (`Active `Ready)) in
+let latch_analysis ~master ~analysis = (* TODO: switch to Current.cutoff by removing this commit *)
+  let prev = ref (Error (`Active `Ready), None) in
   Current.component "latch analysis" |>
-  let> x = Current.state ~hidden:true x in
-  begin match !prev, x with
+  let> x = Current.state ~hidden:true (Current.pair master analysis)
+  and> meta = Current.Analysis.metadata analysis in
+  begin match fst !prev, x with
   | Error _, Ok _ ->
-      prev := x
+      prev := (x, meta)
   | Ok (_, old_analysis), Ok (_, new_analysis)
     when not (Analyse.Analysis.equal old_analysis new_analysis) ->
-      prev := x
+      prev := (x, meta)
   | _ -> ()
   end ;
-  Current_incr.const (!prev, None)
+  Current_incr.const !prev
 
 let analyze ~master src =
   let analysis = Analyse.examine ~master src in
-  let master_analysis = latch_analysis (Current.pair master analysis) in
+  let master_analysis = latch_analysis ~master ~analysis in
   Current.map fst master_analysis, Current.map snd master_analysis
 
 let test_pr ~ocluster ~master ~head =
