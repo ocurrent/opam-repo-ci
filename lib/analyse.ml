@@ -31,17 +31,17 @@ module Analysis = struct
     | Deleted
     | SignificantlyChanged
     | UnsignificantlyChanged
-  [@@deriving yojson]
+  [@@deriving eq, yojson]
 
   type data = {
     kind : kind;
     has_tests : bool;
-  } [@@deriving yojson]
+  } [@@deriving eq, yojson]
 
   type t = {
     packages : (OpamPackage.t * data) list;
   }
-  [@@deriving yojson]
+  [@@deriving eq, yojson]
 
   let marshal t = to_yojson t |> Yojson.Safe.to_string
 
