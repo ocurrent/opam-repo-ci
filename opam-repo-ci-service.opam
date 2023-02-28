@@ -11,7 +11,7 @@ depends: [
   "ppx_sexp_conv"
   "ppx_deriving_yojson"
   "ppx_deriving"
-  "mirage-crypto-rng" {>= "0.8.8"}
+  "mirage-crypto-rng" {>= "0.11.0"}
   "logs"
   "fmt" {>= "0.8.7"}
   "dune" {>= "3.3"}

@@ -16,7 +16,7 @@ depends: [
   "cmdliner" {>= "1.1.0"}
   "lwt"
   "cohttp-lwt-unix" {>= "2.2.0"}
-  "mirage-crypto-rng" {>= "0.8.8"}
+  "mirage-crypto-rng" {>= "0.11.0"}
   "tyxml"
   "capnp-rpc-unix"
   "opam-repo-ci-api"
