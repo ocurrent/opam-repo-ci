@@ -133,8 +133,8 @@ module Analysis = struct
     Current.Process.check_output ~cwd:dir ~cancellable:true ~job cmd >>!= fun output ->
     output
     |> String.split_on_char '\n'
-    |> List.filter (function "" -> false | _ -> true)
     |> Lwt_list.fold_left_s (fun pkgs path ->
+        match path with "" -> Lwt.return pkgs | path ->
         match String.split_on_char '/' path with
         | [_] | ".github"::_ ->
             Lwt.return pkgs
