@@ -7,7 +7,7 @@ let () =
   Memtrace.trace_if_requested ~context:"opam-repo-ci" ();
   Unix.putenv "DOCKER_BUILDKIT" "1";
   Prometheus_unix.Logging.init ();
-  Mirage_crypto_rng_unix.initialize ();
+  Mirage_crypto_rng_unix.initialize (module Mirage_crypto_rng.Fortuna);
   match Conf.profile with
   | `Production -> Logs.info (fun f -> f "Using production configuration")
   | `Staging -> Logs.info (fun f -> f "Using staging configuration")

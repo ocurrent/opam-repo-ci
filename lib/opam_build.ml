@@ -1,12 +1,16 @@
 let fmt = Printf.sprintf
 
 let download_cache = "opam-archives"
-let cache = [ Obuilder_spec.Cache.v download_cache ~target:"/home/opam/.opam/download-cache" ]
+let cache ~variant =
+  match Variant.os variant with
+  | `linux -> [ Obuilder_spec.Cache.v download_cache ~target:"/home/opam/.opam/download-cache" ]
+  | `macOS -> [ Obuilder_spec.Cache.v download_cache ~target:"/Users/mac1000/.opam/download-cache" ]
 let network = ["host"]
 
 let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
   let pkg = OpamPackage.to_string pkg in
   let with_tests_opt = if with_tests then " --with-test" else "" in
+  let cache = cache ~variant in
   let open Obuilder_spec in
   (if lower_bounds then
      [
