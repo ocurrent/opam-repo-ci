@@ -146,7 +146,8 @@ module Analysis = struct
             | Error _ -> (* new release *)
                 Lwt.return (add_pkg ~path ~name ~package New pkgs)
             | Ok old_content ->
-                get_opam ~cwd:dir path >|= begin function
+                (* NOTE: Lwt_preemptive is initialized in lint.ml to only 1 thread *)
+                get_opam ~cwd:dir path >>= Lwt_preemptive.detach begin function
                 | Error () -> (* deleted package *)
                     add_pkg ~path ~name ~package Deleted pkgs
                 | Ok new_content -> (* modified package *)
