@@ -112,6 +112,7 @@ let setup_repository ~variant ~for_docker ~opam_version =
   env "OPAMERRLOGLEN" "0" :: (* Show the whole log if it fails *)
   env "OPAMSOLVERTIMEOUT" "500" :: (* Increase timeout. Poor mccs is doing its best *)
   env "OPAMPRECISETRACKING" "1" :: (* Mitigate https://github.com/ocaml/opam/issues/3997 *)
+  env "CI" "true" :: env "OPAM_REPO_CI" "true" :: (* Advertise CI for test frameworks *)
   [
     run "rm -rf opam-repository/";
     copy ["."] ~dst:"opam-repository/";
