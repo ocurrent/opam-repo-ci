@@ -225,8 +225,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
       ) acc [`Aarch64; `X86_64]
     ) [] default_compilers
   in
-  let analysis = Node.action `Analysed analysis
-  and lint = Node.action `Linted lint
+  let lint = Node.action `Linted lint
   and extras =
     let build ~opam_version ~distro ~arch ~compiler label =
       let variant = Variant.v ~arch ~distro ~compiler in
@@ -258,8 +257,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
       acc
     ) [] default_compilers_full
   in
-  Node.root [
-    Node.leaf ~label:"(analysis)" analysis;
+  [
     Node.leaf ~label:"(lint)" lint;
     Node.branch ~label:"compilers" compilers;
     Node.branch ~label:"distributions" linux_distributions;
@@ -367,14 +365,14 @@ let get_prs repo =
 let analyze ~master src =
   Analyse.examine ~master src
   |> Current.cutoff ~eq:Analyse.Analysis.equal
-  |> latch ~label:"analysis" (* ignore errors from a rerun *)
 
 let test_pr ~ocluster ~master ~head =
   let repo = Current.map Current_github.Api.Commit.repo_id head in
   let commit_id = Current.map Github.Api.Commit.id head in
   let hash = Current.map Git.Commit_id.hash commit_id in
   let src = Git.fetch commit_id in
-  let analysis = analyze ~master src in
+  let latest_analysis = analyze ~master src in
+  let analysis = latest_analysis |> latch ~label:"analysis" (* ignore errors from a rerun *) in
   let lint =
     let packages =
       Current.map (fun x ->
@@ -385,7 +383,11 @@ let test_pr ~ocluster ~master ~head =
     in
     Lint.check ~master ~packages src
   in
-  let builds = build_with_cluster ~ocluster ~analysis ~lint ~master commit_id in
+  let builds =
+    Node.root
+      (Node.leaf ~label:"(analysis)" (Node.action `Analysed latest_analysis)
+      :: build_with_cluster ~ocluster ~analysis ~lint ~master commit_id)
+  in
   let* (jobs, summary) =
     Node.flatten builds
       ~map:{ Node.f = fun ~label kind job ->
