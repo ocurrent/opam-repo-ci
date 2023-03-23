@@ -1,15 +1,22 @@
-type arch = Ocaml_version.arch
+type t [@@deriving yojson, ord, eq]
 
-type t [@@deriving to_yojson]
-
-val v : arch:arch -> distro:string -> compiler:(string * string option) -> t
+(* val v : arch:arch -> distro:string -> compiler:(string * string option) -> t *)
+val v :
+  arch:Ocaml_version.arch ->
+  distro:string ->
+  ocaml_version:Ocaml_version.t ->
+  opam_version:Opam_version.t ->
+  (t, [> `Msg of string ]) result
 
 val pp_ocaml_version : t -> string
 
-val arch : t -> arch
+val arch : t -> Ocaml_version.arch
 val docker_tag : t -> string
-val distribution : t -> string
-val os : t -> [`linux | `macOS]
+val distro_str : t -> string
+val distro : t -> Obuilder_spec_opam.Distro.t
+val ocaml_version : t -> Ocaml_version.t
+val opam_version : t -> Opam_version.t
+val os : t -> Obuilder_spec_opam.Distro.os_family
 
 val pp : t Fmt.t
 

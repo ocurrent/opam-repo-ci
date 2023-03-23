@@ -134,9 +134,9 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
         let has_tests = Current.map (fun {PackageOpt.pkg = _; urgent = _; has_tests} -> has_tests) pkgopt in
         let base =
           match Variant.os variant with
-          | `macOS ->
+          | `Macos | `Windows | `Cygwin ->
               Current.return (Build.MacOS (Variant.docker_tag variant))
-          | `linux -> (* TODO: Use docker images as base for both macOS and linux *)
+          | `Linux -> (* TODO: Use docker images as base for both macOS and linux *)
               let+ repo_id =
                 Docker.peek ~schedule:weekly ~arch:(Ocaml_version.to_docker_arch arch)
                   ("ocaml/opam:" ^ Variant.docker_tag variant)

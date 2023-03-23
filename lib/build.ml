@@ -138,7 +138,7 @@ module Op = struct
   let run { config = { connection; timeout }; master; urgent; base } job { Key.pool; commit; variant; ty } () =
     let master = Current_git.Commit.hash master in
     let os = match Variant.os variant with
-      | `macOS | `linux -> `Unix
+      | `Macos | `Windows | `Cygwin | `Linux -> `Unix
     in
     let build_spec ~for_docker =
       let base = base_to_string base in

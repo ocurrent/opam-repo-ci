@@ -16,5 +16,6 @@
     current_ocluster
     capnp-rpc-lwt
     obuilder-spec
+    obuilder-spec-opam
     opam-format
     opam-state))

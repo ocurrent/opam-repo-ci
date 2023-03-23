@@ -32,8 +32,8 @@ let build_timeout = Duration.of_hour 2
 let pool_of_arch variant =
   let open Opam_repo_ci in
   let os = match Variant.os variant with
-    | `macOS -> "macos"
-    | `linux -> "linux"
+    | `Macos | `Windows | `Cygwin -> "macos"
+    | `Linux -> "linux"
   in
   let arch = match Variant.arch variant with
     | `X86_64 | `I386 -> "x86_64"
