@@ -1,4 +1,5 @@
-module D = Obuilder_spec_opam.Distro
+module Distro = Obuilder_spec_opam.Distro
+module Opam_version = Obuilder_spec_opam.Opam_version
 
 module Ocaml_version = struct
   include Ocaml_version
@@ -27,7 +28,7 @@ module Ocaml_version = struct
     | _ -> Error "unknown json for ocaml version"
 end
 
-let arch_to_yojson arch = `String (Ocaml_version.string_of_arch arch)
+(* let arch_to_yojson arch = `String (Ocaml_version.string_of_arch arch) *)
 
 (* type t = {
   distribution : string;
@@ -57,7 +58,7 @@ let arch t = t.arch
 let docker_tag t =
   t.distro ^ "-ocaml-" ^ pp_ocaml_version t
 let distro_str t = t.distro
-let distro t = D.distro_of_tag t.distro |> Option.get
+let distro t = Distro.distro_of_tag t.distro |> Option.get
 let ocaml_version t = t.ocaml_version
 let opam_version t = t.opam_version
 
@@ -85,6 +86,3 @@ let v ~arch ~distro ~ocaml_version ~opam_version =
   match Ocaml_version.Configure_options.of_t ocaml_version with
   | Ok _ -> Ok { arch; distro; ocaml_version; opam_version }
   | Error e -> Error e
-
-
-

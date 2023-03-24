@@ -28,9 +28,9 @@ let github_status_of_state ~head result =
     | false, _ -> None
   in
   let main_status = match result with
-    | _, Ok m              -> Github.Api.Status.v ~url `Success ~description:("Passed - "^m)
+    | _, Ok m              -> Github.Api.Status.v ~url `Success ~description:("Passed - " ^ m)
     | _, Error (`Active _) -> Github.Api.Status.v ~url `Pending
-    | _, Error (`Msg m)    -> Github.Api.Status.v ~url `Failure ~description:("Failed - "^m)
+    | _, Error (`Msg m)    -> Github.Api.Status.v ~url `Failure ~description:("Failed - " ^ m)
   in
   (lint_status, main_status)
 
@@ -180,25 +180,25 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
     |> (fun x -> Node.branch ~label [x])
     |> Node.collapse ~key:"platform" ~value:label ~input:analysis
   in
+  let variant_dev = Variant.v ~opam_version:`Dev in
   let compilers =
     let master_distro = Distro.tag_of_distro master_distro in
     (Ocaml_version.Releases.recent @ Ocaml_version.Releases.unreleased_betas) |>
     List.map (fun v ->
       let v = Ocaml_version.with_just_major_and_minor v in
       let revdeps = List.exists (Ocaml_version.equal v) default_compilers in (* TODO: Remove this when the cluster is ready *)
+      let variant = Result.get_ok @@  variant_dev ~arch:`X86_64 ~distro:master_distro ~ocaml_version:v in
       let v = Ocaml_version.to_string v in
-      let variant = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(v, None) in
       build ~opam_version ~lower_bounds:true ~revdeps v variant
     )
   in
   let linux_distributions =
-    let build ~distro ~arch ~compiler =
-      let variant = Variant.v ~arch ~distro ~compiler in
+    let build ~distro ~arch ~ocaml_version =
+      let variant = Result.get_ok @@ variant_dev ~arch ~distro ~ocaml_version in
       let label = Fmt.str "%s-ocaml-%s" distro (Variant.pp_ocaml_version variant) in
       build ~opam_version ~lower_bounds:false ~revdeps:false label variant
     in
-    List.fold_left (fun acc comp ->
-      let comp = Ocaml_version.to_string comp in
+    List.fold_left (fun acc ocaml_version ->
       List.fold_left (fun acc distro ->
         if Distro.compare distro master_distro = 0 (* TODO: Add Distro.equal *)
         || Distro.os_family_of_distro distro <> `Linux (* TODO: Unlock this when Windows is ready *)
@@ -207,37 +207,36 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
           acc
         else
           let distro = Distro.tag_of_distro distro in
-          build ~arch:`X86_64 ~distro ~compiler:(comp, None) :: acc
+          build ~arch:`X86_64 ~distro ~ocaml_version :: acc
       ) acc (Distro.active_distros `X86_64)
     ) [] default_compilers
   in
   let macos =
-    let build ~distro ~arch ~compiler =
-      let variant = Variant.v ~arch ~distro ~compiler in
+    let build ~distro ~arch ~ocaml_version =
+      let variant = Result.get_ok @@ variant_dev ~arch ~distro ~ocaml_version in
       let label = Fmt.str "%s-%s" (Variant.docker_tag variant) (Ocaml_version.string_of_arch arch) in
       build ~opam_version ~lower_bounds:false ~revdeps:false label variant
     in
     let homebrew = Variant.macos_homebrew in
-    List.fold_left (fun acc comp ->
-      let comp = Ocaml_version.to_string comp in
+    List.fold_left (fun acc ocaml_version ->
       List.fold_left (fun acc arch ->
-        build ~distro:homebrew ~arch ~compiler:(comp, None) :: acc
+        build ~distro:homebrew ~arch ~ocaml_version :: acc
       ) acc [`Aarch64; `X86_64]
     ) [] default_compilers
   in
   let lint = Node.action `Linted lint
   and extras =
-    let build ~opam_version ~distro ~arch ~compiler label =
-      let variant = Variant.v ~arch ~distro ~compiler in
-      let label = if String.equal label "" then "" else label^"-" in
+    let build ~opam_version ~distro ~arch ~ocaml_version label =
+      let variant = Result.get_ok @@ Variant.v ~arch ~distro ~ocaml_version ~opam_version in
+      let label = if String.equal label "" then "" else label ^ "-" in
       let label = Fmt.str "%socaml-%s" label (Variant.pp_ocaml_version variant) in
       build ~opam_version ~lower_bounds:false ~revdeps:false label variant
     in
     let master_distro = Distro.tag_of_distro master_distro in
-    List.fold_left (fun acc comp_full ->
-      let comp = Ocaml_version.to_string (Ocaml_version.with_just_major_and_minor comp_full) in
-      build ~opam_version:`V2_0 ~arch:`X86_64 ~distro:master_distro ~compiler:(comp, None) "opam-2.0" ::
-      build ~opam_version:`V2_1 ~arch:`X86_64 ~distro:master_distro ~compiler:(comp, None) "opam-2.1" ::
+    List.fold_left (fun acc ocaml_version_full ->
+      let ocaml_version = Ocaml_version.with_just_major_and_minor ocaml_version_full in
+      build ~opam_version:`V2_0 ~arch:`X86_64 ~distro:master_distro ~ocaml_version "opam-2.0" ::
+      build ~opam_version:`V2_1 ~arch:`X86_64 ~distro:master_distro ~ocaml_version "opam-2.1" ::
       List.filter_map (fun v ->
         match Ocaml_version.extra v with
         | None -> None
@@ -245,14 +244,15 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
             (* TODO: This should be in ocaml-version or ocaml-dockerfile *)
             (* TODO: The same code is used in docker-base-images *)
             let label = String.map (function '+' -> '-' | c -> c) label in
-            Some (build ~opam_version ~arch:`X86_64 ~distro:master_distro ~compiler:(comp, Some label) "")
-      ) (Ocaml_version.Opam.V2.switches `X86_64 comp_full) @
+            let ocaml_version = Ocaml_version.with_variant ocaml_version (Some label) in
+            Some (build ~opam_version ~arch:`X86_64 ~distro:master_distro ~ocaml_version "")
+      ) (Ocaml_version.Opam.V2.switches `X86_64 ocaml_version_full) @
       List.filter_map (function
         | `X86_64 -> None
         | `Riscv64 -> None (* TODO: unlock this one when more machines are available *)
         | arch ->
             let label = Ocaml_version.to_opam_arch arch in
-            Some (build ~opam_version ~arch ~distro:master_distro ~compiler:(comp, None) label)
+            Some (build ~opam_version ~arch ~distro:master_distro ~ocaml_version label)
       ) Ocaml_version.arches @
       acc
     ) [] default_compilers_full
