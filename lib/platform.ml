@@ -1,3 +1,5 @@
+open Obuilder_spec_opam
+
 type t = {
   label : string;
   pool : string;        (* OCluster pool *)

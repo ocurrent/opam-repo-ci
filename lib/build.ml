@@ -3,6 +3,7 @@ open Capnp_rpc_lwt
 open Lwt.Infix
 
 module Git = Current_git
+module Variant = Obuilder_spec_opam.Variant
 
 (* TODO: Make macOS use docker images *)
 type base =
@@ -191,10 +192,13 @@ module Op = struct
       | _ -> Lwt_result.fail (`Msg "Missing output from command")
 
   let pp f ({ Key.pool = _; commit; variant; ty }, _) =
+    let variant_pp f t =
+      Fmt.pf f "%s/%s" (Variant.docker_tag t) (Ocaml_version.string_of_arch @@ Variant.arch t)
+    in
     Fmt.pf f "@[<v>%a@,from %a@,on %a@]"
       Spec.pp_ty ty
       Current_git.Commit_id.pp commit
-      Variant.pp variant
+      variant_pp variant
 
   let auto_cancel = true
   let latched = true

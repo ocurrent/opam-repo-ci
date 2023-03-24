@@ -1,6 +1,8 @@
+open Obuilder_spec_opam
+
 val spec :
   for_docker:bool ->
-  opam_version:Obuilder_spec_opam.Opam_version.t ->
+  opam_version:Opam_version.t ->
   base:string ->
   variant:Variant.t ->
   revdep:OpamPackage.t option ->
@@ -11,7 +13,7 @@ val spec :
 
 val revdeps :
   for_docker:bool ->
-  opam_version:Obuilder_spec_opam.Opam_version.t ->
+  opam_version:Opam_version.t ->
   base:string ->
   variant:Variant.t ->
   pkg:OpamPackage.t ->

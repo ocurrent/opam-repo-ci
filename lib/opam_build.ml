@@ -1,3 +1,5 @@
+module Variant = Obuilder_spec_opam.Variant
+
 let fmt = Printf.sprintf
 
 let download_cache = "opam-archives"

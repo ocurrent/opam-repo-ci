@@ -6,6 +6,7 @@ module Github = Current_github
 module Docker = Current_docker.Default
 module Common = Opam_repo_ci_api.Common
 module Distro = Dockerfile_opam.Distro
+module Variant = Obuilder_spec_opam.Variant
 
 let master_distro = (Distro.resolve_alias Distro.master_distro :> Distro.t)
 let default_compilers_full = Ocaml_version.Releases.[v4_14; v5_0] (* NOTE: Should probably stay with list length 2 *)
@@ -195,7 +196,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
   let linux_distributions =
     let build ~distro ~arch ~ocaml_version =
       let variant = Result.get_ok @@ variant_dev ~arch ~distro ~ocaml_version in
-      let label = Fmt.str "%s-ocaml-%s" distro (Variant.pp_ocaml_version variant) in
+      let label = Fmt.str "%s-ocaml-%s" distro (Ocaml_version.to_string @@ Variant.ocaml_version variant) in
       build ~opam_version ~lower_bounds:false ~revdeps:false label variant
     in
     List.fold_left (fun acc ocaml_version ->
@@ -217,19 +218,21 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
       let label = Fmt.str "%s-%s" (Variant.docker_tag variant) (Ocaml_version.string_of_arch arch) in
       build ~opam_version ~lower_bounds:false ~revdeps:false label variant
     in
-    let homebrew = Variant.macos_homebrew in
-    List.fold_left (fun acc ocaml_version ->
-      List.fold_left (fun acc arch ->
-        build ~distro:homebrew ~arch ~ocaml_version :: acc
-      ) acc [`Aarch64; `X86_64]
-    ) [] default_compilers
+    List.map (fun macos_distro ->
+      List.fold_left (fun acc ocaml_version ->
+        List.fold_left (fun acc arch ->
+          build ~distro:macos_distro ~arch ~ocaml_version :: acc
+        ) acc [`Aarch64; `X86_64]
+      ) [] default_compilers)
+      Variant.macos_distributions
+    |> List.flatten
   in
   let lint = Node.action `Linted lint
   and extras =
     let build ~opam_version ~distro ~arch ~ocaml_version label =
       let variant = Result.get_ok @@ Variant.v ~arch ~distro ~ocaml_version ~opam_version in
       let label = if String.equal label "" then "" else label ^ "-" in
-      let label = Fmt.str "%socaml-%s" label (Variant.pp_ocaml_version variant) in
+      let label = Fmt.str "%socaml-%s" label (Ocaml_version.to_string @@ Variant.ocaml_version variant) in
       build ~opam_version ~lower_bounds:false ~revdeps:false label variant
     in
     let master_distro = Distro.tag_of_distro master_distro in

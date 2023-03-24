@@ -1,3 +1,5 @@
+module Variant = Obuilder_spec_opam.Variant
+
 let profile =
   match Sys.getenv_opt "CI_PROFILE" with
   | Some "production" -> `Production
@@ -30,7 +32,6 @@ end
 let build_timeout = Duration.of_hour 2
 
 let pool_of_arch variant =
-  let open Opam_repo_ci in
   let os = match Variant.os variant with
     | `Macos | `Windows | `Cygwin -> "macos"
     | `Linux -> "linux"
