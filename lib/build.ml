@@ -4,6 +4,7 @@ open Lwt.Infix
 
 module Git = Current_git
 module Variant = Obuilder_spec_opam.Variant
+module Opam_version = Obuilder_spec_opam.Opam_version
 
 (* TODO: Make macOS use docker images *)
 type base =
@@ -25,11 +26,11 @@ module Spec = struct
     revdep : package option;
     with_tests : bool;
     lower_bounds : bool;
-    opam_version : [`V2_0 | `V2_1 | `Dev];
+    opam_version : Opam_version.t;
   } [@@deriving to_yojson]
 
   type list_revdeps = {
-    opam_version : [`V2_0 | `V2_1 | `Dev];
+    opam_version : Opam_version.t;
   } [@@deriving to_yojson]
 
   type ty = [

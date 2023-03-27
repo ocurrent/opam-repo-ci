@@ -1,3 +1,5 @@
+open Obuilder_spec_opam
+
 module Spec : sig
   type t
 
@@ -6,7 +8,7 @@ module Spec : sig
     platform:Platform.t ->
     lower_bounds:bool ->
     with_tests:bool ->
-    opam_version:[`V2_0 | `V2_1 | `Dev] ->
+    opam_version:Opam_version.t ->
     OpamPackage.t ->
     t
 end
@@ -32,7 +34,7 @@ val v :
 val list_revdeps :
   t ->
   platform:Platform.t ->
-  opam_version:[`V2_0 | `V2_1 | `Dev] ->
+  opam_version:Opam_version.t ->
   pkgopt:PackageOpt.t Current.t ->
   base:base Current.t ->
   master:Current_git.Commit.t Current.t ->

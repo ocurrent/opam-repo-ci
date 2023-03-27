@@ -188,16 +188,20 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
     List.map (fun v ->
       let v = Ocaml_version.with_just_major_and_minor v in
       let revdeps = List.exists (Ocaml_version.equal v) default_compilers in (* TODO: Remove this when the cluster is ready *)
-      let variant = Result.get_ok @@  variant_dev ~arch:`X86_64 ~distro:master_distro ~ocaml_version:v in
-      let v = Ocaml_version.to_string v in
-      build ~opam_version ~lower_bounds:true ~revdeps v variant
+      match variant_dev ~arch:`X86_64 ~distro:master_distro ~ocaml_version:v with
+      | Error (`Msg s) -> Printf.printf "Error: %s\n" s; exit 1
+      | Ok variant ->
+        let v = Ocaml_version.to_string v in
+        build ~opam_version ~lower_bounds:true ~revdeps v variant
     )
   in
   let linux_distributions =
     let build ~distro ~arch ~ocaml_version =
-      let variant = Result.get_ok @@ variant_dev ~arch ~distro ~ocaml_version in
-      let label = Fmt.str "%s-ocaml-%s" distro (Ocaml_version.to_string @@ Variant.ocaml_version variant) in
-      build ~opam_version ~lower_bounds:false ~revdeps:false label variant
+      match variant_dev ~arch ~distro ~ocaml_version with
+      | Error (`Msg s) -> Printf.printf "Error: %s\n" s; exit 1
+      | Ok variant ->
+        let label = Fmt.str "%s-ocaml-%s" distro (Ocaml_version.to_string @@ Variant.ocaml_version variant) in
+        build ~opam_version ~lower_bounds:false ~revdeps:false label variant
     in
     List.fold_left (fun acc ocaml_version ->
       List.fold_left (fun acc distro ->
@@ -214,9 +218,11 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
   in
   let macos =
     let build ~distro ~arch ~ocaml_version =
-      let variant = Result.get_ok @@ variant_dev ~arch ~distro ~ocaml_version in
-      let label = Fmt.str "%s-%s" (Variant.docker_tag variant) (Ocaml_version.string_of_arch arch) in
-      build ~opam_version ~lower_bounds:false ~revdeps:false label variant
+      match variant_dev ~arch ~distro ~ocaml_version with
+      | Error (`Msg s) -> Printf.printf "Error: %s\n" s; exit 1
+      | Ok variant ->
+        let label = Fmt.str "%s-%s" (Variant.docker_tag variant) (Ocaml_version.string_of_arch arch) in
+        build ~opam_version ~lower_bounds:false ~revdeps:false label variant
     in
     List.map (fun macos_distro ->
       List.fold_left (fun acc ocaml_version ->
@@ -230,10 +236,13 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
   let lint = Node.action `Linted lint
   and extras =
     let build ~opam_version ~distro ~arch ~ocaml_version label =
-      let variant = Result.get_ok @@ Variant.v ~arch ~distro ~ocaml_version ~opam_version in
-      let label = if String.equal label "" then "" else label ^ "-" in
-      let label = Fmt.str "%socaml-%s" label (Ocaml_version.to_string @@ Variant.ocaml_version variant) in
-      build ~opam_version ~lower_bounds:false ~revdeps:false label variant
+      Printf.printf "%s\n" (Ocaml_version.to_string ocaml_version);
+      match Variant.v ~arch ~distro ~ocaml_version ~opam_version with
+      | Error (`Msg s) -> Printf.printf "Error: %s\n" s; exit 1
+      | Ok variant ->
+        let label = if String.equal label "" then "" else label ^ "-" in
+        let label = Fmt.str "%socaml-%s" label (Ocaml_version.to_string @@ Variant.ocaml_version variant) in
+        build ~opam_version ~lower_bounds:false ~revdeps:false label variant
     in
     let master_distro = Distro.tag_of_distro master_distro in
     List.fold_left (fun acc ocaml_version_full ->
@@ -246,7 +255,8 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
         | Some label ->
             (* TODO: This should be in ocaml-version or ocaml-dockerfile *)
             (* TODO: The same code is used in docker-base-images *)
-            let label = String.map (function '+' -> '-' | c -> c) label in
+            (* Replacing '+' with '-' in the label breaks variant parsing, do the replacement later on if necessary? *)
+            (* let label = String.map (function '+' -> '-' | c -> c) label in *)
             let ocaml_version = Ocaml_version.with_variant ocaml_version (Some label) in
             Some (build ~opam_version ~arch:`X86_64 ~distro:master_distro ~ocaml_version "")
       ) (Ocaml_version.Opam.V2.switches `X86_64 ocaml_version_full) @

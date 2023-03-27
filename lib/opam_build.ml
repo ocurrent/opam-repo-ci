@@ -77,17 +77,9 @@ let setup_repository ~variant ~for_docker ~opam_version =
     | `Macos | `Windows | `Cygwin -> None
     | `Linux -> Some "/home/opam"
   in
-  (* let opam_version_str = match opam_version with
-    | `V2_0 -> "2.0"
-    | `V2_1 -> "2.1"
-    | `Dev ->
-        match Variant.os variant with
-        | `Macos | `Windows | `Cygwin -> "2.1" (* TODO: Remove that when macOS has a proper up-to-date docker image *)
-        | `Linux -> "dev"
-  in *)
   let opam_repo_args = match Variant.os variant with
-    | `Macos | `Windows | `Cygwin -> " -k local" (* TODO: (copy ...) do not copy the content of .git or something like that and make the subsequent opam pin fail *)
-    | `Linux -> ""
+    | `Macos -> " -k local" (* TODO: (copy ...) do not copy the content of .git or something like that and make the subsequent opam pin fail *)
+    | `Linux | `Windows | `Cygwin -> ""
   in
   let opamrc = match Variant.os variant with
     (* NOTE: [for_docker] is required because docker does not support bubblewrap in docker build *)
@@ -98,11 +90,9 @@ let setup_repository ~variant ~for_docker ~opam_version =
     (* TODO: On macOS, the sandbox is always (and should be) enabled by default but does not have those ~/.opamrc-sandbox files *)
   in
   user_unix ~uid:1000 ~gid:1000 ::
-  (match home_dir with Some home_dir -> [workdir home_dir] | None -> []) @
+  (match home_dir with Some home_dir -> [ workdir home_dir ] | None -> []) @
   (* TODO: macOS seems to have a bug in (copy ...) so I am forced to remove the (workdir ...) here.
      Otherwise the "opam pin" after the "opam repository set-url" will fail (cannot find the new package for some reason) *)
-  (* run "%s -f %s/bin/opam-%s %s/bin/opam" ln prefix opam_version_str prefix ::
-  run "opam init --reinit%s -ni" opamrc :: *)
   Obuilder_spec_opam.opam_init ~opamrc opam_version distro
   @ [
     env "OPAMDOWNLOADJOBS" "1"; (* Try to avoid github spam detection *)
@@ -110,15 +100,9 @@ let setup_repository ~variant ~for_docker ~opam_version =
     env "OPAMSOLVERTIMEOUT" "500"; (* Increase timeout. Poor mccs is doing its best *)
     env "OPAMPRECISETRACKING" "1"; (* Mitigate https://github.com/ocaml/opam/issues/3997 *)
     run "rm -rf opam-repository/";
-    copy ["."] ~dst:"opam-repository/";
+    copy [ "." ] ~dst:"opam-repository/";
     run "opam repository set-url%s --strict default opam-repository/" opam_repo_args;
   ]
-
-let set_personality ~variant =
-  if Variant.arch variant |> Ocaml_version.arch_is_32bit then
-    [Obuilder_spec.shell ["/usr/bin/linux32"; "/bin/sh"; "-c"]]
-  else
-    []
 
 let spec ~for_docker ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_tests ~pkg =
   let opam_install = opam_install ~variant ~opam_version in
@@ -134,7 +118,7 @@ let spec ~for_docker ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_te
     | false -> []
   in
   Obuilder_spec.stage ~from:base (
-    set_personality ~variant
+    Obuilder_spec_opam.set_personality (Variant.arch variant)
     @ setup_repository ~variant ~for_docker ~opam_version
     @ opam_install ~pin:true ~lower_bounds:false ~with_tests:false ~pkg
     @ lower_bounds
