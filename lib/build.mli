@@ -6,6 +6,7 @@ module Spec : sig
     platform:Platform.t ->
     lower_bounds:bool ->
     with_tests:bool ->
+    local:bool ->
     opam_version:[`V2_0 | `V2_1 | `Dev] ->
     OpamPackage.t ->
     t
@@ -32,6 +33,7 @@ val v :
 val list_revdeps :
   t ->
   platform:Platform.t ->
+  local:bool ->
   opam_version:[`V2_0 | `V2_1 | `Dev] ->
   pkgopt:PackageOpt.t Current.t ->
   base:base Current.t ->
