@@ -6,7 +6,8 @@ let download_cache = "opam-archives"
 let cache ~variant =
   match Variant.os variant with
   | `Linux -> [ Obuilder_spec.Cache.v download_cache ~target:"/home/opam/.opam/download-cache" ]
-  | `Macos | `Windows | `Cygwin -> [ Obuilder_spec.Cache.v download_cache ~target:"/Users/mac1000/.opam/download-cache" ]
+  | `Macos -> [ Obuilder_spec.Cache.v download_cache ~target:"/Users/mac1000/.opam/download-cache" ]
+  | `Windows | `Cygwin -> failwith "Windows and Cygwin are not yet supported by Opam-CI"
 let network = ["host"]
 
 let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
@@ -74,19 +75,22 @@ let setup_repository ~variant ~for_docker ~opam_version =
   let open Obuilder_spec in
   let distro = Variant.distro variant in
   let home_dir = match Variant.os variant with
-    | `Macos | `Windows | `Cygwin -> None
+    | `Macos -> None
     | `Linux -> Some "/home/opam"
+    | `Windows | `Cygwin -> failwith "Windows and Cygwin are not yet supported by Opam-CI"
   in
   let opam_repo_args = match Variant.os variant with
     | `Macos -> " -k local" (* TODO: (copy ...) do not copy the content of .git or something like that and make the subsequent opam pin fail *)
-    | `Linux | `Windows | `Cygwin -> ""
+    | `Linux -> ""
+    | `Windows | `Cygwin -> failwith "Windows and Cygwin are not yet supported by Opam-CI"
   in
   let opamrc = match Variant.os variant with
     (* NOTE: [for_docker] is required because docker does not support bubblewrap in docker build *)
     (* docker run has --privileged but docker build does not have it *)
     (* so we need to remove the part re-enabling the sandbox. *)
     | `Linux when not for_docker -> " --config .opamrc-sandbox"
-    | `Macos | `Windows | `Cygwin | `Linux -> ""
+    | `Macos | `Linux -> ""
+    | `Windows | `Cygwin -> failwith "Windows and Cygwin are not yet supported by Opam-CI"
     (* TODO: On macOS, the sandbox is always (and should be) enabled by default but does not have those ~/.opamrc-sandbox files *)
   in
   user_unix ~uid:1000 ~gid:1000 ::

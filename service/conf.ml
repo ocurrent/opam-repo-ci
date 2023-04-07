@@ -33,8 +33,9 @@ let build_timeout = Duration.of_hour 2
 
 let pool_of_arch variant =
   let os = match Variant.os variant with
-    | `Macos | `Windows | `Cygwin -> "macos"
+    | `Macos -> "macos"
     | `Linux -> "linux"
+    | `Windows | `Cygwin -> failwith "Windows and Cygwin are not yet supported by Opam-CI"
   in
   let arch = match Variant.arch variant with
     | `X86_64 | `I386 -> "x86_64"

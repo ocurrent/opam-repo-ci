@@ -135,7 +135,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
         let has_tests = Current.map (fun {PackageOpt.pkg = _; urgent = _; has_tests} -> has_tests) pkgopt in
         let base =
           match Variant.os variant with
-          | `Macos | `Windows | `Cygwin ->
+          | `Macos ->
               Current.return (Build.MacOS (Variant.docker_tag variant))
           | `Linux -> (* TODO: Use docker images as base for both macOS and linux *)
               let+ repo_id =
@@ -143,6 +143,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
                   ("ocaml/opam:" ^ Variant.docker_tag variant)
               in
               Build.Docker (Current_docker.Raw.Image.of_hash repo_id)
+          | `Windows | `Cygwin -> failwith "Windows and Cygwin are not yet supported by Opam-CI"
         in
         let image =
           let spec = build_spec ~platform ~opam_version pkg in
