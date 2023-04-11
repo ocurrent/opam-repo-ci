@@ -2,18 +2,12 @@ module Variant = Obuilder_spec_opam.Variant
 
 let fmt = Printf.sprintf
 
-let download_cache = "opam-archives"
-let cache ~variant =
-  match Variant.os variant with
-  | `Linux -> [ Obuilder_spec.Cache.v download_cache ~target:"/home/opam/.opam/download-cache" ]
-  | `Macos -> [ Obuilder_spec.Cache.v download_cache ~target:"/Users/mac1000/.opam/download-cache" ]
-  | `Windows | `Cygwin -> failwith "Windows and Cygwin are not yet supported by Opam-CI"
 let network = ["host"]
 
 let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
   let pkg = OpamPackage.to_string pkg in
   let with_tests_opt = if with_tests then " --with-test" else "" in
-  let cache = cache ~variant in
+  let cache = Obuilder_spec_opam.cache (Variant.distro variant) in
   let open Obuilder_spec in
   (if lower_bounds then
      [
