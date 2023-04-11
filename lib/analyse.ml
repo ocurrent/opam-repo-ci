@@ -29,6 +29,7 @@ module Analysis = struct
   type kind =
     | New
     | Deleted
+    | Unavailable
     | SignificantlyChanged
     | UnsignificantlyChanged
   [@@deriving eq, yojson]
@@ -56,6 +57,7 @@ module Analysis = struct
 
   let opam_version_2 = OpamVersion.of_string "2"
 
+  (* NOTE: Returns whether or not the given package is known to be available *)
   let check_opam opam =
     let opam_version = OpamFile.OPAM.opam_version opam in
     let pkg = OpamFile.OPAM.package opam in
@@ -74,7 +76,9 @@ module Analysis = struct
         in
         Fmt.failwith "Format errors detected in %s:\n%s" (OpamPackage.to_string pkg) errors
     end;
-    ()
+    match OpamFile.OPAM.available opam with
+    | OpamTypes.FBool b -> b
+    | _ -> true
 
   let get_package_name ~path ~name ~package =
     let nme =
@@ -105,16 +109,19 @@ module Analysis = struct
 
   let add_pkg ~path ~name ~package kind pkgs =
     let update old_kind = match old_kind, kind with
+      (* NOTE: Impossible combinations (opam file would have to be processed more than once) *)
+      | (New | Deleted | Unavailable), (New | Deleted | Unavailable) ->
+          assert false
       (* NOTE: stronger_kind >= weaker_kind *)
-      | New, (New | Deleted | SignificantlyChanged | UnsignificantlyChanged)
-      | Deleted, (Deleted | SignificantlyChanged | UnsignificantlyChanged)
+      | New, (SignificantlyChanged | UnsignificantlyChanged)
+      | Deleted, (SignificantlyChanged | UnsignificantlyChanged)
+      | Unavailable, (SignificantlyChanged | UnsignificantlyChanged)
       | SignificantlyChanged, (SignificantlyChanged | UnsignificantlyChanged)
       | UnsignificantlyChanged, UnsignificantlyChanged ->
           old_kind
       (* NOTE: weaker_kind < stronger_kind *)
-      | Deleted, New
-      | SignificantlyChanged, (New | Deleted)
-      | UnsignificantlyChanged, (New | Deleted | SignificantlyChanged) ->
+      | SignificantlyChanged, (New | Deleted | Unavailable)
+      | UnsignificantlyChanged, (New | Deleted | Unavailable | SignificantlyChanged) ->
           kind
     in
     OpamPackage.Map.update (get_package_name ~path ~name ~package) update kind pkgs
@@ -163,10 +170,12 @@ module Analysis = struct
                       | OpamPp.Bad_version (_, msg) ->
                           Fmt.failwith "%S failed to be parsed: %s" path msg
                     in
-                    check_opam new_file;
-                    if OpamFile.OPAM.effectively_equal old_file new_file &&
-                       ci_extensions_equal old_file new_file &&
-                       depexts_equal old_file new_file
+                    if not (check_opam new_file) then
+                      (* NOTE: We skip hard tests on unavailable packages (must pass linter but skip building them) *)
+                      add_pkg ~path ~name ~package Unavailable pkgs
+                    else if OpamFile.OPAM.effectively_equal old_file new_file &&
+                            ci_extensions_equal old_file new_file &&
+                            depexts_equal old_file new_file
                     then
                       (* the changes are not significant so we ignore this package *)
                       add_pkg ~path ~name ~package UnsignificantlyChanged pkgs

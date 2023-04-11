@@ -2,6 +2,7 @@ module Analysis : sig
   type kind =
     | New
     | Deleted
+    | Unavailable
     | SignificantlyChanged
     | UnsignificantlyChanged
   [@@deriving yojson]
