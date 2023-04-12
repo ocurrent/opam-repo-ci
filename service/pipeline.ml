@@ -110,7 +110,7 @@ let test_revdeps ~ocluster ~opam_version ~master ~base ~platform ~pkgopt ~after 
 let get_significant_available_pkg = function
   | pkg, {Analyse.Analysis.kind = New; has_tests} -> Some {PackageOpt.pkg; urgent = None; has_tests}
   | pkg, {Analyse.Analysis.kind = SignificantlyChanged; has_tests} -> Some {PackageOpt.pkg; urgent = Some (fun (`High | `Low) -> false); has_tests}
-  | _, {Analyse.Analysis.kind = Deleted | UnsignificantlyChanged; _} -> None
+  | _, {Analyse.Analysis.kind = Deleted | Unavailable | UnsignificantlyChanged; _} -> None
 
 let build_with_cluster ~ocluster ~analysis ~lint ~master source =
   let pkgs = Current.map Analyse.Analysis.packages analysis in
