@@ -4,7 +4,8 @@ let download_cache = "opam-archives"
 let cache ~variant =
   match Variant.os variant with
   | `linux -> [ Obuilder_spec.Cache.v download_cache ~target:"/home/opam/.opam/download-cache" ]
-  | `macOS -> [ Obuilder_spec.Cache.v download_cache ~target:"/Users/mac1000/.opam/download-cache" ]
+  | `macOS -> [ Obuilder_spec.Cache.v download_cache ~target:"/Users/mac1000/.opam/download-cache";
+                Obuilder_spec.Cache.v "homebrew" ~target:"/Users/mac1000/Library/Caches/Homebrew" ]
 let network = ["host"]
 
 let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
