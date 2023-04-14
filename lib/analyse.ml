@@ -111,7 +111,7 @@ module Analysis = struct
     let update old_kind = match old_kind, kind with
       (* NOTE: Impossible combinations (opam file would have to be processed more than once) *)
       | (New | Deleted | Unavailable), (New | Deleted | Unavailable) ->
-          assert false
+          old_kind (* old_kind instead of assert false because OpamStd.Map.update works this way :( *)
       (* NOTE: stronger_kind >= weaker_kind *)
       | New, (SignificantlyChanged | UnsignificantlyChanged)
       | Deleted, (SignificantlyChanged | UnsignificantlyChanged)
