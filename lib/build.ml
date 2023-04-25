@@ -139,6 +139,7 @@ module Op = struct
     let master = Current_git.Commit.hash master in
     let os = match Variant.os variant with
       | `macOS | `linux -> `Unix
+      | `windows -> `Windows
     in
     let build_spec ~for_docker =
       let base = base_to_string base in

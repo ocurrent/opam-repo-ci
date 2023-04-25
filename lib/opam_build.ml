@@ -1,17 +1,24 @@
 let fmt = Printf.sprintf
 
 let download_cache = "opam-archives"
+
 let cache ~variant =
   match Variant.os variant with
   | `linux -> [ Obuilder_spec.Cache.v download_cache ~target:"/home/opam/.opam/download-cache" ]
   | `macOS -> [ Obuilder_spec.Cache.v download_cache ~target:"/Users/mac1000/.opam/download-cache";
                 Obuilder_spec.Cache.v "homebrew" ~target:"/Users/mac1000/Library/Caches/Homebrew" ]
-let network = ["host"]
+  | `windows -> []
+
+let network ~variant =
+  match Variant.os variant with
+  | `linux | `macOS -> ["host"]
+  | `windows -> ["nat"]
 
 let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
   let pkg = OpamPackage.to_string pkg in
   let with_tests_opt = if with_tests then " --with-test" else "" in
   let cache = cache ~variant in
+  let network = network ~variant in
   let open Obuilder_spec in
   (if lower_bounds then
      [
@@ -71,16 +78,17 @@ let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
 
 let setup_repository ~variant ~for_docker ~opam_version =
   let open Obuilder_spec in
+  let network = network ~variant in
   let home_dir = match Variant.os variant with
     | `macOS -> None
-    | `linux -> Some "/home/opam"
+    | `linux | `windows -> Some "/home/opam"
   in
   let prefix = match Variant.os variant with
     | `macOS -> "~/local"
-    | `linux -> "/usr"
+    | `linux | `windows -> "/usr"
   in
   let ln = match Variant.os variant with
-    | `macOS -> "ln"
+    | `macOS | `windows -> "ln"
     | `linux -> "sudo ln"
   in
   let opam_version_str = match opam_version with
@@ -89,21 +97,26 @@ let setup_repository ~variant ~for_docker ~opam_version =
     | `Dev ->
         match Variant.os variant with
         | `macOS -> "2.1" (* TODO: Remove that when macOS has a proper up-to-date docker image *)
-        | `linux -> "dev"
+        | `linux | `windows -> "dev"
   in
   let opam_repo_args = match Variant.os variant with
     | `macOS -> " -k local" (* TODO: (copy ...) do not copy the content of .git or something like that and make the subsequent opam pin fail *)
-    | `linux -> ""
+    | `linux | `windows -> ""
   in
   let opamrc = match Variant.os variant with
     (* NOTE: [for_docker] is required because docker does not support bubblewrap in docker build *)
     (* docker run has --privileged but docker build does not have it *)
     (* so we need to remove the part re-enabling the sandbox. *)
     | `linux when not for_docker -> " --config .opamrc-sandbox"
+    | `windows -> " --config .opamrc-sandbox"
     | `macOS | `linux -> ""
     (* TODO: On macOS, the sandbox is always (and should be) enabled by default but does not have those ~/.opamrc-sandbox files *)
   in
-  user_unix ~uid:1000 ~gid:1000 ::
+  let user = match Variant.os variant with
+    | `windows -> user_windows ~name:"ContainerAdministrator"
+    | _ -> user_unix ~uid:1000 ~gid:1000
+  in
+  user ::
   (match home_dir with Some home_dir -> [workdir home_dir] | None -> []) @
   (* TODO: macOS seems to have a bug in (copy ...) so I am forced to remove the (workdir ...) here.
      Otherwise the "opam pin" after the "opam repository set-url" will fail (cannot find the new package for some reason) *)

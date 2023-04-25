@@ -28,12 +28,19 @@ let macos_homebrew = "macos-homebrew"
 let macos_distributions = [
   macos_homebrew;
   (* TODO: Add macos-macports *)
+  ]
+
+let windows_distributions = [
+  "windows-mingw";
+  "windows-msvc";
 ]
 
 (* TODO: Remove that when macOS uses ocaml-dockerfile *)
 let os {distribution; _} =
   if List.exists (String.equal distribution) macos_distributions then
     `macOS
+  else if List.exists (fun prefix -> String.starts_with ~prefix distribution) windows_distributions then
+    `windows
   else
     `linux
 
