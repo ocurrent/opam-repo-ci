@@ -34,6 +34,8 @@ depends: [
   "ocamlgraph" # needed for the opam vendor
   "cppo" # needed for the opam vendor
   "spdx_licenses" # needed for the opam vendor
+  "jsonm" # needed for the opam vendor
+  "swhid_core" # needed for the opam vendor
   "opam-file-format" {>= "2.1.2"}
   "sexplib" {>= "v0.14.0"}
   "conf-libev"
