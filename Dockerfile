@@ -32,4 +32,5 @@ RUN git config --global user.name "ocaml" && git config --global user.email "ci"
 WORKDIR /var/lib/ocurrent
 ENTRYPOINT ["dumb-init", "/usr/local/bin/opam-repo-ci-service"]
 ENV OCAMLRUNPARAM=a=2
+ENV MEMTRACE=/tmp/memtrace
 COPY --from=build /src/_build/install/default/bin/opam-repo-ci-service /usr/local/bin/
