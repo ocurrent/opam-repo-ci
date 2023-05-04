@@ -218,12 +218,13 @@ let v t ~label ~spec ~base ~master ~urgent commit =
   BC.run t { Op.Key.pool; commit; variant; ty } ()
   |> Current.Primitive.map_result (Result.map ignore) (* TODO: Create a separate type of cache that doesn't parse the output *)
 
-let list_revdeps t ~platform ~opam_version ~pkgopt ~base ~master ~after commit =
+let list_revdeps t ~platform ~opam_version ~pkgopt ~pkgs ~base ~master ~after commit =
   Current.component "list revdeps" |>
   let> {PackageOpt.pkg; urgent; has_tests = _} = pkgopt
   and> base = base
   and> commit = commit
   and> master = master
+  and> pkgs = pkgs
   and> () = after in
   let t = { Op.config = t; master; urgent; base } in
   let { Platform.pool; variant; label = _ } = platform in
@@ -235,7 +236,7 @@ let list_revdeps t ~platform ~opam_version ~pkgopt ~base ~master ~after commit =
           | "" -> acc
           | revdep ->
               let revdep = OpamPackage.of_string revdep in
-              if OpamPackage.equal pkg revdep then
+              if List.exists (fun x -> OpamPackage.equal revdep x.PackageOpt.pkg) pkgs then
                 acc (* NOTE: opam list --recursive --depends-on <pkg> also returns <pkg> itself *)
               else
                 OpamPackage.Set.add revdep acc
