@@ -84,9 +84,9 @@ let revdep_spec ~platform ~opam_version ~revdep pkg =
 
 (* List the revdeps of [pkg] (using [builder] and [image]) and test each one
    (using [spec] and [base], merging [source] into [master]). *)
-let test_revdeps ~ocluster ~opam_version ~master ~base ~platform ~pkgopt ~after source =
+let test_revdeps ~ocluster ~opam_version ~master ~base ~platform ~pkgopt ~pkgs ~after source =
   let revdeps =
-    Build.list_revdeps ~opam_version ~base ocluster ~platform ~pkgopt ~master ~after source |>
+    Build.list_revdeps ~opam_version ~base ocluster ~platform ~pkgopt ~master ~pkgs ~after source |>
     Current.map OpamPackage.Set.elements
   in
   let pkg = Current.map (fun {PackageOpt.pkg = pkg; urgent = _; has_tests = _} -> pkg) pkgopt in
@@ -167,7 +167,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
           else
             Node.empty
         and revdeps =
-          if revdeps then test_revdeps ~ocluster ~opam_version ~master ~base ~platform ~pkgopt source ~after:image
+          if revdeps then test_revdeps ~ocluster ~opam_version ~master ~base ~platform ~pkgopt ~pkgs source ~after:image
           else Node.empty
         in
         let label = Current.map OpamPackage.to_string pkg in
