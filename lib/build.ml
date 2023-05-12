@@ -135,7 +135,7 @@ module Op = struct
 
   module Outcome = Current.String
 
-  let lwt_pool = Lwt_pool.create 1000 (fun () -> Lwt.return_unit)
+  let lwt_pool = Lwt_pool.create 1200 (fun () -> Lwt.return_unit)
 
   let run { config = { connection; timeout }; master; urgent; base } job { Key.pool; commit; variant; ty } () =
     Lwt_pool.use lwt_pool @@ fun () ->
@@ -169,11 +169,11 @@ module Op = struct
     let cache_hint =
       let pkg =
         match ty with
-        | `Opam (`Build { revdep = Some revdep; _ }, pkg) -> Printf.sprintf "%s-%s" (OpamPackage.to_string pkg) (OpamPackage.to_string revdep)
+        | `Opam (`Build { revdep = Some revdep; _ }, pkg) -> Fmt.str "%s-%s" (OpamPackage.to_string pkg) (OpamPackage.to_string revdep)
         | `Opam (`List_revdeps _, pkg)
         | `Opam (`Build _, pkg) -> OpamPackage.to_string pkg
       in
-      Printf.sprintf "%s-%s-%s" (base_to_string base) pkg (Git.Commit_id.hash commit)
+      Fmt.str "%s-%s-%s" (base_to_string base) pkg (Git.Commit_id.hash commit)
     in
     Current.Job.log job "Using cache hint %S" cache_hint;
     Current.Job.log job "Using OBuilder spec:@.%s@." spec_str;

@@ -1,4 +1,4 @@
-let fmt = Printf.sprintf
+let fmt = Fmt.str
 
 let download_cache = "opam-archives"
 let cache ~variant =
