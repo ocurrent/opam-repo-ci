@@ -135,7 +135,7 @@ module Op = struct
 
   module Outcome = Current.String
 
-  let lwt_pool = Lwt_pool.create 1200 (fun () -> Lwt.return_unit)
+  let lwt_pool = Lwt_pool.create 2000 (fun () -> Lwt.return_unit)
 
   let run { config = { connection; timeout }; master; urgent; base } job { Key.pool; commit; variant; ty } () =
     Lwt_pool.use lwt_pool @@ fun () ->
