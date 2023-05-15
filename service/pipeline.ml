@@ -91,6 +91,7 @@ let test_revdeps ~ocluster ~opam_version ~master ~base ~platform ~pkgopt ~pkgs ~
   in
   let pkg = Current.map (fun {PackageOpt.pkg = pkg; urgent = _; has_tests = _} -> pkg) pkgopt in
   let urgent = Current.map (fun {PackageOpt.pkg = _; urgent; has_tests = _} -> urgent) pkgopt in
+
   let tests =
     revdeps
     |> Node.list_map (module OpamPackage) (fun revdep ->
@@ -117,7 +118,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
   let pkgs = Current.map (List.filter_map get_significant_available_pkg) pkgs in
   let build ~opam_version ~lower_bounds ~revdeps label variant =
     let arch = Variant.arch variant in
-    let pool = Conf.pool_of_arch variant in
+    let pool = Conf.pool_of_arch variant in (* ocluster-pool eg linux-x86_64 *)
     let platform = {Platform.label; pool; variant} in
     let analysis = with_label label analysis in
     let pkgs =
@@ -182,6 +183,8 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
   in
   let compilers =
     let master_distro = Distro.tag_of_distro master_distro in
+    (* The last eight releases of OCaml plus latest beta / release-candidate for each unreleased version. *)
+    (* 4.02 -> 5.0 plus 5.1~alpha *)
     (Ocaml_version.Releases.recent @ Ocaml_version.Releases.unreleased_betas) |>
     List.map (fun v ->
       let v = Ocaml_version.with_just_major_and_minor v in
@@ -226,7 +229,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
     ) [] default_compilers
   in
   let lint = Node.action `Linted lint
-  and extras = (* Non-linux-x86_64 compiler variants. eg macos, ls390x, arm64. *)
+  and extras = (* Non-linux-x86_64 compiler variants. eg macos, ls390x, arm64, flambda, afl etc *)
     let build ~opam_version ~distro ~arch ~compiler label =
       let variant = Variant.v ~arch ~distro ~compiler in
       let label = if String.equal label "" then "" else label^"-" in

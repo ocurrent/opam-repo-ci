@@ -135,9 +135,19 @@ module Op = struct
 
   module Outcome = Current.String
 
-  let lwt_pool = Lwt_pool.create 2000 (fun () -> Lwt.return_unit)
+  (* TODO This limits the number of executions of this Build.Op regardless of which pool.
+     We want to limit the revdeps Jobs being created in memory in this pipeline, while allowing
+     Build jobs to be created and submitted to ocluster, to allow non-linux-x86_64 pools to consume
+     their jobs as soon as possible. Extend this to per os/architecture pools.
+   *)
+  let main_lwt_pool = Lwt_pool.create 5000 (fun () -> Lwt.return_unit)
+  let secondary_lwt_pool = Lwt_pool.create 2000 (fun () -> Lwt.return_unit)
 
   let run { config = { connection; timeout }; master; urgent; base } job { Key.pool; commit; variant; ty } () =
+    let lwt_pool = match ty with
+      | `Opam (`List_revdeps _, _) -> secondary_lwt_pool (* Take from secondary pool for revdeps. *)
+      | `Opam (`Build _, _) -> main_lwt_pool (* Otherwise take from the main pool. *)
+    in
     Lwt_pool.use lwt_pool @@ fun () ->
     let master = Current_git.Commit.hash master in
     let os = match Variant.os variant with
