@@ -140,15 +140,15 @@ module Op = struct
      Build jobs to be created and submitted to ocluster, to allow non-linux-x86_64 pools to consume
      their jobs as soon as possible. Extend this to per os/architecture pools.
    *)
-  let main_lwt_pool = Lwt_pool.create 5000 (fun () -> Lwt.return_unit)
-  let secondary_lwt_pool = Lwt_pool.create 2000 (fun () -> Lwt.return_unit)
+  (* let main_lwt_pool = Lwt_pool.create 5000 (fun () -> Lwt.return_unit) *)
+  (* let secondary_lwt_pool = Lwt_pool.create 2000 (fun () -> Lwt.return_unit) *)
 
   let run { config = { connection; timeout }; master; urgent; base } job { Key.pool; commit; variant; ty } () =
-    let lwt_pool = match ty with
-      | `Opam (`List_revdeps _, _) -> secondary_lwt_pool (* Take from secondary pool for revdeps. *)
-      | `Opam (`Build _, _) -> main_lwt_pool (* Otherwise take from the main pool. *)
-    in
-    Lwt_pool.use lwt_pool @@ fun () ->
+    (* let lwt_pool = match ty with *)
+    (*   | `Opam (`List_revdeps _, _) -> secondary_lwt_pool (\* Take from secondary pool for revdeps. *\) *)
+    (*   | `Opam (`Build _, _) -> main_lwt_pool (\* Otherwise take from the main pool. *\) *)
+    (* in *)
+    (* Lwt_pool.use lwt_pool @@ fun () -> *)
     let master = Current_git.Commit.hash master in
     let os = match Variant.os variant with
       | `macOS | `linux -> `Unix
@@ -216,7 +216,7 @@ end
 module BC = Current_cache.Generic(Op)
 
 let config ~timeout sr =
-  let connection = Current_ocluster.Connection.create sr in
+  let connection = Current_ocluster.Connection.create ~max_pipeline:500 sr in
   { connection; timeout }
 
 let v t ~label ~spec ~base ~master ~urgent commit =
