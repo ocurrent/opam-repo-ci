@@ -26,7 +26,7 @@ RUN opam config exec -- dune build ./_build/install/default/bin/opam-repo-ci-ser
 FROM debian:11
 RUN apt-get update && apt-get install libev4 openssh-client curl gnupg2 dumb-init git graphviz libsqlite3-dev ca-certificates netbase gzip bzip2 xz-utils unzip tar -y --no-install-recommends
 RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add -
-RUN echo 'deb [arch=amd64] https://download.docker.com/linux/debian bullseye stable' >> /etc/apt/sources.list
+RUN echo 'deb [arch=arm64] https://download.docker.com/linux/debian bullseye stable' >> /etc/apt/sources.list
 RUN apt-get update && apt-get install docker-ce -y --no-install-recommends
 RUN git config --global user.name "ocaml" && git config --global user.email "ci"
 WORKDIR /var/lib/ocurrent
