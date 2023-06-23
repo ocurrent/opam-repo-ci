@@ -2,9 +2,4 @@
  (public_name opam-repo-ci)
  (package opam-repo-ci-client)
  (name main)
- (libraries
-  opam-repo-ci-api
-  current_rpc
-  capnp-rpc-unix
-  logs.fmt
-  fmt.tty))
+ (libraries opam-repo-ci-api current_rpc capnp-rpc-unix logs.fmt fmt.tty))
