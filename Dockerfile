@@ -1,4 +1,4 @@
-FROM ocaml/opam:debian-11-ocaml-4.14@sha256:d0ed341a7c8c0fcc1d976d670c587e58980671f88fe5cd5c9b86087e6fc5a0e4 AS build
+FROM ocaml/opam:debian-11-ocaml-4.14@sha256:48362dd2acf76b1c7bd4cfe5b5c5cead036f018c5c69153296759faf9179cf8c AS build
 RUN sudo apt-get update && sudo apt-get install libev-dev capnproto graphviz m4 pkg-config libsqlite3-dev libgmp-dev libffi-dev -y --no-install-recommends
 RUN cd ~/opam-repository && git fetch origin master && git reset --hard d16e9990e8b1cc2566a6d36c42b895c65bf0516a && opam update
 COPY --chown=opam \
@@ -26,7 +26,7 @@ RUN opam config exec -- dune build ./_build/install/default/bin/opam-repo-ci-ser
 FROM debian:11
 RUN apt-get update && apt-get install libev4 openssh-client curl gnupg2 dumb-init git graphviz libsqlite3-dev ca-certificates netbase gzip bzip2 xz-utils unzip tar -y --no-install-recommends
 RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add -
-RUN echo 'deb [arch=amd64] https://download.docker.com/linux/debian bullseye stable' >> /etc/apt/sources.list
+RUN echo 'deb https://download.docker.com/linux/debian bullseye stable' >> /etc/apt/sources.list
 RUN apt-get update && apt-get install docker-ce -y --no-install-recommends
 RUN git config --global user.name "ocaml" && git config --global user.email "ci"
 WORKDIR /var/lib/ocurrent
