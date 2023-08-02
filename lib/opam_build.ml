@@ -1,4 +1,4 @@
-let fmt = Printf.sprintf
+let fmt = Fmt.str
 
 let download_cache = "opam-archives"
 let cache ~variant =
@@ -36,9 +36,7 @@ let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
      [ run "opam pin add -k version -yn %s %s" pkg version ]
    else
      []
-  ) @ [
-    run ~network "opam %s || true" (match opam_version with `V2_1 | `Dev -> "update --depexts" | `V2_0 -> "depext -u");
-  ] @
+  ) @
   (if with_tests then [
      (* TODO: Remove this hack when https://github.com/ocurrent/obuilder/issues/77 is fixed *)
      (* NOTE: This hack will fail for packages that have src: "git+https://..." *)
@@ -118,6 +116,7 @@ let setup_repository ~variant ~for_docker ~opam_version =
     run "rm -rf opam-repository/";
     copy ["."] ~dst:"opam-repository/";
     run "opam repository set-url%s --strict default opam-repository/" opam_repo_args;
+    run ~network "opam %s || true" (match opam_version with `V2_1 | `Dev -> "update --depexts" | `V2_0 -> "depext -u");
   ]
 
 let set_personality ~variant =

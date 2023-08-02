@@ -166,11 +166,11 @@ module Op = struct
     let cache_hint =
       let pkg =
         match ty with
-        | `Opam (`Build { revdep = Some revdep; _ }, pkg) -> Printf.sprintf "%s-%s" (OpamPackage.to_string pkg) (OpamPackage.to_string revdep)
+        | `Opam (`Build { revdep = Some revdep; _ }, pkg) -> Fmt.str "%s-%s" (OpamPackage.to_string pkg) (OpamPackage.to_string revdep)
         | `Opam (`List_revdeps _, pkg)
         | `Opam (`Build _, pkg) -> OpamPackage.to_string pkg
       in
-      Printf.sprintf "%s-%s-%s" (base_to_string base) pkg (Git.Commit_id.hash commit)
+      Fmt.str "%s-%s-%s" (base_to_string base) pkg (Git.Commit_id.hash commit)
     in
     Current.Job.log job "Using cache hint %S" cache_hint;
     Current.Job.log job "Using OBuilder spec:@.%s@." spec_str;
@@ -218,12 +218,13 @@ let v t ~label ~spec ~base ~master ~urgent commit =
   BC.run t { Op.Key.pool; commit; variant; ty } ()
   |> Current.Primitive.map_result (Result.map ignore) (* TODO: Create a separate type of cache that doesn't parse the output *)
 
-let list_revdeps t ~platform ~opam_version ~pkgopt ~base ~master ~after commit =
+let list_revdeps t ~platform ~opam_version ~pkgopt ~pkgs ~base ~master ~after commit =
   Current.component "list revdeps" |>
   let> {PackageOpt.pkg; urgent; has_tests = _} = pkgopt
   and> base = base
   and> commit = commit
   and> master = master
+  and> pkgs = pkgs
   and> () = after in
   let t = { Op.config = t; master; urgent; base } in
   let { Platform.pool; variant; label = _ } = platform in
@@ -235,7 +236,7 @@ let list_revdeps t ~platform ~opam_version ~pkgopt ~base ~master ~after commit =
           | "" -> acc
           | revdep ->
               let revdep = OpamPackage.of_string revdep in
-              if OpamPackage.equal pkg revdep then
+              if List.exists (fun x -> OpamPackage.equal revdep x.PackageOpt.pkg) pkgs then
                 acc (* NOTE: opam list --recursive --depends-on <pkg> also returns <pkg> itself *)
               else
                 OpamPackage.Set.add revdep acc

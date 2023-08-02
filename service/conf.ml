@@ -6,7 +6,7 @@ let profile =
   | Some x -> Fmt.failwith "Unknown $CI_PROFILE setting %S" x
 
 let cmdliner_envs =
-  let doc = Printf.sprintf "CI profile settings, must be %s. Defaults to $(b,dev)."
+  let doc = Fmt.str "CI profile settings, must be %s. Defaults to $(b,dev)."
               (Cmdliner.Arg.doc_alts [ "dev"; "production"; "staging" ])
   in
   [ Cmdliner.Cmd.Env.info "CI_PROFILE" ~doc ]

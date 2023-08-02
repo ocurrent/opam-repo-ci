@@ -15,7 +15,7 @@ let opam_version = `Dev
 let weekly = Current_cache.Schedule.v ~valid_for:(Duration.of_day 7) ()
 
 (* Link for GitHub statuses. *)
-let url ~owner ~name ~hash = Uri.of_string (Printf.sprintf "https://opam.ci.ocaml.org/github/%s/%s/commit/%s" owner name hash)
+let url ~owner ~name ~hash = Uri.of_string (Fmt.str "https://opam.ci.ocaml.org/github/%s/%s/commit/%s" owner name hash)
 
 let github_status_of_state ~head result =
   let+ head = head
@@ -84,10 +84,10 @@ let revdep_spec ~platform ~opam_version ~revdep pkg =
 
 (* List the revdeps of [pkg] (using [builder] and [image]) and test each one
    (using [spec] and [base], merging [source] into [master]). *)
-let test_revdeps ~ocluster ~opam_version ~master ~base ~platform ~pkgopt ~after source =
+let test_revdeps ~ocluster ~opam_version ~master ~base ~platform ~pkgopt ~pkgs ~after source =
   let revdeps =
-    Build.list_revdeps ~opam_version ~base ocluster ~platform ~pkgopt ~master ~after source |>
-    Current.map OpamPackage.Set.elements
+    Build.list_revdeps ~opam_version ~base ocluster ~platform ~pkgopt ~master ~pkgs ~after source
+    |> Current.map OpamPackage.Set.elements
   in
   let pkg = Current.map (fun {PackageOpt.pkg = pkg; urgent = _; has_tests = _} -> pkg) pkgopt in
   let urgent = Current.map (fun {PackageOpt.pkg = _; urgent; has_tests = _} -> urgent) pkgopt in
@@ -117,7 +117,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
   let pkgs = Current.map (List.filter_map get_significant_available_pkg) pkgs in
   let build ~opam_version ~lower_bounds ~revdeps label variant =
     let arch = Variant.arch variant in
-    let pool = Conf.pool_of_arch variant in
+    let pool = Conf.pool_of_arch variant in (* ocluster-pool eg linux-x86_64 *)
     let platform = {Platform.label; pool; variant} in
     let analysis = with_label label analysis in
     let pkgs =
@@ -167,7 +167,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
           else
             Node.empty
         and revdeps =
-          if revdeps then test_revdeps ~ocluster ~opam_version ~master ~base ~platform ~pkgopt source ~after:image
+          if revdeps then test_revdeps ~ocluster ~opam_version ~master ~base ~pkgs ~platform ~pkgopt source ~after:image
           else Node.empty
         in
         let label = Current.map OpamPackage.to_string pkg in
@@ -182,6 +182,8 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
   in
   let compilers =
     let master_distro = Distro.tag_of_distro master_distro in
+    (* The last eight releases of OCaml plus latest beta / release-candidate for each unreleased version. *)
+    (* 4.02 -> 5.0 plus 5.1~alpha *)
     (Ocaml_version.Releases.recent @ Ocaml_version.Releases.unreleased_betas) |>
     List.map (fun v ->
       let v = Ocaml_version.with_just_major_and_minor v in
@@ -226,7 +228,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
     ) [] default_compilers
   in
   let lint = Node.action `Linted lint
-  and extras =
+  and extras = (* Non-linux-x86_64 compiler variants. eg macos, ls390x, arm64, flambda, afl etc *)
     let build ~opam_version ~distro ~arch ~compiler label =
       let variant = Variant.v ~arch ~distro ~compiler in
       let label = if String.equal label "" then "" else label^"-" in
