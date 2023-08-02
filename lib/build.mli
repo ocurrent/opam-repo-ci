@@ -34,6 +34,7 @@ val list_revdeps :
   platform:Platform.t ->
   opam_version:[`V2_0 | `V2_1 | `Dev] ->
   pkgopt:PackageOpt.t Current.t ->
+  pkgs:PackageOpt.t list Current.t ->
   base:base Current.t ->
   master:Current_git.Commit.t Current.t ->
   after:unit Current.t ->
