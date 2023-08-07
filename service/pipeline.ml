@@ -280,7 +280,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
     Node.branch ~label:"compilers" compilers;
     Node.branch ~label:"distributions" linux_distributions;
     Node.branch ~label:"macos" macos;
-    Node.branch ~label:"FreeBSD" freebsd;
+    Node.branch ~label:"freebsd" freebsd;
     Node.branch ~label:"extras" extras;
   ]
 
