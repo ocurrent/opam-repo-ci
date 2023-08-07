@@ -2,18 +2,20 @@
  (names main local)
  (package opam-repo-ci-service)
  (public_names opam-repo-ci-service opam-repo-ci-local)
- (libraries current
-            current_web
-            current_docker
-            current_git
-            current_github
-            current_rpc
-            capnp-rpc-unix
-            memtrace
-            mirage-crypto-rng.unix
-            ocluster-api
-            opam_repo_ci
-            opam-repo-ci-api
-            dockerfile-opam
-            prometheus-app.unix)
- (preprocess (pps ppx_deriving_yojson)))
+ (libraries
+  current
+  current_web
+  current_docker
+  current_git
+  current_github
+  current_rpc
+  capnp-rpc-unix
+  memtrace
+  mirage-crypto-rng.unix
+  ocluster-api
+  opam_repo_ci
+  opam-repo-ci-api
+  dockerfile-opam
+  prometheus-app.unix)
+ (preprocess
+  (pps ppx_deriving_yojson)))

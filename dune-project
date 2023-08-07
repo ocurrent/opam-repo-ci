@@ -1,3 +1,3 @@
-(lang dune 3.3)
+(lang dune 3.7)
 (name opam-repo-ci)
-(formatting disabled)
+(formatting (enabled_for dune))

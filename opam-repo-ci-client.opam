@@ -1,14 +1,22 @@
 opam-version: "2.0"
 synopsis: "Command-line client for opam-repo-ci"
-maintainer: ["talex5@gmail.com"]
-authors: ["talex5@gmail.com"]
+maintainer: [
+  "Kate <kit-ty-kate@outlook.com>"
+  "Tim McGilchrist <timmcgil@gmail.com>"
+]
+authors: [
+  "Kate <kit-ty-kate@outlook.com>"
+  "Thomas Leonard <talex5@gmail.com>"
+  "Craig Ferguson <me@craigfe.io>"
+  "Anil Madhavapeddy <anil@recoil.org>"
+]
 homepage: "https://github.com/ocurrent/opam-repo-ci"
 bug-reports: "https://github.com/ocurrent/opam-repo-ci/issues"
 depends: [
   "logs"
   "fmt" {>= "0.8.7"}
-  "dune" {>= "3.3"}
-  "ocaml" {>= "4.12.0"}
+  "dune" {>= "3.7"}
+  "ocaml" {>= "4.14.1"}
   "current_rpc"
   "capnp-rpc-unix"
   "opam-repo-ci-api"

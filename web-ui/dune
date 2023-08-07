@@ -1,14 +1,16 @@
 (executable
-  (name main)
-  (public_name opam-repo-ci-web)
-  (package opam-repo-ci-web)
-  (libraries lwt.unix
-             current_ansi
-             cohttp-lwt-unix
-             tyxml
-             prometheus-app.unix
-             opam-repo-ci-api
-             capnp-rpc-unix
-             yojson
-             ppx_deriving_yojson.runtime)
-(preprocess (pps ppx_deriving_yojson)))
+ (name main)
+ (public_name opam-repo-ci-web)
+ (package opam-repo-ci-web)
+ (libraries
+  lwt.unix
+  current_ansi
+  cohttp-lwt-unix
+  tyxml
+  prometheus-app.unix
+  opam-repo-ci-api
+  capnp-rpc-unix
+  yojson
+  ppx_deriving_yojson.runtime)
+ (preprocess
+  (pps ppx_deriving_yojson)))

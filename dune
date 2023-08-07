@@ -1,2 +1,3 @@
 (dirs :standard \ var)
-(vendored_dirs capnp-ocaml capnp-rpc ocurrent ocluster ocaml-dockerfile ocaml-version opam)
+
+(vendored_dirs ocurrent ocluster ocaml-dockerfile ocaml-version opam)
