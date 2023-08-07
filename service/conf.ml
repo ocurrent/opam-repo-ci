@@ -33,6 +33,7 @@ let pool_of_arch variant =
   let open Opam_repo_ci in
   let os = match Variant.os variant with
     | `macOS -> "macos"
+    | `FreeBSD -> "freebsd"
     | `linux -> "linux"
   in
   let arch = match Variant.arch variant with

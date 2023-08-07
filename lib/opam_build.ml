@@ -4,6 +4,7 @@ let download_cache = "opam-archives"
 let cache ~variant =
   match Variant.os variant with
   | `linux -> [ Obuilder_spec.Cache.v download_cache ~target:"/home/opam/.opam/download-cache" ]
+  | `FreeBSD -> [ Obuilder_spec.Cache.v download_cache ~target:"/usr/home/opam/.opam/download-cache" ]
   | `macOS -> [ Obuilder_spec.Cache.v download_cache ~target:"/Users/mac1000/.opam/download-cache";
                 Obuilder_spec.Cache.v "homebrew" ~target:"/Users/mac1000/Library/Caches/Homebrew" ]
 let network = ["host"]
@@ -71,34 +72,37 @@ let setup_repository ~variant ~for_docker ~opam_version =
   let open Obuilder_spec in
   let home_dir = match Variant.os variant with
     | `macOS -> None
+    | `FreeBSD -> Some "/usr/home/opam"
     | `linux -> Some "/home/opam"
   in
   let prefix = match Variant.os variant with
     | `macOS -> "~/local"
+    | `FreeBSD -> "/usr/local"
     | `linux -> "/usr"
   in
   let ln = match Variant.os variant with
     | `macOS -> "ln"
-    | `linux -> "sudo ln"
+    | `FreeBSD | `linux -> "sudo ln"
   in
   let opam_version_str = match opam_version with
     | `V2_0 -> "2.0"
     | `V2_1 -> "2.1"
     | `Dev ->
         match Variant.os variant with
+        | `FreeBSD -> "2.1"
         | `macOS -> "2.1" (* TODO: Remove that when macOS has a proper up-to-date docker image *)
         | `linux -> "dev"
   in
   let opam_repo_args = match Variant.os variant with
     | `macOS -> " -k local" (* TODO: (copy ...) do not copy the content of .git or something like that and make the subsequent opam pin fail *)
-    | `linux -> ""
+    | `FreeBSD | `linux -> ""
   in
   let opamrc = match Variant.os variant with
     (* NOTE: [for_docker] is required because docker does not support bubblewrap in docker build *)
     (* docker run has --privileged but docker build does not have it *)
     (* so we need to remove the part re-enabling the sandbox. *)
     | `linux when not for_docker -> " --config .opamrc-sandbox"
-    | `macOS | `linux -> ""
+    | `FreeBSD | `macOS | `linux -> ""
     (* TODO: On macOS, the sandbox is always (and should be) enabled by default but does not have those ~/.opamrc-sandbox files *)
   in
   user_unix ~uid:1000 ~gid:1000 ::

@@ -9,8 +9,9 @@ val pp_ocaml_version : t -> string
 val arch : t -> arch
 val docker_tag : t -> string
 val distribution : t -> string
-val os : t -> [`linux | `macOS]
+val os : t -> [`linux | `macOS | `FreeBSD ]
 
 val pp : t Fmt.t
 
 val macos_homebrew : string
+val freebsd : string

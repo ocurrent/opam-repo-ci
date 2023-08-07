@@ -8,10 +8,12 @@ module Git = Current_git
 type base =
   | Docker of Current_docker.Raw.Image.t
   | MacOS of string
+  | FreeBSD of string
 
 let base_to_string = function
   | Docker img -> Current_docker.Raw.Image.hash img
   | MacOS base -> base
+  | FreeBSD base -> base
 
 let ( >>!= ) = Lwt_result.bind
 
@@ -138,7 +140,7 @@ module Op = struct
   let run { config = { connection; timeout }; master; urgent; base } job { Key.pool; commit; variant; ty } () =
     let master = Current_git.Commit.hash master in
     let os = match Variant.os variant with
-      | `macOS | `linux -> `Unix
+      | `macOS | `linux | `FreeBSD -> `Unix
     in
     let build_spec ~for_docker =
       let base = base_to_string base in
