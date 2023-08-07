@@ -1,10 +1,11 @@
 opam-version: "2.0"
 synopsis: "Web-server frontend for opam-repo-ci"
 maintainer: [
-  "Kate <kit.ty.kate@disroot.org>" "Tim McGilchrist <timmcgil@gmail.com>"
+  "Kate <kit-ty-kate@outlook.com>"
+  "Tim McGilchrist <timmcgil@gmail.com>"
 ]
 authors: [
-  "Kate <kit.ty.kate@disroot.org>"
+  "Kate <kit-ty-kate@outlook.com>"
   "Thomas Leonard <talex5@gmail.com>"
   "Craig Ferguson <me@craigfe.io>"
   "Anil Madhavapeddy <anil@recoil.org>"
