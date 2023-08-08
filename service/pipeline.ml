@@ -136,6 +136,8 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
           match Variant.os variant with
           | `macOS ->
               Current.return (Build.MacOS (Variant.docker_tag variant))
+          | `FreeBSD ->
+              Current.return (Build.FreeBSD (Variant.docker_tag variant))
           | `linux -> (* TODO: Use docker images as base for both macOS and linux *)
               let+ repo_id =
                 Docker.peek ~schedule:weekly ~arch:(Ocaml_version.to_docker_arch arch)
@@ -227,6 +229,20 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
       ) acc [`Aarch64; `X86_64]
     ) [] default_compilers
   in
+  let freebsd =
+    let build ~distro ~arch ~compiler =
+      let variant = Variant.v ~arch ~distro ~compiler in
+      let label = Fmt.str "%s-%s" (Variant.docker_tag variant) (Ocaml_version.string_of_arch arch) in
+      build ~opam_version ~lower_bounds:false ~revdeps:false label variant
+    in
+    let freebsd = Variant.freebsd in
+    List.fold_left (fun acc comp ->
+      let comp = Ocaml_version.to_string comp in
+      List.fold_left (fun acc arch ->
+        build ~distro:freebsd ~arch ~compiler:(comp, None) :: acc
+      ) acc [`X86_64]
+    ) [] default_compilers
+  in
   let lint = Node.action `Linted lint
   and extras = (* Non-linux-x86_64 compiler variants. eg macos, ls390x, arm64, flambda, afl etc *)
     let build ~opam_version ~distro ~arch ~compiler label =
@@ -264,6 +280,7 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
     Node.branch ~label:"compilers" compilers;
     Node.branch ~label:"distributions" linux_distributions;
     Node.branch ~label:"macos" macos;
+    Node.branch ~label:"freebsd" freebsd;
     Node.branch ~label:"extras" extras;
   ]
 

@@ -14,6 +14,7 @@ end
 type base =
   | Docker of Current_docker.Raw.Image.t
   | MacOS of string
+  | FreeBSD of string
 
 type t
 
