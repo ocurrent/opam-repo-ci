@@ -87,11 +87,7 @@ let setup_repository ~variant ~for_docker ~opam_version =
   let opam_version_str = match opam_version with
     | `V2_0 -> "2.0"
     | `V2_1 -> "2.1"
-    | `Dev ->
-        match Variant.os variant with
-        | `FreeBSD -> "2.1"
-        | `macOS -> "2.1" (* TODO: Remove that when macOS has a proper up-to-date docker image *)
-        | `linux -> "dev"
+    | `Dev -> "dev"
   in
   let opam_repo_args = match Variant.os variant with
     | `macOS -> " -k local" (* TODO: (copy ...) do not copy the content of .git or something like that and make the subsequent opam pin fail *)
