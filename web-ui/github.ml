@@ -202,12 +202,22 @@ let link_jobs ~owner ~name ~hash ?selected jobs =
     in
     StatusTree.add k x trees
   in
+  let render_error trees { Client.variant; outcome } =
+    let k = [Fmt.str "%a" Client.State.pp outcome; variant] in
+    let x =
+      let uri = job_url ~owner ~name ~hash variant in
+      let label = String.split_on_char Common.status_sep variant in
+      let label = String.concat " / " label in
+      outcome, [a ~a:[a_href uri] [txt label]]
+    in
+    StatusTree.add k x trees
+  in
   let full_tree = statuses (List.fold_left render_job [] jobs) in
   let error_tree =
     if errors = [] then []
     else [
       h2 [txt "Summary of errors"];
-      statuses (List.fold_left render_job [] errors);
+      statuses (List.fold_left render_error [] errors);
     ]
   in
   error_tree @ [
