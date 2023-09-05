@@ -211,8 +211,9 @@ let link_jobs ~owner ~name ~hash ?selected jobs =
     ]
   in
   error_tree @ [
-    h2 [txt "Full results"];
-    full_tree
+    details
+      (summary [b [txt "Full results"]])
+      [full_tree]
   ]
 
 let short_hash = Astring.String.with_range ~len:6
