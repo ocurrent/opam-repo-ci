@@ -204,14 +204,14 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
     List.fold_left (fun acc comp ->
       let comp = Ocaml_version.to_string comp in
       List.fold_left (fun acc distro ->
-        if Distro.compare distro master_distro = 0 (* TODO: Add Distro.equal *)
-        || Distro.os_family_of_distro distro <> `Linux (* TODO: Unlock this when Windows is ready *)
-        || Distro.compare distro (`CentOS `V7 : Distro.t) = 0 (* TODO: Remove when it has been removed in ocaml-dockerfile *)
-        || Distro.compare distro (`OracleLinux `V7 : Distro.t) = 0 then
-          acc
-        else
-          let distro = Distro.tag_of_distro distro in
-          build ~arch:`X86_64 ~distro ~compiler:(comp, None) :: acc
+        match distro with
+        | `CentOS `V7 | `OracleLinux _ (* TODO: Too annoying to support. Remove when it has been removed in ocaml-dockerfile *)
+        | _ when Distro.compare distro master_distro = 0 (* TODO: Add Distro.equal *)
+              || Distro.os_family_of_distro distro <> `Linux -> (* TODO: Unlock this when Windows is ready *)
+            acc
+        | _ ->
+            let distro = Distro.tag_of_distro distro in
+            build ~arch:`X86_64 ~distro ~compiler:(comp, None) :: acc
       ) acc (Distro.active_distros `X86_64)
     ) [] default_compilers
   in
