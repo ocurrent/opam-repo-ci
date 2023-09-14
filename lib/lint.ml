@@ -136,7 +136,7 @@ module Check = struct
     in
     let is_build = ref false in
     let rec get_lower_bound = function
-      | OpamFormula.Atom (OpamTypes.Constraint ((`Gt | `Geq), OpamTypes.FString version)) -> Some version
+      | OpamFormula.Atom (OpamTypes.Constraint ((`Gt | `Geq | `Eq), OpamTypes.FString version)) -> Some version
       | Atom (Filter (FIdent (_, var, _))) when String.equal (OpamVariable.to_string var) "build" -> is_build := true; None (* TODO: remove this hack *)
       | Empty | Atom (Filter _) | Atom (Constraint _) -> None
       | Block x -> get_lower_bound x
