@@ -8,7 +8,7 @@ module Common = Opam_repo_ci_api.Common
 module Distro = Dockerfile_opam.Distro
 
 let master_distro = (Distro.resolve_alias Distro.master_distro :> Distro.t)
-let default_compilers_full = Ocaml_version.Releases.[v4_14; v5_0] (* NOTE: Should probably stay with list length 2 *)
+let default_compilers_full = Ocaml_version.Releases.[v4_14; Ocaml_version.Releases.latest] (* NOTE: Should probably stay with list length 2 *)
 let default_compilers = List.map Ocaml_version.with_just_major_and_minor default_compilers_full
 let opam_version = `Dev
 
