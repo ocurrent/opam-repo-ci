@@ -5,3 +5,7 @@ all:
 
 deploy-stack:
 	docker --context $(CONTEXT) stack deploy --prune -c stack.yml opam-repo-ci
+
+.PHONY: dev
+dev:
+	./dev/dev.sh
