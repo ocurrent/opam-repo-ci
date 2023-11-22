@@ -56,8 +56,7 @@ let submission_service =
 let cmd =
   let doc = "Test opam-repo-ci on a local Git clone" in
   let info = Cmd.info "opam-repo-ci-local" ~doc in
-  Cmd.v
-    info
+  Cmd.v info
     Term.(term_result (
       const main
       $ Current.Config.cmdliner
