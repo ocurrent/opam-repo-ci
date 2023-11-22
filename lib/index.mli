@@ -50,6 +50,10 @@ val set_status:
   unit
 (** [set_status ~owner ~name ~hash build_status] sets the latest status for this combination. *)
 
+type n_per_status_t = { not_started : int; pending : int; failed : int; passed : int }
+
+val n_per_status : unit -> n_per_status_t
+
 val get_full_hash : owner:string -> name:string -> string -> (string, [> `Ambiguous | `Unknown | `Invalid]) result
 (** [get_full_hash ~owner ~name short_hash] returns the full hash for [short_hash]. *)
 

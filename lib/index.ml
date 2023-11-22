@@ -88,27 +88,63 @@ let get_job_ids ~owner ~name ~hash =
   get_job_ids_with_variant t ~owner ~name ~hash
   |> Job_map.bindings |> List.filter_map snd
 
+type n_per_status_t = { not_started : int; pending : int; failed : int; passed : int }
+
 module Status_cache = struct
-  let cache = Hashtbl.create 1_000
+  let cache : (string * string * string, build_status) Hashtbl.t = Hashtbl.create 1_000
   let cache_max_size = 1_000_000
 
-  type elt = [ `Not_started | `Pending | `Failed | `Passed ]
-
-  let add ~owner ~name ~hash (status : elt) =
+  let add ~owner ~name ~hash status =
     if Hashtbl.length cache > cache_max_size then Hashtbl.clear cache;
     Hashtbl.add cache (owner, name, hash) status
 
-  let find ~owner ~name ~hash : elt =
+  let find ~owner ~name ~hash =
     Hashtbl.find_opt cache (owner, name, hash)
     |> function
       | Some s -> s
       | None -> `Not_started
+
+  let empty_n_per_status = { not_started = 0; pending = 0; failed = 0; passed = 0 }
+
+  module Commit_map = Map.Make (struct
+    type t = string * string * string
+
+    (* Compare in reverse order as hashes are most likely to be distinct *)
+    let compare (a0, b0, c0) (a1, b1, c1) =
+      let x = String.compare c0 c1 in
+      if x = 0 then
+        let y = String.compare b0 b1 in
+        if y = 0 then String.compare a0 a1
+        else y
+      else x
+  end)
+
+  let sum_per_status () =
+    (* Deduplicates hashtbl, taking the most recent value for a given key *)
+    let hashtbl_to_map h =
+      Hashtbl.fold
+        (fun key status acc ->
+          if Commit_map.exists (fun k _ -> k = key) acc then acc
+          else Commit_map.add key status acc)
+        h
+        Commit_map.empty
+    in
+    let f _ status acc =
+      match status with
+      | `Not_started -> { acc with not_started = acc.not_started + 1 }
+      | `Pending -> { acc with pending = acc.pending + 1 }
+      | `Failed -> { acc with failed = acc.failed + 1 }
+      | `Passed -> { acc with passed = acc.passed + 1 }
+    in
+    let m = hashtbl_to_map cache in
+    Commit_map.fold f m empty_n_per_status
 end
 
 let get_status = Status_cache.find
 
-let set_status ~owner ~name ~hash status =
-  Status_cache.add ~owner ~name ~hash status
+let set_status = Status_cache.add
+
+let n_per_status = Status_cache.sum_per_status
 
 let record ~repo ~hash jobs =
   let { Current_github.Repo_id.owner; name } = repo in
