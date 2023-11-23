@@ -88,17 +88,42 @@ let get_job_ids ~owner ~name ~hash =
   get_job_ids_with_variant t ~owner ~name ~hash
   |> Job_map.bindings |> List.filter_map snd
 
+type n_per_status_t = { not_started : int; pending : int; failed : int; passed : int }
+
 module Status_cache = struct
-  let cache = Hashtbl.create 1_000
+  let cache : (string * string * string, build_status) Hashtbl.t = Hashtbl.create 1_000
   let cache_max_size = 1_000_000
 
-  type elt = [ `Not_started | `Pending | `Failed | `Passed ]
+  module Metrics = struct
+    let empty_n_per_status = { not_started = 0; pending = 0; failed = 0; passed = 0 }
+    let n_per_status = ref empty_n_per_status
 
-  let add ~owner ~name ~hash (status : elt) =
-    if Hashtbl.length cache > cache_max_size then Hashtbl.clear cache;
-    Hashtbl.add cache (owner, name, hash) status
+    let reset () = n_per_status := empty_n_per_status
 
-  let find ~owner ~name ~hash : elt =
+    let modify f status =
+      let g acc = function
+      | `Not_started -> { acc with not_started = f acc.not_started }
+      | `Pending -> { acc with pending = f acc.pending }
+      | `Failed -> { acc with failed = f acc.failed }
+      | `Passed -> { acc with passed = f acc.passed }
+      in
+      n_per_status := g !n_per_status status
+  end
+
+  let add ~owner ~name ~hash status =
+    if Hashtbl.length cache > cache_max_size then begin
+      Hashtbl.clear cache;
+      Metrics.reset ()
+    end;
+    let key = (owner, name, hash) in
+    (* Decrement existing status if it exists *)
+    Hashtbl.find_opt cache key
+    |> Option.iter (Metrics.modify (fun x -> x - 1));
+    (* Increment new status *)
+    Metrics.modify (fun x -> x + 1) status;
+    Hashtbl.add cache key status
+
+  let find ~owner ~name ~hash =
     Hashtbl.find_opt cache (owner, name, hash)
     |> function
       | Some s -> s
@@ -107,8 +132,9 @@ end
 
 let get_status = Status_cache.find
 
-let set_status ~owner ~name ~hash status =
-  Status_cache.add ~owner ~name ~hash status
+let set_status = Status_cache.add
+
+let get_n_per_status () = !Status_cache.Metrics.n_per_status
 
 let record ~repo ~hash jobs =
   let { Current_github.Repo_id.owner; name } = repo in

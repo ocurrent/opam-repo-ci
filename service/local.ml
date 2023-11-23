@@ -8,9 +8,10 @@ module Github = Current_github
 let () =
   Memtrace.trace_if_requested ~context:"opam-repo-ci-local" ();
   Unix.putenv "DOCKER_BUILDKIT" "1";
-  Prometheus_unix.Logging.init ()
+  Prometheus_unix.Logging.init ();
+  Prometheus.CollectorRegistry.(register_pre_collect default) Metrics.update
 
-let main config mode capnp_address submission_uri api repo_id =
+let main config mode capnp_address submission_uri api repo_id prometheus_config =
   Lwt_main.run begin
     Capnp_setup.run capnp_address >>= fun (vat, rpc_engine_resolver) ->
     let repo = (api, repo_id) in
@@ -19,10 +20,15 @@ let main config mode capnp_address submission_uri api repo_id =
     rpc_engine_resolver |> Option.iter (fun r -> Capability.resolve_ok r (Api_impl.make_ci ~engine));
     let routes = Current_web.routes engine in
     let site = Current_web.Site.(v ~has_role:allow_all) ~name:"opam-repo-ci-local" routes in
-    Lwt.choose [
+    let prometheus =
+      List.map
+        (Lwt.map @@ Result.ok)
+        (Prometheus_unix.serve prometheus_config)
+    in
+    Lwt.choose ([
       Current.Engine.thread engine;
       Current_web.run ~mode site;
-    ]
+    ] @ prometheus)
   end
 
 (* Command-line parsing *)
@@ -50,6 +56,15 @@ let submission_service =
 let cmd =
   let doc = "Test opam-repo-ci on a local Git clone" in
   let info = Cmd.info "opam-repo-ci-local" ~doc in
-  Cmd.v info Term.(term_result (const main $ Current.Config.cmdliner $ Current_web.cmdliner $ Capnp_setup.cmdliner $ submission_service $ Current_github.Api.cmdliner $ repo))
+  Cmd.v info
+    Term.(term_result (
+      const main
+      $ Current.Config.cmdliner
+      $ Current_web.cmdliner
+      $ Capnp_setup.cmdliner
+      $ submission_service
+      $ Current_github.Api.cmdliner
+      $ repo
+      $ Prometheus_unix.opts))
 
 let () = exit @@ Cmd.eval cmd

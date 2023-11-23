@@ -7,6 +7,7 @@ let () =
   Memtrace.trace_if_requested ~context:"opam-repo-ci" ();
   Unix.putenv "DOCKER_BUILDKIT" "1";
   Prometheus_unix.Logging.init ();
+  Prometheus.CollectorRegistry.(register_pre_collect default) Metrics.update;
   Mirage_crypto_rng_unix.initialize (module Mirage_crypto_rng.Fortuna);
   match Conf.profile with
   | `Production -> Logs.info (fun f -> f "Using production configuration")
@@ -115,7 +116,7 @@ let add_default_matching_log_rules () =
   in
   List.iter Current.Log_matcher.add_rule default_rules
 
-let main config mode app capnp_address github_auth submission_uri =
+let main config mode app capnp_address github_auth submission_uri prometheus_config =
   add_default_matching_log_rules ();
   Lwt_main.run begin
     let listen_address = Capnp_rpc_unix.Network.Location.tcp ~host:"0.0.0.0" ~port:Conf.Capnp.internal_port in
@@ -134,10 +135,15 @@ let main config mode app capnp_address github_auth submission_uri =
       Routes.(s "login" /? nil @--> Current_github.Auth.login github_auth) ::
       Current_web.routes engine in
     let site = Current_web.Site.v ?authn ~has_role ~secure_cookies:true ~name:"opam-ci" routes in
-    Lwt.choose [
+    let prometheus =
+      List.map
+        (Lwt.map @@ Result.ok)
+        (Prometheus_unix.serve prometheus_config)
+    in
+    Lwt.choose ([
       Current.Engine.thread engine;
       Current_web.run ~mode site;
-    ]
+    ] @ prometheus)
   end
 
 (* Command-line parsing *)
@@ -155,7 +161,15 @@ let submission_service =
 let cmd =
   let doc = "Build OCaml projects on GitHub" in
   let info = Cmd.info "opam-repo-ci" ~doc ~envs:Conf.cmdliner_envs in
-  Cmd.v info Term.(term_result (const main $ Current.Config.cmdliner $ Current_web.cmdliner $
-                     Current_github.App.cmdliner $ Capnp_setup.cmdliner $ Current_github.Auth.cmdliner $ submission_service))
+  Cmd.v info
+    Term.(term_result (
+      const main
+      $ Current.Config.cmdliner
+      $ Current_web.cmdliner
+      $ Current_github.App.cmdliner
+      $ Capnp_setup.cmdliner
+      $ Current_github.Auth.cmdliner
+      $ submission_service
+      $ Prometheus_unix.opts))
 
 let () = exit @@ Cmd.eval cmd
