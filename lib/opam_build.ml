@@ -10,7 +10,7 @@ let cache ~variant =
 let network = ["host"]
 
 let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
-  let pkg = OpamPackage.to_string pkg in
+  let pkg_s = OpamPackage.to_string pkg in
   let with_tests_opt = if with_tests then " --with-test" else "" in
   let cache = cache ~variant in
   let open Obuilder_spec in
@@ -31,10 +31,10 @@ let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
   ) @
   (if pin then
      let version =
-       let idx = String.index pkg '.' + 1 in
-       String.sub pkg idx (String.length pkg - idx)
+       let idx = String.index pkg_s '.' + 1 in
+       String.sub pkg_s idx (String.length pkg_s - idx)
      in
-     [ run "opam pin add -k version -yn %s %s" pkg version ]
+     [ run "opam pin add -k version -yn %s %s" pkg_s version ]
    else
      []
   ) @
@@ -42,13 +42,24 @@ let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
      (* TODO: Remove this hack when https://github.com/ocurrent/obuilder/issues/77 is fixed *)
      (* NOTE: This hack will fail for packages that have src: "git+https://..." *)
      run ~network "(%sopam reinstall --with-test %s) || true"
-       (match opam_version with `V2_1 | `Dev -> "" | `V2_0 -> fmt "opam depext%s %s && " with_tests_opt pkg) pkg
+       (match opam_version with `V2_1 | `Dev -> "" | `V2_0 -> fmt "opam depext%s %s && " with_tests_opt pkg_s) pkg_s
    ] else []) @ [
     (* TODO: Replace by two calls to opam install + opam install -t using the OPAMDROPINSTALLEDPACKAGES feature *)
     (* NOTE: See above for the ~network:(if with_tests ...) hack *)
     (* NOTE: We cannot use the cache as concurrent access to the cache might overwrite it and the required archives might not be available anymore at this point *)
+    let depext =
+      match opam_version with
+      | `V2_1 | `Dev -> ""
+      | `V2_0 -> fmt "opam depext%s %s && " with_tests_opt pkg_s
+    in
+    let verbose = if with_tests then " --verbose" else "" in
+    let update_invariant =
+      if String.equal (OpamPackage.name_to_string pkg) "ocaml-variants" then
+        " --update-invariant"
+      else ""
+    in
     run ~cache:(if with_tests then [] else cache) ~network:(if with_tests then [] else network)
-      {|%sopam reinstall%s%s %s;
+      {|%sopam reinstall%s%s%s %s;
         res=$?;
         test "$res" != 31 && exit "$res";
         export OPAMCLI=2.0;
@@ -63,9 +74,9 @@ let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
         done;
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
         exit 1|}
-      (match opam_version with `V2_1 | `Dev -> "" | `V2_0 -> fmt "opam depext%s %s && " with_tests_opt pkg) with_tests_opt (if with_tests then " --verbose" else "") pkg
+      depext with_tests_opt verbose update_invariant pkg_s
       (Variant.distribution variant)
-      pkg
+      pkg_s
   ]
 
 let setup_repository ~variant ~for_docker ~opam_version =
