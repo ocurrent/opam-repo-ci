@@ -54,6 +54,8 @@ type n_per_status_t = { not_started : int; pending : int; failed : int; passed :
 
 val get_n_per_status : unit -> n_per_status_t
 
+val get_n_handled : unit -> int
+
 val get_full_hash : owner:string -> name:string -> string -> (string, [> `Ambiguous | `Unknown | `Invalid]) result
 (** [get_full_hash ~owner ~name short_hash] returns the full hash for [short_hash]. *)
 

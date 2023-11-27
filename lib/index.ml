@@ -90,37 +90,41 @@ let get_job_ids ~owner ~name ~hash =
 
 type n_per_status_t = { not_started : int; pending : int; failed : int; passed : int }
 
+module Metrics = struct
+  let empty_n_per_status = { not_started = 0; pending = 0; failed = 0; passed = 0 }
+  let n_per_status = ref empty_n_per_status
+
+  let reset_n_per_status () = n_per_status := empty_n_per_status
+
+  let modify_n_per_status f status =
+    let g acc = function
+    | `Not_started -> { acc with not_started = f acc.not_started }
+    | `Pending -> { acc with pending = f acc.pending }
+    | `Failed -> { acc with failed = f acc.failed }
+    | `Passed -> { acc with passed = f acc.passed }
+    in
+    n_per_status := g !n_per_status status
+
+  let n_handled = ref 0
+
+  let inc_n_handled n = n_handled := !n_handled + n
+end
+
 module Status_cache = struct
   let cache : (string * string * string, build_status) Hashtbl.t = Hashtbl.create 1_000
   let cache_max_size = 1_000_000
 
-  module Metrics = struct
-    let empty_n_per_status = { not_started = 0; pending = 0; failed = 0; passed = 0 }
-    let n_per_status = ref empty_n_per_status
-
-    let reset () = n_per_status := empty_n_per_status
-
-    let modify f status =
-      let g acc = function
-      | `Not_started -> { acc with not_started = f acc.not_started }
-      | `Pending -> { acc with pending = f acc.pending }
-      | `Failed -> { acc with failed = f acc.failed }
-      | `Passed -> { acc with passed = f acc.passed }
-      in
-      n_per_status := g !n_per_status status
-  end
-
   let add ~owner ~name ~hash status =
     if Hashtbl.length cache > cache_max_size then begin
       Hashtbl.clear cache;
-      Metrics.reset ()
+      Metrics.reset_n_per_status ()
     end;
     let key = (owner, name, hash) in
     (* Decrement existing status if it exists *)
     Hashtbl.find_opt cache key
-    |> Option.iter (Metrics.modify (fun x -> x - 1));
+    |> Option.iter (Metrics.modify_n_per_status (fun x -> x - 1));
     (* Increment new status *)
-    Metrics.modify (fun x -> x + 1) status;
+    Metrics.modify_n_per_status (fun x -> x + 1) status;
     Hashtbl.add cache key status
 
   let find ~owner ~name ~hash =
@@ -133,7 +137,7 @@ module Status_cache = struct
     let key = (owner, name, hash) in
     Hashtbl.find_opt cache key
     |> Option.iter (fun status ->
-      Metrics.modify (fun x -> x - 1) status;
+      Metrics.modify_n_per_status (fun x -> x - 1) status;
       Hashtbl.remove cache key)
 end
 
@@ -141,7 +145,9 @@ let get_status = Status_cache.find
 
 let set_status = Status_cache.add
 
-let get_n_per_status () = !Status_cache.Metrics.n_per_status
+let get_n_per_status () = !Metrics.n_per_status
+
+let get_n_handled () = !Metrics.n_handled
 
 let record ~repo ~hash jobs =
   let { Current_github.Repo_id.owner; name } = repo in
@@ -238,12 +244,13 @@ let set_active_refs ~repo (refs : (string * string) list) =
   (* Remove statuses from Status_cache corresponding to removed refs *)
   Repo_map.find_opt repo !active_refs
   |> Option.iter (fun old_refs ->
-    (* Set difference: find refs that have been removed by merging *)
+    (* Set difference: find removed refs that have been merged or closed *)
     let removed_refs =
       List.filter
         (fun k -> not @@ List.mem k refs)
         old_refs
     in
+    Metrics.inc_n_handled (List.length removed_refs);
     List.iter (fun (_, hash) ->
       Status_cache.remove
         ~owner:repo.Current_github.Repo_id.owner
