@@ -240,7 +240,9 @@ let set_active_refs ~repo (refs : (string * string) list) =
   |> Option.iter (fun old_refs ->
     (* Set difference: find refs that have been removed by merging *)
     let removed_refs =
-      List.filter (fun k -> List.exists ((!=) k) refs) old_refs
+      List.filter
+        (fun k -> not @@ List.exists ((=) k) refs)
+        old_refs
     in
     List.iter (fun (_, hash) ->
       Status_cache.remove
