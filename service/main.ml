@@ -117,8 +117,9 @@ let add_default_matching_log_rules () =
   in
   List.iter Current.Log_matcher.add_rule default_rules
 
-let main config mode app capnp_address github_auth submission_uri prometheus_config =
+let main config mode app capnp_address github_auth submission_uri prometheus_config level =
   add_default_matching_log_rules ();
+  Logs.set_level level;
   Lwt_main.run begin
     let listen_address = Capnp_rpc_unix.Network.Location.tcp ~host:"0.0.0.0" ~port:Conf.Capnp.internal_port in
     Capnp_setup.run ~listen_address capnp_address >>= fun (vat, rpc_engine_resolver) ->
@@ -171,6 +172,7 @@ let cmd =
       $ Capnp_setup.cmdliner
       $ Current_github.Auth.cmdliner
       $ submission_service
-      $ Prometheus_unix.opts))
+      $ Prometheus_unix.opts
+      $ Logs_cli.level ()))
 
 let () = exit @@ Cmd.eval cmd

@@ -11,6 +11,7 @@
   opam-repo-ci-api
   capnp-rpc-unix
   yojson
-  ppx_deriving_yojson.runtime)
+  ppx_deriving_yojson.runtime
+  logs.cli)
  (preprocess
   (pps ppx_deriving_yojson)))
