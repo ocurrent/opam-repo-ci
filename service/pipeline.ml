@@ -326,6 +326,8 @@ module Summary = struct
         | ok, err, skip -> Error (`Msg (Fmt.str "%d jobs failed, %d jobs skipped, %d jobs passed" err skip ok))
     in
     (lint, main_jobs)
+
+  let n_jobs { ok; pending; err; skip; lint } = ok + pending + err + skip + lint
 end
 
 module Results : sig
@@ -434,6 +436,7 @@ let test_pr ~ocluster ~master ~head =
     let+ summary = summary
     and+ { Current_github.Repo_id.owner; name } = repo
     and+ hash = hash in
+    let n_jobs = Summary.n_jobs summary in
     let summary = Summary.to_string summary in
     let status =
       match summary with
@@ -441,7 +444,7 @@ let test_pr ~ocluster ~master ~head =
       | _, Error (`Active `Running) -> `Pending
       | _, Error (`Msg _) -> `Failed
     in
-    Index.set_status ~owner ~name ~hash status;
+    Index.set_status ~owner ~name ~hash (status, n_jobs);
     summary
   in
   summary

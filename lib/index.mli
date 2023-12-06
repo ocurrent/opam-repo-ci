@@ -35,20 +35,27 @@ val get_job : owner:string -> name:string -> hash:string -> variant:string -> (s
 
 val get_job_ids: owner:string -> name:string -> hash:string -> string list
 
-val get_status:
+val get_build_status:
   owner:string ->
   name:string ->
   hash:string ->
   build_status
-(** [get_status ~owner ~name ~hash] is the latest status for this combination. *)
+(** [get_build_status ~owner ~name ~hash] is the latest status for this combination. *)
+
+val get_n_jobs:
+  owner:string ->
+  name:string ->
+  hash:string ->
+  int
+(** [get_n_jobs ~owner ~name ~hash] is the latest number of jobs for this combination. *)
 
 val set_status:
   owner:string ->
   name:string ->
   hash:string ->
-  build_status ->
+  build_status * int ->
   unit
-(** [set_status ~owner ~name ~hash build_status] sets the latest status for this combination. *)
+(** [set_status ~owner ~name ~hash build_status] sets the latest status and number of jobs for this combination. *)
 
 type n_per_status_t = { not_started : int; pending : int; failed : int; passed : int }
 

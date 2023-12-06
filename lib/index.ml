@@ -111,7 +111,7 @@ module Metrics = struct
 end
 
 module Status_cache = struct
-  let cache : (string * string * string, build_status) Hashtbl.t = Hashtbl.create 1_000
+  let cache : (string * string * string, build_status * int) Hashtbl.t = Hashtbl.create 1_000
   let cache_max_size = 1_000_000
 
   let add ~owner ~name ~hash status =
@@ -122,26 +122,32 @@ module Status_cache = struct
     let key = (owner, name, hash) in
     (* Decrement existing status if it exists *)
     Hashtbl.find_opt cache key
-    |> Option.iter (Metrics.modify_n_per_status (fun x -> x - 1));
+    |> Option.iter (fun x -> fst x |> Metrics.modify_n_per_status (fun x -> x - 1));
     (* Increment new status *)
-    Metrics.modify_n_per_status (fun x -> x + 1) status;
+    Metrics.modify_n_per_status (fun x -> x + 1) (fst status);
     Hashtbl.add cache key status
 
   let find ~owner ~name ~hash =
     Hashtbl.find_opt cache (owner, name, hash)
     |> function
       | Some s -> s
-      | None -> `Not_started
+      | None -> `Not_started, 0
+
+  let find_build_status ~owner ~name ~hash = fst @@ find ~owner ~name ~hash
+
+  let find_n_jobs ~owner ~name ~hash = snd @@ find ~owner ~name ~hash
 
   let remove ~owner ~name ~hash =
     let key = (owner, name, hash) in
     Hashtbl.find_opt cache key
     |> Option.iter (fun status ->
-      Metrics.modify_n_per_status (fun x -> x - 1) status;
+      Metrics.modify_n_per_status (fun x -> x - 1) (fst status);
       Hashtbl.remove cache key)
 end
 
-let get_status = Status_cache.find
+let get_build_status = Status_cache.find_build_status
+
+let get_n_jobs = Status_cache.find_n_jobs
 
 let set_status = Status_cache.add
 
