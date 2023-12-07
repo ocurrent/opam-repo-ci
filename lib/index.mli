@@ -84,3 +84,6 @@ val set_active_refs : repo:Current_github.Repo_id.t -> (string * string) list ->
 val get_active_refs : Current_github.Repo_id.t -> (string * string) list
 (** [get_active_refs repo] is the entries last set for [repo] with [set_active_refs], or
     [] if this repository isn't known. *)
+
+val get_jobs_per_ref : Current_github.Repo_id.t -> (string * int) list
+(** [get_jobs_per_ref repo] is the number of jobs run for each ref in [repo]. *)

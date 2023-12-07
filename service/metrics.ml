@@ -12,6 +12,15 @@ let handled_prs =
   let help = "Number of PRs closed or merged" in
   Gauge.v ~help ~namespace ~subsystem "pr_handled"
 
+let jobs_per_pr =
+  let help = "Number of jobs per PR" in
+  Gauge.v_label ~label_name:"ref" ~help ~namespace ~subsystem
+    "jobs_per_pr"
+
+let primary_repo : Current_github.Repo_id.t option ref = ref None
+
+let set_primary_repo repo = primary_repo := Some repo
+
 let update () =
   let open Opam_repo_ci in
   let n_per_status = Index.get_n_per_status () in
@@ -20,4 +29,13 @@ let update () =
   Gauge.set (master "failed") (float_of_int n_per_status.failed);
   Gauge.set (master "passed") (float_of_int n_per_status.passed);
   let n_handled = Index.get_n_handled () in
-  Gauge.set handled_prs (float_of_int n_handled)
+  Gauge.set handled_prs (float_of_int n_handled);
+  let f repo =
+    let jobs_per_ref =
+      Index.get_jobs_per_ref repo
+      |> List.sort (fun (_, n0) (_, n1) -> Int.compare n0 n1)
+    in
+    List.iter (fun (ref, n) ->
+      Gauge.set (jobs_per_pr ref) (float_of_int n)) jobs_per_ref
+  in
+  Option.iter f !primary_repo

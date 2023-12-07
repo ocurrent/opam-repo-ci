@@ -471,10 +471,18 @@ let local_test ~ocluster repo () =
   let ocluster = Build.config ~timeout:Conf.build_timeout ocluster in
   test_repo ~ocluster ~push_status:false (Current.return repo)
 
+let set_metrics_primary_repo repo =
+  let repo = Current.map Current_github.Api.Repo.id repo in
+  let+ repo = repo in
+  Metrics.set_primary_repo repo
+
 let v ~ocluster ~app () =
   let ocluster = Build.config ~timeout:Conf.build_timeout ocluster in
   let installations = Github.App.installations app |> set_active_installations in
   installations |> Current.list_iter (module Github.Installation) @@ fun installation ->
   let repos = Github.Installation.repositories installation in
   repos |> Current.list_iter (module Github.Api.Repo) @@ fun repo ->
-  test_repo ~ocluster ~push_status:(Conf.profile = `Production) repo
+  Current.all [
+    set_metrics_primary_repo repo;
+    test_repo ~ocluster ~push_status:(Conf.profile = `Production) repo
+  ]

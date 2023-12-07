@@ -5,10 +5,13 @@ open Lwt.Infix
 
 module Github = Current_github
 
+let opam_repository = { Github.Repo_id.owner = "ocaml"; name = "opam-repository" }
+
 let () =
   Memtrace.trace_if_requested ~context:"opam-repo-ci-local" ();
   Unix.putenv "DOCKER_BUILDKIT" "1";
   Prometheus_unix.Logging.init ();
+  Metrics.set_primary_repo opam_repository;
   Prometheus.CollectorRegistry.(register_pre_collect default) Metrics.update
 
 let main config mode capnp_address submission_uri api repo_id prometheus_config =
@@ -32,8 +35,6 @@ let main config mode capnp_address submission_uri api repo_id prometheus_config 
   end
 
 (* Command-line parsing *)
-
-let opam_repository = { Github.Repo_id.owner = "ocaml"; name = "opam-repository" }
 
 open Cmdliner
 
