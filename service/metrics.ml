@@ -21,6 +21,13 @@ let primary_repo : Current_github.Repo_id.t option ref = ref None
 
 let set_primary_repo repo = primary_repo := Some repo
 
+(** Maps e.g. refs/pull/123/head to #123 *)
+let prettify_ref ref =
+  let l = Astring.String.cuts ~sep:"/" ref in
+  match List.nth_opt l 2 with
+  | None -> ref
+  | Some ref -> Printf.sprintf "#%s" ref
+
 let update () =
   let open Opam_repo_ci in
   let n_per_status = Index.get_n_per_status () in
@@ -36,6 +43,9 @@ let update () =
       |> List.sort (fun (_, n0) (_, n1) -> Int.compare n0 n1)
     in
     List.iter (fun (ref, n) ->
-      Gauge.set (jobs_per_pr ref) (float_of_int n)) jobs_per_ref
+      Gauge.set
+        (jobs_per_pr @@ prettify_ref ref)
+        (float_of_int n))
+      jobs_per_ref
   in
   Option.iter f !primary_repo
