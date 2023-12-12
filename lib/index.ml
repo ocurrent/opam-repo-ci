@@ -20,8 +20,6 @@ type t = {
 
 type job_state = [`Not_started | `Active | `Failed of string | `Passed | `Aborted ] [@@deriving show]
 
-type build_status = [ `Not_started | `Pending | `Failed | `Passed ]
-
 let or_fail label x =
   match x with
   | Sqlite3.Rc.OK -> ()
@@ -110,8 +108,19 @@ module Metrics = struct
   let inc_n_handled n = n_handled := !n_handled + n
 end
 
-module Status_cache = struct
-  let cache : (string * string * string, build_status) Hashtbl.t = Hashtbl.create 1_000
+type build_status = [ `Not_started | `Pending | `Failed | `Passed ]
+
+module Commit_info_cache = struct
+  type key = string * string * string
+
+  type elt = {
+    build_status : build_status;
+    n_jobs : int
+  }
+
+  let empty_elt = { build_status = `Not_started; n_jobs = 0 }
+
+  let cache : (key, elt) Hashtbl.t = Hashtbl.create 1_000
   let cache_max_size = 1_000_000
 
   let add ~owner ~name ~hash status =
@@ -122,28 +131,47 @@ module Status_cache = struct
     let key = (owner, name, hash) in
     (* Decrement existing status if it exists *)
     Hashtbl.find_opt cache key
-    |> Option.iter (Metrics.modify_n_per_status (fun x -> x - 1));
+    |> Option.iter (fun x -> Metrics.modify_n_per_status (fun x -> x - 1) x.build_status);
     (* Increment new status *)
-    Metrics.modify_n_per_status (fun x -> x + 1) status;
+    Metrics.modify_n_per_status (fun x -> x + 1) status.build_status;
     Hashtbl.add cache key status
 
   let find ~owner ~name ~hash =
     Hashtbl.find_opt cache (owner, name, hash)
     |> function
       | Some s -> s
-      | None -> `Not_started
+      | None -> empty_elt
+
+  let find_build_status ~owner ~name ~hash = (find ~owner ~name ~hash).build_status
+
+  let find_n_jobs ~owner ~name ~hash = (find ~owner ~name ~hash).n_jobs
 
   let remove ~owner ~name ~hash =
     let key = (owner, name, hash) in
     Hashtbl.find_opt cache key
     |> Option.iter (fun status ->
-      Metrics.modify_n_per_status (fun x -> x - 1) status;
+      Metrics.modify_n_per_status (fun x -> x - 1) status.build_status;
       Hashtbl.remove cache key)
+
+  let get_jobs_per_ref ~owner ~name refs =
+    Hashtbl.fold
+      (fun (owner', name', hash) status acc ->
+        if String.equal owner owner' && String.equal name name' then
+          List.find_opt (fun (_, hash') -> String.equal hash hash') refs
+          |> function
+          | None -> acc
+          | Some (ref, _) -> (ref, status.n_jobs) :: acc
+        else acc)
+      cache
+      []
 end
 
-let get_status = Status_cache.find
+let get_build_status = Commit_info_cache.find_build_status
 
-let set_status = Status_cache.add
+let get_n_jobs = Commit_info_cache.find_n_jobs
+
+let set_status ~owner ~name ~hash (build_status, n_jobs) =
+  Commit_info_cache.add ~owner ~name ~hash Commit_info_cache.{build_status; n_jobs}
 
 let get_n_per_status () = !Metrics.n_per_status
 
@@ -241,7 +269,7 @@ let get_active_accounts () = !active_accounts
 let active_refs : (string * string) list Repo_map.t ref = ref Repo_map.empty
 
 let set_active_refs ~repo (refs : (string * string) list) =
-  (* Remove statuses from Status_cache corresponding to removed refs *)
+  (* Remove statuses from Commit_info_cache corresponding to removed refs *)
   Repo_map.find_opt repo !active_refs
   |> Option.iter (fun old_refs ->
     (* Set difference: find removed refs that have been merged or closed *)
@@ -252,7 +280,7 @@ let set_active_refs ~repo (refs : (string * string) list) =
     in
     Metrics.inc_n_handled (List.length removed_refs);
     List.iter (fun (_, hash) ->
-      Status_cache.remove
+      Commit_info_cache.remove
         ~owner:repo.Current_github.Repo_id.owner
         ~name:repo.name ~hash)
         removed_refs);
@@ -260,3 +288,10 @@ let set_active_refs ~repo (refs : (string * string) list) =
 
 let get_active_refs repo =
   Repo_map.find_opt repo !active_refs |> Option.value ~default:[]
+
+let get_jobs_per_ref repo =
+  let active_refs = get_active_refs repo in
+  Commit_info_cache.get_jobs_per_ref
+    ~owner:repo.Current_github.Repo_id.owner
+    ~name:repo.name
+    active_refs

@@ -60,7 +60,7 @@ let make_commit ~engine ~owner ~name hash =
       let open Commit.Status in
       release_param_caps ();
       let response, results = Service.Response.create Results.init_pointer in
-      Index.get_status ~owner ~name ~hash
+      Index.get_build_status ~owner ~name ~hash
       |> (function
           | `Not_started -> Results.status_set results NotStarted
           | `Pending -> Results.status_set results Pending
