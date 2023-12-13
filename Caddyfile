@@ -1,3 +1,4 @@
+# Used by caddy in docker-compose.yml
 {
 	log {
 		format console
@@ -5,11 +6,13 @@
 	}
 }
 
+# Admin web server
 localhost:8100 {
 	reverse_proxy service:8080
 	tls internal
 }
 
+# User-facing web server
 localhost {
 	reverse_proxy web:8090
 	tls internal

@@ -21,14 +21,14 @@ services:
       - '443:443'
       - '8100:8100'
     volumes:
-      - $PWD/docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - $PWD/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
 
   service:
     build:
       context: .
-      dockerfile: docker/Dockerfile
+      dockerfile: Dockerfile
     command: >
       --github-app-id ${APP_ID}
       --github-private-key-file /run/secrets/opam-repo-ci-github-key
@@ -59,7 +59,7 @@ services:
   web:
     build:
       context: .
-      dockerfile: docker/Dockerfile.web
+      dockerfile: Dockerfile.web
     command: >
       --backend /capnp-secrets/opam-repo-ci-admin.cap
       --listen-prometheus=9090
@@ -99,17 +99,11 @@ services:
       - 'capnp-secrets:/capnp-secrets'
 
   worker:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.rsync-worker
-    command: >
-      --connect=/capnp-secrets/pool-linux-x86_64.cap
-      --name=ocluster-worker
-      --capacity=1
-      --state-dir=/var/lib/ocluster
-      --obuilder-store=rsync:/rsync
-      --rsync-mode=copy
-      --obuilder-healthcheck=0
+    image: ocurrent/ocluster-worker:live
+    entrypoint: >
+      bash -c "apt -qq update > /dev/null
+      && apt -qqy install rsync > /dev/null
+      && /usr/local/bin/ocluster-worker --connect=/capnp-secrets/pool-linux-x86_64.cap --name=ocluster-worker --capacity=1 --state-dir=/var/lib/ocluster --obuilder-store=rsync:/rsync --rsync-mode=hardlink_unsafe --obuilder-healthcheck=0"
     # Required for the Docker in Docker container to work
     privileged: true
     # Wait for the scheduler to write pool-linux-x86_64.cap
