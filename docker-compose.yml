@@ -101,8 +101,8 @@ services:
   worker:
     image: ocurrent/ocluster-worker:live
     entrypoint: >
-      bash -c "apt -qq update > /dev/null
-      && apt -qqy install rsync > /dev/null
+      bash -c "apt-get -qq update > /dev/null
+      && apt-get -qqy install rsync > /dev/null
       && /usr/local/bin/ocluster-worker --connect=/capnp-secrets/pool-linux-x86_64.cap --name=ocluster-worker --capacity=1 --state-dir=/var/lib/ocluster --obuilder-store=rsync:/rsync --rsync-mode=hardlink_unsafe --obuilder-healthcheck=0"
     # Required for the Docker in Docker container to work
     privileged: true
