@@ -467,11 +467,32 @@ let test_repo ~is_macos ~ocluster ~push_status repo =
     |> (if push_status then github_set_statuses ~head
         else Current.ignore_value)
 
-let local_test ~is_macos ~ocluster repo () =
-  let { Github.Repo_id.owner; name = _ } = Github.Api.Repo.id repo in
-  Index.set_active_accounts @@ Index.Account_set.singleton owner;
-  let ocluster = Build.config ~timeout:Conf.build_timeout ocluster in
-  test_repo ~is_macos ~ocluster ~push_status:false (Current.return repo)
+let local_test ~is_macos repo pr_branch () =
+  ignore is_macos;
+  let master =
+    Current_git.Local.commit_of_ref repo "refs/heads/master" in
+  let pr_branch =
+    Current_git.Local.commit_of_ref repo (Printf.sprintf "refs/heads/%s" pr_branch) in
+  let latest_analysis = analyze ~master pr_branch in
+  (* ignore errors from a rerun *)
+  let analysis = latest_analysis |> latch ~label:"analysis" in
+  let lint =
+    let packages =
+      Current.map (fun x ->
+        List.map (fun (pkg, {Analyse.Analysis.kind; has_tests = _}) ->
+          (pkg, kind))
+          (Analyse.Analysis.packages x))
+        analysis
+    in
+    Lint.check ~master ~packages pr_branch
+  in
+  let builds =
+    Node.root
+      ([Node.leaf ~label:"(analysis)" (Node.action `Analysed latest_analysis)])
+      (* :: build_with_cluster ~ocluster ~analysis ~lint ~master commit_id) *)
+  in
+  ignore builds;
+  lint
 
 let set_metrics_primary_repo repo =
   let repo = Current.map Current_github.Api.Repo.id repo in
