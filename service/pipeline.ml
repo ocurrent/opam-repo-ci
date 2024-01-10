@@ -113,7 +113,7 @@ let get_significant_available_pkg = function
   | _, {Analyse.Analysis.kind = Deleted | Unavailable | UnsignificantlyChanged; _} -> None
 
 module Build_with_cluster = struct
-  let build ~ocluster ~analysis ~pkgs ~master ~source ~opam_version ~lower_bounds ~revdeps label variant =
+  let build_with_cluster ~ocluster ~analysis ~pkgs ~master ~source ~opam_version ~lower_bounds ~revdeps label variant =
     let arch = Variant.arch variant in
     let pool = Conf.pool_of_arch variant in (* ocluster-pool eg linux-x86_64 *)
     let platform = {Platform.label; pool; variant} in
@@ -276,7 +276,7 @@ module Build_with_cluster = struct
   let v ~ocluster ~analysis ~lint ~master source =
     let pkgs = Current.map (fun x -> Analyse.Analysis.packages x
       |> List.filter_map get_significant_available_pkg) analysis in
-    let build = build ~ocluster ~analysis ~pkgs ~master ~source in
+    let build = build_with_cluster ~ocluster ~analysis ~pkgs ~master ~source in
     [
       Node.leaf ~label:"(lint)" (Node.action `Linted lint);
       Node.branch ~label:"compilers" (compilers ~build);
@@ -488,8 +488,8 @@ let local_test ~is_macos repo pr_branch () =
   in
   let builds =
     Node.root
-      ([Node.leaf ~label:"(analysis)" (Node.action `Analysed latest_analysis)])
-      (* :: build_with_cluster ~ocluster ~analysis ~lint ~master commit_id) *)
+      (Node.leaf ~label:"(analysis)" (Node.action `Analysed latest_analysis)
+      :: build_with_cluster ~ocluster ~analysis ~lint ~master commit_id)
   in
   ignore builds;
   lint
