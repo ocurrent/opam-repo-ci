@@ -572,22 +572,16 @@ let v ~is_macos ~ocluster ~app () =
     test_repo ~is_macos ~ocluster ~push_status:(Conf.profile = `Production) repo
   ]
 
-let flatten_local builds =
-  let f ~label kind job =
-    let+ _ = label
-    and+ _ = job in
-    ignore kind
-  in
-  Node.flatten builds
-    ~map:{ Node.f }
-    ~merge:(fun () () -> ())
-    ~empty:()
+let set_index_local ~repo gref hash =
+  let+ repo
+  and+ hash in
+  Index.(set_active_accounts @@ Account_set.singleton "local");
+  Index.set_active_refs ~repo [(gref, hash)]
 
 let local_test_pr ~is_macos repo pr_branch () =
   let master = Git.Local.commit_of_ref repo "refs/heads/master" in
-  let pr_branch =
-    Git.Local.commit_of_ref repo (Printf.sprintf "refs/heads/%s" pr_branch)
-  in
+  let pr_gref = Printf.sprintf "refs/heads/%s" pr_branch in
+  let pr_branch = Git.Local.commit_of_ref repo pr_gref in
   let analysis = analyze ~master pr_branch in
   let lint =
     let packages =
@@ -604,5 +598,9 @@ let local_test_pr ~is_macos repo pr_branch () =
       (Node.leaf ~label:"(analysis)" (Node.action `Analysed analysis)
       :: Build_with.docker ~analysis ~lint ~master pr_branch)
   in
-  flatten_local builds
+  let dummy_repo = Current.return { Github.Repo_id.owner = "local"; name = "local" } in
+  let pr_hash = Current.map Git.Commit.hash pr_branch in
+  (let+ _ = set_index_local ~repo:dummy_repo pr_gref pr_hash
+  and+ result = summarise ~repo:dummy_repo ~hash:pr_hash builds in
+  result)
   |> Current.ignore_value
