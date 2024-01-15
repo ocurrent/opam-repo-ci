@@ -2,12 +2,13 @@
 
 let () =
   Memtrace.trace_if_requested ~context:"opam-repo-ci-local" ();
-  Unix.putenv "DOCKER_BUILDKIT" "1"
+  Unix.putenv "DOCKER_BUILDKIT" "1";
+  Prometheus_unix.Logging.init ()
 
-let main config mode repo branch is_macos =
+let main config mode is_macos repo branch =
   Lwt_main.run begin
     let repo = Current_git.Local.v (Result.get_ok @@ Fpath.of_string repo) in
-    let engine = Current.Engine.create ~config (Pipeline.local_test ~is_macos repo branch) in
+    let engine = Current.Engine.create ~config (Pipeline.local_test_pr ~is_macos repo branch) in
     let routes = Current_web.routes engine in
     let site = Current_web.Site.(v ~has_role:allow_all) ~name:"opam-repo-ci-local" routes in
     Lwt.choose ([
@@ -53,12 +54,8 @@ let cmd =
       const main
       $ Current.Config.cmdliner
       $ Current_web.cmdliner
-      $ repo
-<<<<<<< HEAD
       $ is_macos
-      $ Prometheus_unix.opts))
-=======
+      $ repo
       $ branch))
->>>>>>> bef800d (Lint job running locally)
 
 let () = exit @@ Cmd.eval cmd

@@ -28,7 +28,7 @@ val actioned_branch : label:string -> 'a t -> 'a t list -> 'a t
 (** [actioned_branch ~label action children] is a branch node with an action directly attached to the node itself. *)
 
 val actioned_branch_dyn : label:string Current.t -> 'a t -> 'a t list -> 'a t
-(** Same as [actionned_branch], but with a dynamic [label]. *)
+(** Same as [actioned_branch], but with a dynamic [label]. *)
 
 val branch : label:string -> 'a t list -> 'a t
 (** [branch ~label children] is a branch node. *)

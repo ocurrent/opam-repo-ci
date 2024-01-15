@@ -1,4 +1,4 @@
-val local_test : is_macos:bool -> Current_git.Local.t -> string -> unit -> unit Current.t
+val local_test_pr : is_macos:bool -> Current_git.Local.t -> string -> unit -> unit Current.t
 (** [local_test repo branch] is a pipeline that tests
     branch [branch] on the local Git repository at path [repo]. *)
 

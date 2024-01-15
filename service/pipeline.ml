@@ -66,27 +66,27 @@ let with_label l t =
 
 let build_spec ~platform ~opam_version pkg =
   let+ pkg = pkg in
-  Build.Spec.opam ~platform ~lower_bounds:false ~with_tests:false ~opam_version pkg
+  Spec.opam ~platform ~lower_bounds:false ~with_tests:false ~opam_version pkg
 
 let test_spec ~platform ~opam_version pkg =
   let+ pkg = pkg in
-  Build.Spec.opam ~platform ~lower_bounds:false ~with_tests:true ~opam_version pkg
+  Spec.opam ~platform ~lower_bounds:false ~with_tests:true ~opam_version pkg
 
 let lower_bounds_spec ~platform ~opam_version pkg =
   let+ pkg = pkg in
-  Build.Spec.opam ~platform ~lower_bounds:true ~with_tests:false ~opam_version pkg
+  Spec.opam ~platform ~lower_bounds:true ~with_tests:false ~opam_version pkg
 
 let revdep_spec ~platform ~opam_version ~revdep pkg =
   let+ revdep = revdep
   and+ pkg = pkg
   in
-  Build.Spec.opam ~platform ~lower_bounds:false ~with_tests:true ~revdep ~opam_version pkg
+  Spec.opam ~platform ~lower_bounds:false ~with_tests:true ~revdep ~opam_version pkg
 
 (* List the revdeps of [pkg] (using [builder] and [image]) and test each one
    (using [spec] and [base], merging [source] into [master]). *)
 let test_revdeps ~ocluster ~opam_version ~master ~base ~platform ~pkgopt ~after source =
   let revdeps =
-    Build.list_revdeps ~opam_version ~base ocluster ~platform ~pkgopt ~master ~after source
+    Cluster_build.list_revdeps ~opam_version ~base ocluster ~platform ~pkgopt ~master ~after source
     |> Current.map OpamPackage.Set.elements
   in
   let pkg = Current.map (fun {PackageOpt.pkg = pkg; urgent = _; has_tests = _} -> pkg) pkgopt in
@@ -96,7 +96,7 @@ let test_revdeps ~ocluster ~opam_version ~master ~base ~platform ~pkgopt ~after 
     |> Node.list_map (module OpamPackage) (fun revdep ->
         let image =
           let spec = revdep_spec ~platform ~opam_version ~revdep pkg in
-          Build.v ocluster ~label:"build" ~base ~spec ~master ~urgent source
+          Cluster_build.v ocluster ~label:"build" ~base ~spec ~master ~urgent source
         in
         let label = Current.map OpamPackage.to_string revdep
         and build = Node.action `Built image
@@ -112,74 +112,7 @@ let get_significant_available_pkg = function
   | pkg, {Analyse.Analysis.kind = SignificantlyChanged; has_tests} -> Some {PackageOpt.pkg; urgent = Some (fun (`High | `Low) -> false); has_tests}
   | _, {Analyse.Analysis.kind = Deleted | Unavailable | UnsignificantlyChanged; _} -> None
 
-module Build_with_cluster = struct
-  let build_with_cluster ~ocluster ~analysis ~pkgs ~master ~source ~opam_version ~lower_bounds ~revdeps label variant =
-    let arch = Variant.arch variant in
-    let pool = Conf.pool_of_arch variant in (* ocluster-pool eg linux-x86_64 *)
-    let platform = {Platform.label; pool; variant} in
-    let analysis = with_label label analysis in
-    let pkgs =
-      (* Add fake dependency from pkgs to analysis so that the package being tested appears
-        below the platform, to make the diagram look nicer. Ideally, the pulls of the
-        base images should be moved to the top (not be per-package at all). *)
-      let+ _ = analysis
-      and+ pkgs in
-      pkgs
-    in
-    pkgs |> Node.list_map ~collapse_key:"pkg" (module PackageOpt) (fun pkgopt ->
-        let pkg = Current.map (fun {PackageOpt.pkg; urgent = _; has_tests = _} -> pkg) pkgopt in
-        let urgent = Current.return None in
-        let has_tests = Current.map (fun {PackageOpt.pkg = _; urgent = _; has_tests} -> has_tests) pkgopt in
-        let base =
-          match Variant.os variant with
-          | `macOS ->
-              Current.return (Build.MacOS (Variant.docker_tag variant))
-          | `FreeBSD ->
-              Current.return (Build.FreeBSD (Variant.docker_tag variant))
-          | `linux -> (* TODO: Use docker images as base for both macOS and linux *)
-              let+ repo_id =
-                Docker.peek ~schedule:weekly ~arch:(Ocaml_version.to_docker_arch arch)
-                  ("ocaml/opam:" ^ Variant.docker_tag variant)
-              in
-              Build.Docker (Current_docker.Raw.Image.of_hash repo_id)
-        in
-        let image =
-          let spec = build_spec ~platform ~opam_version pkg in
-          Build.v ocluster ~label:"build" ~base ~spec ~master ~urgent source in
-        let build = Node.action `Built image
-        and tests =
-          Node.bool_map (fun () ->
-            let action =
-              let spec = test_spec ~platform ~opam_version pkg in
-              Build.v ocluster ~label:"test" ~base ~spec ~master ~urgent source
-            in
-            let action = Node.action `Built action in
-            Node.leaf ~label:"tests" action
-          ) has_tests
-        and lower_bounds_check =
-          if lower_bounds then
-            let action =
-              let spec = lower_bounds_spec ~platform ~opam_version pkg in
-              Build.v ocluster ~label:"lower-bounds" ~base ~spec ~master ~urgent source
-            in
-            let action = Node.action `Built action in
-            Node.leaf ~label:"lower-bounds" action
-          else
-            Node.empty
-        and revdeps =
-          if revdeps then test_revdeps ~ocluster ~opam_version ~master ~base ~platform ~pkgopt source ~after:image
-          else Node.empty
-        in
-        let label = Current.map OpamPackage.to_string pkg in
-        Node.actioned_branch_dyn ~label build [
-          tests;
-          lower_bounds_check;
-          revdeps;
-        ]
-      )
-    |> (fun x -> Node.branch ~label [x])
-    |> Node.collapse ~key:"platform" ~value:label ~input:analysis
-
+module Build_with = struct
   let compilers ~build =
     let master_distro = Distro.tag_of_distro master_distro in
     (* The last eight releases of OCaml plus latest beta / release-candidate for each unreleased version. *)
@@ -273,7 +206,147 @@ module Build_with_cluster = struct
       acc
     ) [] default_compilers_full
 
-  let v ~ocluster ~analysis ~lint ~master source =
+  let build_with_cluster ~ocluster ~analysis ~pkgs ~master ~source ~opam_version ~lower_bounds ~revdeps label variant =
+    let arch = Variant.arch variant in
+    let pool = Conf.pool_of_arch variant in (* ocluster-pool eg linux-x86_64 *)
+    let platform = {Platform.label; pool; variant} in
+    let analysis = with_label label analysis in
+    let pkgs =
+      (* Add fake dependency from pkgs to analysis so that the package being tested appears
+        below the platform, to make the diagram look nicer. Ideally, the pulls of the
+        base images should be moved to the top (not be per-package at all). *)
+      let+ _ = analysis
+      and+ pkgs in
+      pkgs
+    in
+    pkgs |> Node.list_map ~collapse_key:"pkg" (module PackageOpt) (fun pkgopt ->
+        let pkg = Current.map (fun {PackageOpt.pkg; urgent = _; has_tests = _} -> pkg) pkgopt in
+        let urgent = Current.return None in
+        let has_tests = Current.map (fun {PackageOpt.pkg = _; urgent = _; has_tests} -> has_tests) pkgopt in
+        let base =
+          match Variant.os variant with
+          | `macOS ->
+              Current.return (Spec.MacOS (Variant.docker_tag variant))
+          | `FreeBSD ->
+              Current.return (Spec.FreeBSD (Variant.docker_tag variant))
+          | `linux -> (* TODO: Use docker images as base for both macOS and linux *)
+              let+ repo_id =
+                Docker.peek ~schedule:weekly ~arch:(Ocaml_version.to_docker_arch arch)
+                  ("ocaml/opam:" ^ Variant.docker_tag variant)
+              in
+              Spec.Docker (Current_docker.Raw.Image.of_hash repo_id)
+        in
+        let image =
+          let spec = build_spec ~platform ~opam_version pkg in
+          Cluster_build.v ocluster ~label:"build" ~base ~spec ~master ~urgent source
+        in
+        let build = Node.action `Built image
+        and tests =
+          Node.bool_map (fun () ->
+            let action =
+              let spec = test_spec ~platform ~opam_version pkg in
+              Cluster_build.v ocluster ~label:"test" ~base ~spec ~master ~urgent source
+            in
+            let action = Node.action `Built action in
+            Node.leaf ~label:"tests" action
+          ) has_tests
+        and lower_bounds_check =
+          if lower_bounds then
+            let action =
+              let spec = lower_bounds_spec ~platform ~opam_version pkg in
+              Cluster_build.v ocluster ~label:"lower-bounds" ~base ~spec ~master ~urgent source
+            in
+            let action = Node.action `Built action in
+            Node.leaf ~label:"lower-bounds" action
+          else
+            Node.empty
+        (* and revdeps =
+          if revdeps then test_revdeps ~ocluster ~opam_version ~master ~base ~platform ~pkgopt source ~after:image
+          else Node.empty *)
+        in
+        let label = Current.map OpamPackage.to_string pkg in
+        ignore revdeps;
+        ignore test_revdeps;
+        Node.actioned_branch_dyn ~label build [
+          tests;
+          lower_bounds_check;
+          (* revdeps; *)
+        ]
+      )
+    |> (fun x -> Node.branch ~label [x])
+    |> Node.collapse ~key:"platform" ~value:label ~input:analysis
+
+  let build_with_docker ~analysis ~pkgs ~master ~source ~opam_version ~lower_bounds ~revdeps label variant =
+    ignore revdeps;
+    let arch = Variant.arch variant in
+    let pool = Conf.pool_of_arch variant in (* ocluster-pool eg linux-x86_64 *)
+    let platform = {Platform.label; pool; variant} in
+    let analysis = with_label label analysis in
+    let pkgs =
+      (* Add fake dependency from pkgs to analysis so that the package being tested appears
+        below the platform, to make the diagram look nicer. Ideally, the pulls of the
+        base images should be moved to the top (not be per-package at all). *)
+      let+ _ = analysis
+      and+ pkgs in
+      pkgs
+    in
+    pkgs |> Node.list_map ~collapse_key:"pkg" (module PackageOpt) (fun pkgopt ->
+        let pkg = Current.map (fun {PackageOpt.pkg; urgent = _; has_tests = _} -> pkg) pkgopt in
+        let urgent = Current.return None in
+        let has_tests = Current.map (fun {PackageOpt.pkg = _; urgent = _; has_tests} -> has_tests) pkgopt in
+        let base =
+          match Variant.os variant with
+          | `macOS ->
+              Current.return (Spec.MacOS (Variant.docker_tag variant))
+          | `FreeBSD ->
+              Current.return (Spec.FreeBSD (Variant.docker_tag variant))
+          | `linux -> (* TODO: Use docker images as base for both macOS and linux *)
+              let+ repo_id =
+                Docker.peek ~schedule:weekly ~arch:(Ocaml_version.to_docker_arch arch)
+                  ("ocaml/opam:" ^ Variant.docker_tag variant)
+              in
+              Spec.Docker (Current_docker.Raw.Image.of_hash repo_id)
+        in
+        let image =
+          let spec = build_spec ~platform ~opam_version pkg in
+          Local_build.v ~label:"build" ~base ~spec ~master ~urgent source
+        in
+        let build = Node.action `Built image
+        and tests =
+          Node.bool_map (fun () ->
+            let action =
+              let spec = test_spec ~platform ~opam_version pkg in
+              Local_build.v ~label:"test" ~base ~spec ~master ~urgent source
+            in
+            let action = Node.action `Built action in
+            Node.leaf ~label:"tests" action
+          ) has_tests
+        and lower_bounds_check =
+          if lower_bounds then
+            let action =
+              let spec = lower_bounds_spec ~platform ~opam_version pkg in
+              Local_build.v ~label:"lower-bounds" ~base ~spec ~master ~urgent source
+            in
+            let action = Node.action `Built action in
+            Node.leaf ~label:"lower-bounds" action
+          else
+            Node.empty
+        (* and revdeps =
+          if revdeps then test_revdeps ~ocluster ~opam_version ~master ~base ~platform ~pkgopt source ~after:image
+          else Node.empty *)
+        in
+        let label = Current.map OpamPackage.to_string pkg in
+        Node.actioned_branch_dyn ~label build [
+          tests;
+          lower_bounds_check;
+          (* revdeps; *)
+        ]
+      )
+    |> (fun x -> Node.branch ~label [x])
+    |> Node.collapse ~key:"platform" ~value:label ~input:analysis
+
+  let cluster ~ocluster ~analysis ~lint ~master source =
+    ignore (linux_distributions, macos, freebsd, extras);
     let pkgs = Current.map (fun x -> Analyse.Analysis.packages x
       |> List.filter_map get_significant_available_pkg) analysis in
     let build = build_with_cluster ~ocluster ~analysis ~pkgs ~master ~source in
@@ -283,6 +356,17 @@ module Build_with_cluster = struct
       Node.branch ~label:"distributions" (linux_distributions ~build);
       Node.branch ~label:"macos" (macos ~build);
       Node.branch ~label:"freebsd" (freebsd ~build);
+      Node.branch ~label:"extras" (extras ~build);
+    ]
+
+  let docker ~analysis ~lint ~master source =
+    let pkgs = Current.map (fun x -> Analyse.Analysis.packages x
+      |> List.filter_map get_significant_available_pkg) analysis in
+    let build = build_with_docker ~analysis ~pkgs ~master ~source in
+    [
+      Node.leaf ~label:"(lint)" (Node.action `Linted lint);
+      Node.branch ~label:"compilers" (compilers ~build);
+      Node.branch ~label:"distributions" (linux_distributions ~build);
       Node.branch ~label:"extras" (extras ~build);
     ]
 end
@@ -389,46 +473,27 @@ let analyze ~master src =
   Analyse.examine ~master src
   |> Current.cutoff ~eq:Analyse.Analysis.equal
 
-let test_pr ~is_macos ~ocluster ~master ~head =
-  let repo = Current.map Current_github.Api.Commit.repo_id head in
-  let commit_id = Current.map Github.Api.Commit.id head in
-  let hash = Current.map Git.Commit_id.hash commit_id in
-  let src = Git.fetch commit_id in
-  let latest_analysis = analyze ~master src in
-  let analysis = latest_analysis |> latch ~label:"analysis" (* ignore errors from a rerun *) in
-  let lint =
-    let packages =
-      Current.map (fun x ->
-        List.map (fun (pkg, {Analyse.Analysis.kind; has_tests = _}) ->
-          (pkg, kind))
-          (Analyse.Analysis.packages x))
-        analysis
+let flatten builds =
+  let f ~label kind job =
+    let db_record =
+      let+ variant = label
+      and+ job_id = Node.job_id job
+      in
+      Index.Job_map.singleton variant job_id
     in
-    Lint.check ~is_macos ~master ~packages src
+    let result =
+      let+ _ = job in
+      kind
+    in
+    Current.return (db_record, Summary.of_current result)
   in
-  let builds =
-    Node.root
-      (Node.leaf ~label:"(analysis)" (Node.action `Analysed latest_analysis)
-      :: Build_with_cluster.v ~ocluster ~analysis ~lint ~master commit_id)
-  in
-  let* (jobs, summary) =
-    Node.flatten builds
-      ~map:{ Node.f = fun ~label kind job ->
-              let db_record =
-                let+ variant = label
-                and+ job_id = Node.job_id job
-                in
-                Index.Job_map.singleton variant job_id
-              in
-              let result =
-                let+ _ = job in
-                kind
-              in
-              Current.return (db_record, Summary.of_current result)
-      }
-      ~merge:Results.merge
-      ~empty:Results.empty
-  in
+  Node.flatten builds
+    ~map:{ Node.f }
+    ~merge:Results.merge
+    ~empty:Results.empty
+
+let summarise ~repo ~hash builds =
+  let* (jobs, summary) = flatten builds in
   let+ () =
     let+ jobs = jobs
     and+ repo = repo
@@ -451,6 +516,30 @@ let test_pr ~is_macos ~ocluster ~master ~head =
   in
   summary
 
+let test_pr ~is_macos ~ocluster ~master ~head =
+  let repo = Current.map Current_github.Api.Commit.repo_id head in
+  let commit_id = Current.map Github.Api.Commit.id head in
+  let hash = Current.map Git.Commit_id.hash commit_id in
+  let src = Git.fetch commit_id in
+  let latest_analysis = analyze ~master src in
+  let analysis = latest_analysis |> latch ~label:"analysis" (* ignore errors from a rerun *) in
+  let lint =
+    let packages =
+      Current.map (fun x ->
+        List.map (fun (pkg, {Analyse.Analysis.kind; has_tests = _}) ->
+          (pkg, kind))
+          (Analyse.Analysis.packages x))
+        analysis
+    in
+    Lint.check ~is_macos ~master ~packages src
+  in
+  let builds =
+    Node.root
+      (Node.leaf ~label:"(analysis)" (Node.action `Analysed latest_analysis)
+      :: Build_with.cluster ~ocluster ~analysis ~lint ~master commit_id)
+  in
+  summarise ~repo ~hash builds
+
 let github_set_statuses ~head statuses =
   let+ () = Current.option_iter (Github.Api.Commit.set_status head "opam-repo-ci (linter)") (Current.map fst statuses)
   and+ () = Github.Api.Commit.set_status head "opam-ci" (Current.map snd statuses) (* TODO: Change to opam-repo-ci *)
@@ -467,40 +556,13 @@ let test_repo ~is_macos ~ocluster ~push_status repo =
     |> (if push_status then github_set_statuses ~head
         else Current.ignore_value)
 
-let local_test ~is_macos repo pr_branch () =
-  ignore is_macos;
-  let master =
-    Current_git.Local.commit_of_ref repo "refs/heads/master" in
-  let pr_branch =
-    Current_git.Local.commit_of_ref repo (Printf.sprintf "refs/heads/%s" pr_branch) in
-  let latest_analysis = analyze ~master pr_branch in
-  (* ignore errors from a rerun *)
-  let analysis = latest_analysis |> latch ~label:"analysis" in
-  let lint =
-    let packages =
-      Current.map (fun x ->
-        List.map (fun (pkg, {Analyse.Analysis.kind; has_tests = _}) ->
-          (pkg, kind))
-          (Analyse.Analysis.packages x))
-        analysis
-    in
-    Lint.check ~master ~packages pr_branch
-  in
-  let builds =
-    Node.root
-      (Node.leaf ~label:"(analysis)" (Node.action `Analysed latest_analysis)
-      :: build_with_cluster ~ocluster ~analysis ~lint ~master commit_id)
-  in
-  ignore builds;
-  lint
-
 let set_metrics_primary_repo repo =
   let repo = Current.map Current_github.Api.Repo.id repo in
   let+ repo = repo in
   Metrics.set_primary_repo repo
 
 let v ~is_macos ~ocluster ~app () =
-  let ocluster = Build.config ~timeout:Conf.build_timeout ocluster in
+  let ocluster = Cluster_build.config ~timeout:Conf.build_timeout ocluster in
   let installations = Github.App.installations app |> set_active_installations in
   installations |> Current.list_iter (module Github.Installation) @@ fun installation ->
   let repos = Github.Installation.repositories installation in
@@ -509,3 +571,38 @@ let v ~is_macos ~ocluster ~app () =
     set_metrics_primary_repo repo;
     test_repo ~is_macos ~ocluster ~push_status:(Conf.profile = `Production) repo
   ]
+
+let flatten_local builds =
+  let f ~label kind job =
+    let+ _ = label
+    and+ _ = job in
+    ignore kind
+  in
+  Node.flatten builds
+    ~map:{ Node.f }
+    ~merge:(fun () () -> ())
+    ~empty:()
+
+let local_test_pr ~is_macos repo pr_branch () =
+  let master = Git.Local.commit_of_ref repo "refs/heads/master" in
+  let pr_branch =
+    Git.Local.commit_of_ref repo (Printf.sprintf "refs/heads/%s" pr_branch)
+  in
+  let analysis = analyze ~master pr_branch in
+  let lint =
+    let packages =
+      Current.map (fun x ->
+        List.map (fun (pkg, {Analyse.Analysis.kind; has_tests = _}) ->
+          (pkg, kind))
+          (Analyse.Analysis.packages x))
+        analysis
+    in
+    Lint.check ~is_macos ~master ~packages pr_branch
+  in
+  let builds =
+    Node.root
+      (Node.leaf ~label:"(analysis)" (Node.action `Analysed analysis)
+      :: Build_with.docker ~analysis ~lint ~master pr_branch)
+  in
+  flatten_local builds
+  |> Current.ignore_value

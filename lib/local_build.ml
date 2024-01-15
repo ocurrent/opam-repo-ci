@@ -4,72 +4,7 @@ open Lwt.Infix
 module Git = Current_git
 module Raw = Current_docker.Raw
 
-(* TODO: Make macOS use docker images *)
-type base =
-  | Docker of Current_docker.Raw.Image.t
-  | MacOS of string
-  | FreeBSD of string
-
-let base_to_string = function
-  | Docker img -> Current_docker.Raw.Image.hash img
-  | MacOS base -> base
-  | FreeBSD base -> base
-
 let ( >>!= ) = Lwt_result.bind
-
-module Spec = struct
-  type package = OpamPackage.t
-
-  let package_to_yojson x = `String (OpamPackage.to_string x)
-
-  type opam_build = {
-    revdep : package option;
-    with_tests : bool;
-    lower_bounds : bool;
-    opam_version : [`V2_0 | `V2_1 | `Dev];
-  } [@@deriving to_yojson]
-
-  type list_revdeps = {
-    opam_version : [`V2_0 | `V2_1 | `Dev];
-  } [@@deriving to_yojson]
-
-  type ty = [
-    | `Opam of [ `Build of opam_build | `List_revdeps of list_revdeps ] * package
-  ] [@@deriving to_yojson]
-
-  type t = {
-    platform : Platform.t;
-    ty : ty;
-  }
-
-  let opam ?revdep ~platform ~lower_bounds ~with_tests ~opam_version pkg =
-    let ty = `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) in
-    { platform; ty }
-
-  let pp_pkg ?revdep f pkg =
-    match revdep with
-    | Some revdep -> Fmt.pf f "%s with %s" (OpamPackage.to_string revdep) (OpamPackage.to_string pkg)
-    | None -> Fmt.string f (OpamPackage.to_string pkg)
-
-  let pp_opam_version = function
-    | `V2_0 -> "2.0"
-    | `V2_1 -> "2.1"
-    | `Dev -> "dev"
-
-  let pp_ty f = function
-    | `Opam (`List_revdeps {opam_version}, pkg) ->
-        Fmt.pf f "list revdeps of %s, using opam %s" (OpamPackage.to_string pkg)
-          (pp_opam_version opam_version)
-    | `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) ->
-      let action = if with_tests then "test" else "build" in
-      Fmt.pf f "%s %a%s, using opam %s" action (pp_pkg ?revdep) pkg
-        (if lower_bounds then ", lower-bounds" else "")
-        (pp_opam_version opam_version)
-
-  let pp_summary f = function
-    | `Opam (`List_revdeps _, _) -> Fmt.string f "Opam list revdeps"
-    | `Opam (`Build _, _) -> Fmt.string f "Opam project build"
-end
 
 let checkout_pool = Current.Pool.create ~label:"git-clone" 1
 
@@ -98,6 +33,12 @@ module Builder = struct
     build_timeout : Duration.t;
   }
 
+  let local =
+    let pool = Current.Pool.create ~label:"docker" 1 in
+    (* Maximum time for one Docker build. *)
+    let build_timeout = Duration.of_hour 1 in
+    { docker_context = None; pool; build_timeout }
+
   let build { docker_context; pool; build_timeout } ~dockerfile source =
     Current_docker.Raw.build (`Git source) ~dockerfile ~docker_context ~pool
       ~timeout:build_timeout ~pull:false
@@ -119,7 +60,7 @@ module Op = struct
     config : Builder.t;
     master : Current_git.Commit.t;
     urgent : ([`High | `Low] -> bool) option;
-    base : base;
+    base : Spec.base;
   }
 
   let id = "ci-build"
@@ -128,30 +69,16 @@ module Op = struct
   module Key = struct
     type t = {
       commit : Current_git.Commit.t; (* The source code to build and test *)
-      branch : string;
       label : string; (* A unique ID for this build within the commit *)
-    }
-
-    let to_json { commit; branch; label } =
-      `Assoc
-        [
-          ("commit", `String (Current_git.Commit.hash commit));
-          ("branch", `String branch);
-          ("label", `String label);
-        ]
-
-    let digest t = Yojson.Safe.to_string (to_json t)
-  end
-
-  module Value = struct
-    type t = {
       ty : Spec.ty;
       variant : Variant.t; (* Added as a comment in the Dockerfile *)
     }
 
-    let to_json { ty; variant } =
+    let to_json { commit; label; ty; variant } =
       `Assoc
         [
+          ("commit", `String (Current_git.Commit.hash commit));
+          ("label", `String label);
           ("op", Spec.ty_to_yojson ty);
           ("variant", Variant.to_yojson variant);
         ]
@@ -159,15 +86,15 @@ module Op = struct
     let digest t = Yojson.Safe.to_string (to_json t)
   end
 
-  module Outcome = Current.Unit
+  module Value = Current.Unit
 
   let or_raise = function Ok () -> () | Error (`Msg m) -> raise (Failure m)
 
-  let run { config; master = _; urgent = _; base } job
-      { Key.commit; label = _; branch = _ } { Value.ty; variant } =
+  let build { config; master = _; urgent = _; base } job
+      { Key.commit; label = _; ty; variant } =
     let { Builder.docker_context; pool; build_timeout } = config in
     let build_spec =
-      let base = base_to_string base in
+      let base = Spec.base_to_string base in
       match ty with
       | `Opam (`List_revdeps { opam_version }, pkg) ->
           Opam_build.revdeps ~for_docker:true ~opam_version ~base ~variant ~pkg
@@ -211,82 +138,20 @@ module Op = struct
         let pp_error_command f = Fmt.string f "Docker build" in
         Current.Process.exec ~cancellable:true ~pp_error_command ~job cmd
 
-  let pp f ({ Key.commit; label; branch }, _) =
-    Fmt.pf f "test %s %a (%s)" branch Current_git.Commit.pp commit label
+  let pp f { Key.commit; label; ty = _; variant } =
+    Fmt.pf f "test %a %a (%s)" Current_git.Commit.pp commit Variant.pp variant label
 
   let auto_cancel = true
-  let latched = true
 end
 
-module BC = Current_cache.Generic(Op)
+module BC = Current_cache.Make(Op)
 
-(* let v t ~label ~spec ~base ~master ~urgent commit =
-  Current.component "%s" label |>
-  let> { Spec.platform; ty } = spec
-  and> base = base
-  and> commit = commit
-  and> master = master
-  and> urgent = urgent in
-  let t = { Op.config = t; master; urgent; base } in
-  let { Platform.pool; variant; label = _ } = platform in
-  BC.run t { Op.Key.pool; commit; variant; ty } ()
-  |> Current.Primitive.map_result (Result.map ignore) *)
-
-let v ~label ~spec ~master ~urgent ~base ~docker_context ~pool ~build_timeout commit branch =
+let v ~label ~spec ~master ~urgent ~base commit =
   Current.component "%s" label |>
   let> {Spec.platform; ty} = spec
-  and> base in
-  let t = {Op.config = { Builder.docker_context; pool; build_timeout }; master; urgent; base } in
-  BC.run t {commit; branch; label} { ty; variant = platform.variant }
-  |> Current.Primitive.map_result (Result.map ignore)
-
-(* let build ~platforms ~spec ~repo commit =
-  Current.component "build"
-  |> let> { Spec.variant; ty; label } = spec
-      and> commit
-      and> platforms
-      and> repo in
-      match
-        List.find_opt
-          (fun p -> Variant.equal p.Platform.variant variant)
-          platforms
-      with
-      | Some { Platform.builder; variant; base; _ } ->
-          BC.run builder
-            { Op.Key.commit; repo; label }
-            { Op.Value.base; ty; variant }
-      | None ->
-          (* We can only get here if there is a bug. If the set of platforms changes, [Analyse] should recalculate. *)
-          let msg =
-            Fmt.str "BUG: variant %a is not a supported platform" Variant.pp
-              variant
-          in
-          Current_incr.const (Error (`Msg msg), None) *)
-
-(* let list_revdeps t ~platform ~opam_version ~pkgopt ~base ~master ~after commit =
-  Current.component "list revdeps" |>
-  let> {PackageOpt.pkg; urgent; has_tests = _} = pkgopt
-  and> base = base
-  and> commit = commit
-  and> master = master
-  and> () = after in
-  let t = { Op.config = t; master; urgent; base } in
-  let { Platform.pool; variant; label = _ } = platform in
-  let ty = `Opam (`List_revdeps {Spec.opam_version}, pkg) in
-  BC.run t { Op.Key.pool; commit; variant; ty } ()
-  |> Current.Primitive.map_result (Result.map (fun output ->
-      String.split_on_char '\n' output |>
-      List.fold_left (fun acc -> function
-          | "" -> acc
-          | revdep ->
-              let revdep = OpamPackage.of_string revdep in
-              if OpamPackage.equal pkg revdep then
-                acc (* NOTE: opam list --recursive --depends-on <pkg> also returns <pkg> itself *)
-              else
-                OpamPackage.Set.add revdep acc
-        ) OpamPackage.Set.empty
-    )) *)
-
-(* let build_with_docker ~analysis ty =
-  Current.with_context analysis @@ fun () ->
-   *)
+  and> base
+  and> commit
+  and> master
+  and> urgent in
+  let t = { Op.config = Builder.local; master; urgent; base } in
+  BC.get t { commit; label; ty; variant = platform.variant }
