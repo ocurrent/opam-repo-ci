@@ -1,0 +1,110 @@
+version: '3.1'
+volumes:
+  data:
+  capnp-secrets:
+  worker-data:
+  scheduler-data:
+  caddy_data:
+  caddy_config:
+
+secrets:
+  opam-repo-ci-github-key:
+    file: ${SECRETS_DIR}/private-key.pem
+  opam-repo-ci-webhook-secret:
+    file: ${SECRETS_DIR}/webhook-secret
+
+services:
+  service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: >
+      --github-app-id ${APP_ID}
+      --github-private-key-file /run/secrets/opam-repo-ci-github-key
+      --github-webhook-secret-file /run/secrets/opam-repo-ci-webhook-secret
+      --github-account-allowlist '${ALLOW_LIST}'
+      --confirm above-average
+      --confirm-auto-release 120
+      --capnp-address=tcp:service:9000
+      --submission-service /capnp-secrets/user.cap
+      --verbosity=warning
+    depends_on:
+      - scheduler
+    restart: on-failure
+    ports:
+      - '8080:8080'
+    environment:
+      - "CI_PROFILE=production"
+      - "DOCKER_BUILDKIT=1"
+      - "PROGRESS_NO_TRUNC=1"
+    volumes:
+      - 'data:/var/lib/ocurrent'
+      - '/var/run/docker.sock:/var/run/docker.sock'
+      - 'capnp-secrets:/capnp-secrets'
+    secrets:
+      - 'opam-repo-ci-github-key'
+      - 'opam-repo-ci-webhook-secret'
+    sysctls:
+      - 'net.ipv4.tcp_keepalive_time=60'
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    command: >
+      --backend /capnp-secrets/opam-repo-ci-admin.cap
+      --listen-prometheus=9090
+      --verbosity=warning
+    depends_on:
+      - service
+    # Wait for the default network to be created
+    restart: on-failure
+    ports:
+      - '8090:8090'
+    volumes:
+      - 'capnp-secrets:/capnp-secrets:ro'
+    sysctls:
+      - 'net.ipv4.tcp_keepalive_time=60'
+
+  scheduler:
+    image: ocurrent/ocluster-scheduler:live
+    command: >
+      --secrets-dir=/capnp-secrets
+      --capnp-secret-key-file=/capnp-secrets/key.pem
+      --capnp-listen-address=tcp:0.0.0.0:9000
+      --capnp-public-address=tcp:scheduler:9000
+      --pools=solver,linux-x86_64
+      --state-dir=/var/lib/ocluster-scheduler
+    restart: on-failure
+    volumes:
+      - 'scheduler-data:/var/lib/ocluster-scheduler'
+      - 'capnp-secrets:/capnp-secrets'
+
+  # Generate the capability file to allow the
+  # service to connect to the scheduler
+  scheduler-cap:
+    image: ocurrent/ocluster-scheduler:live
+    entrypoint: /bin/sh
+    command: -c "ocluster-admin -c /capnp-secrets/admin.cap add-client user >> /capnp-secrets/user.cap"
+    depends_on:
+      - scheduler
+    volumes:
+      - 'capnp-secrets:/capnp-secrets'
+
+  worker:
+    image: ocurrent/ocluster-worker:live
+    entrypoint: >
+      bash -c "apt-get -qq update > /dev/null
+      && apt-get -qqy install rsync > /dev/null
+      && /usr/local/bin/ocluster-worker --connect=/capnp-secrets/pool-linux-x86_64.cap --name=ocluster-worker --capacity=1 --state-dir=/var/lib/ocluster --obuilder-store=rsync:/rsync --rsync-mode=hardlink_unsafe --obuilder-healthcheck=0"
+    # Required for the Docker in Docker container to work
+    privileged: true
+    # Wait for the scheduler to write pool-linux-x86_64.cap
+    restart: on-failure
+    volumes:
+      - 'worker-data:/var/lib/ocluster'
+      - '/var/run/docker.sock:/var/run/docker.sock'
+      - 'capnp-secrets:/capnp-secrets:ro'
+    environment:
+      - DOCKER_BUILDKIT=1
+      - DOCKER_CLI_EXPERIMENTAL=enabled

@@ -31,7 +31,8 @@ let handle_request ~backend _conn request _body =
 let pp_mode f mode =
   Sexplib.Sexp.pp_hum f (Conduit_lwt_unix.sexp_of_server mode)
 
-let main port backend_uri prometheus_config =
+let main port backend_uri prometheus_config level =
+  Logs.set_level level;
   Lwt_main.run begin
     let vat = Capnp_rpc_unix.client_only_vat () in
     let backend_sr = Capnp_rpc_unix.Vat.import_exn vat backend_uri in
@@ -73,6 +74,6 @@ let backend_cap =
 let cmd =
   let doc = "A web front-end for opam-repo-ci" in
   let info = Cmd.info "opam-repo-ci-web" ~doc in
-  Cmd.v info Term.(const main $ port $ backend_cap $ Prometheus_unix.opts)
+  Cmd.v info Term.(const main $ port $ backend_cap $ Prometheus_unix.opts $ Logs_cli.level ())
 
 let () = exit @@ Cmd.eval cmd

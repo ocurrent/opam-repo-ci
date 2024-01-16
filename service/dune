@@ -16,6 +16,7 @@
   opam_repo_ci
   opam-repo-ci-api
   dockerfile-opam
-  prometheus-app.unix)
+  prometheus-app.unix
+  logs.cli)
  (preprocess
   (pps ppx_deriving_yojson)))
