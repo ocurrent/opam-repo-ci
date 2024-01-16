@@ -19,7 +19,6 @@ let flatten t ~map ~merge ~empty =
   let ctx = { label = Current.return "" ; map ; merge ; empty } in
   t ~ctx
 
-
 let empty ~ctx = Current.return ctx.empty
 
 let action kind job ~ctx = ctx.map.f ~label:ctx.label kind job
@@ -34,7 +33,6 @@ let dir ~label = leaf ~label:(label ^ status_sep)
 
 let dir_dyn ~label t ~ctx =
   t ~ctx: { ctx with label = let+ prefix = ctx.label and+ label = label in prefix ^ label ^ status_sep }
-
 
 let of_list children ~ctx =
   List.fold_left
@@ -60,7 +58,6 @@ let actioned_branch_dyn ~label action children ~ctx =
   let+ t = leaf_dyn ~label action ~ctx
   and+ ts = dir_dyn ~label (of_list children) ~ctx
   in ctx.merge t ts
-
 
 let map_reduce ordered ?collapse_key ~map ~merge ~empty input =
   let+ lst = Current.list_map ordered ?collapse_key map input in
