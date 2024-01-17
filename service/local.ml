@@ -1,14 +1,20 @@
-(* Utility program for testing the CI pipeline locally. *)
+(** Utility program for testing the CI pipeline locally. *)
+
+open Capnp_rpc_lwt
+open Lwt.Infix
 
 let () =
   Memtrace.trace_if_requested ~context:"opam-repo-ci-local" ();
   Unix.putenv "DOCKER_BUILDKIT" "1";
   Prometheus_unix.Logging.init ()
 
-let main config mode is_macos repo branch =
+let main config mode is_macos capnp_address repo branch =
   Lwt_main.run begin
     let repo = Current_git.Local.v (Result.get_ok @@ Fpath.of_string repo) in
     let engine = Current.Engine.create ~config (Pipeline.local_test_pr ~is_macos repo branch) in
+    let listen_address = Capnp_rpc_unix.Network.Location.tcp ~host:"0.0.0.0" ~port:Conf.Capnp.internal_port in
+    Capnp_setup.run ~listen_address capnp_address >>= fun (_, rpc_engine_resolver) ->
+    rpc_engine_resolver |> Option.iter (fun r -> Capability.resolve_ok r (Api_impl.make_ci ~engine));
     let routes = Current_web.routes engine in
     let site = Current_web.Site.(v ~has_role:allow_all) ~name:"opam-repo-ci-local" routes in
     Lwt.choose ([
@@ -55,6 +61,7 @@ let cmd =
       $ Current.Config.cmdliner
       $ Current_web.cmdliner
       $ is_macos
+      $ Capnp_setup.cmdliner
       $ repo
       $ branch))
 

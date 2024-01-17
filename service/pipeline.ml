@@ -575,7 +575,7 @@ let v ~is_macos ~ocluster ~app () =
 let set_index_local ~repo gref hash =
   let+ repo
   and+ hash in
-  Index.(set_active_accounts @@ Account_set.singleton "local");
+  Index.(set_active_accounts @@ Account_set.singleton repo.Github.Repo_id.owner);
   Index.set_active_refs ~repo [(gref, hash)]
 
 let local_test_pr ~is_macos repo pr_branch () =
@@ -598,7 +598,9 @@ let local_test_pr ~is_macos repo pr_branch () =
       (Node.leaf ~label:"(analysis)" (Node.action `Analysed analysis)
       :: Build_with.docker ~analysis ~lint ~master pr_branch)
   in
-  let dummy_repo = Current.return { Github.Repo_id.owner = "local"; name = "local" } in
+  let dummy_repo =
+    Current.return { Github.Repo_id.owner = "local-owner"; name = "local-repo" }
+  in
   let pr_hash = Current.map Git.Commit.hash pr_branch in
   (let+ _ = set_index_local ~repo:dummy_repo pr_gref pr_hash
   and+ result = summarise ~repo:dummy_repo ~hash:pr_hash builds in
