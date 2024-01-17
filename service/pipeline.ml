@@ -112,20 +112,18 @@ let get_significant_available_pkg = function
   | pkg, {Analyse.Analysis.kind = SignificantlyChanged; has_tests} -> Some {PackageOpt.pkg; urgent = Some (fun (`High | `Low) -> false); has_tests}
   | _, {Analyse.Analysis.kind = Deleted | Unavailable | UnsignificantlyChanged; _} -> None
 
-let build_with_cluster ~ocluster ~analysis ~lint ~master source =
-  let pkgs = Current.map Analyse.Analysis.packages analysis in
-  let pkgs = Current.map (List.filter_map get_significant_available_pkg) pkgs in
-  let build ~opam_version ~lower_bounds ~revdeps label variant =
+module Build_with_cluster = struct
+  let build ~ocluster ~analysis ~pkgs ~master ~source ~opam_version ~lower_bounds ~revdeps label variant =
     let arch = Variant.arch variant in
     let pool = Conf.pool_of_arch variant in (* ocluster-pool eg linux-x86_64 *)
     let platform = {Platform.label; pool; variant} in
     let analysis = with_label label analysis in
     let pkgs =
       (* Add fake dependency from pkgs to analysis so that the package being tested appears
-         below the platform, to make the diagram look nicer. Ideally, the pulls of the
-         base images should be moved to the top (not be per-package at all). *)
+        below the platform, to make the diagram look nicer. Ideally, the pulls of the
+        base images should be moved to the top (not be per-package at all). *)
       let+ _ = analysis
-      and+ pkgs = pkgs in
+      and+ pkgs in
       pkgs
     in
     pkgs |> Node.list_map ~collapse_key:"pkg" (module PackageOpt) (fun pkgopt ->
@@ -181,8 +179,8 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
       )
     |> (fun x -> Node.branch ~label [x])
     |> Node.collapse ~key:"platform" ~value:label ~input:analysis
-  in
-  let compilers =
+
+  let compilers ~build =
     let master_distro = Distro.tag_of_distro master_distro in
     (* The last eight releases of OCaml plus latest beta / release-candidate for each unreleased version. *)
     (* 4.02 -> 5.0 plus 5.1~alpha *)
@@ -194,8 +192,8 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
       let variant = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(v, None) in
       build ~opam_version ~lower_bounds:true ~revdeps v variant
     )
-  in
-  let linux_distributions =
+
+  let linux_distributions ~build =
     let build ~distro ~arch ~compiler =
       let variant = Variant.v ~arch ~distro ~compiler in
       let label = Fmt.str "%s-ocaml-%s" distro (Variant.pp_ocaml_version variant) in
@@ -214,8 +212,8 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
             build ~arch:`X86_64 ~distro ~compiler:(comp, None) :: acc
       ) acc (Distro.active_distros `X86_64)
     ) [] default_compilers
-  in
-  let macos =
+
+  let macos ~build =
     let build ~distro ~arch ~compiler =
       let variant = Variant.v ~arch ~distro ~compiler in
       let label = Fmt.str "%s-%s" (Variant.docker_tag variant) (Ocaml_version.string_of_arch arch) in
@@ -228,8 +226,8 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
         build ~distro:homebrew ~arch ~compiler:(comp, None) :: acc
       ) acc [`Aarch64; `X86_64]
     ) [] default_compilers
-  in
-  let freebsd =
+
+  let freebsd ~build =
     let build ~distro ~arch ~compiler =
       let variant = Variant.v ~arch ~distro ~compiler in
       let label = Fmt.str "%s-%s" (Variant.docker_tag variant) (Ocaml_version.string_of_arch arch) in
@@ -242,9 +240,9 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
         build ~distro:freebsd ~arch ~compiler:(comp, None) :: acc
       ) acc [`X86_64]
     ) [] default_compilers
-  in
-  let lint = Node.action `Linted lint
-  and extras = (* Non-linux-x86_64 compiler variants. eg macos, ls390x, arm64, flambda, afl etc *)
+
+  (** Non-linux-x86_64 compiler variants. eg macos, ls390x, arm64, flambda, afl etc *)
+  let extras ~build =
     let build ~opam_version ~distro ~arch ~compiler label =
       let variant = Variant.v ~arch ~distro ~compiler in
       let label = if String.equal label "" then "" else label^"-" in
@@ -274,16 +272,20 @@ let build_with_cluster ~ocluster ~analysis ~lint ~master source =
       ) Ocaml_version.arches @
       acc
     ) [] default_compilers_full
-  in
-  [
-    Node.leaf ~label:"(lint)" lint;
-    Node.branch ~label:"compilers" compilers;
-    Node.branch ~label:"distributions" linux_distributions;
-    Node.branch ~label:"macos" macos;
-    Node.branch ~label:"freebsd" freebsd;
-    Node.branch ~label:"extras" extras;
-  ]
 
+  let v ~ocluster ~analysis ~lint ~master source =
+    let pkgs = Current.map (fun x -> Analyse.Analysis.packages x
+      |> List.filter_map get_significant_available_pkg) analysis in
+    let build = build ~ocluster ~analysis ~pkgs ~master ~source in
+    [
+      Node.leaf ~label:"(lint)" (Node.action `Linted lint);
+      Node.branch ~label:"compilers" (compilers ~build);
+      Node.branch ~label:"distributions" (linux_distributions ~build);
+      Node.branch ~label:"macos" (macos ~build);
+      Node.branch ~label:"freebsd" (freebsd ~build);
+      Node.branch ~label:"extras" (extras ~build);
+    ]
+end
 
 module Summary = struct
   type t = { ok: int; pending: int; err: int; skip: int; lint: int }
@@ -407,7 +409,7 @@ let test_pr ~ocluster ~master ~head =
   let builds =
     Node.root
       (Node.leaf ~label:"(analysis)" (Node.action `Analysed latest_analysis)
-      :: build_with_cluster ~ocluster ~analysis ~lint ~master commit_id)
+      :: Build_with_cluster.v ~ocluster ~analysis ~lint ~master commit_id)
   in
   let* (jobs, summary) =
     Node.flatten builds
