@@ -118,6 +118,31 @@ module Check = struct
         | exn -> Lwt.fail exn
         end
 
+  (** On MacOS [get_dune_project_version] does not work and causes a hang
+      https://github.com/ocurrent/opam-repo-ci/issues/260 *)
+  let get_dune_project_version_portable ~pkg url =
+    Lwt_io.with_temp_dir @@ fun dir ->
+    let res = OpamProcess.Job.run @@
+      OpamRepository.pull_tree (OpamPackage.to_string pkg)
+        (OpamFilename.Dir.of_string dir)
+        (OpamFile.URL.checksum url)
+        [OpamFile.URL.url url] in
+    match res with
+    | OpamTypes.Not_available (_, msg) ->
+        Lwt.return (Error msg)
+    | Up_to_date _ | Result _ ->
+        let dune_project = Filename.concat dir "dune-project" in
+        Lwt.catch begin fun () ->
+          Lwt_io.with_file ~mode:Lwt_io.Input dune_project (fun ch -> Lwt_io.read ch >|= Sexplib.Sexp.parse) >>= begin function
+          | Sexplib.Sexp.(Done (List [Atom "lang"; Atom "dune"; Atom version], _)) -> Lwt.return (Ok (Some version))
+          | Done _ -> Lwt.fail_with "(lang dune ...) is not the first construct"
+          | Cont _ -> Lwt.fail_with "Failed to parse the dune-project file"
+          end
+        end begin function
+        | Unix.Unix_error (Unix.ENOENT, _, _) -> Lwt.return (Ok None)
+        | exn -> Lwt.fail exn
+        end
+
   let is_dune name =
     OpamPackage.Name.equal name (OpamPackage.Name.of_string "dune")
 
@@ -157,9 +182,13 @@ module Check = struct
     in
     (!is_build, aux opam.OpamFile.OPAM.depends)
 
-  let check_dune_constraints ~errors ~pkg opam =
+  let check_dune_constraints ~is_macos ~errors ~pkg opam =
     match opam.OpamFile.OPAM.url with
     | Some url ->
+        let get_dune_project_version =
+          if is_macos then get_dune_project_version_portable
+          else get_dune_project_version
+        in
         get_dune_project_version ~pkg url >|= fun dune_version ->
         let is_build, dune_constraint = get_dune_constraint opam in
         let errors =
@@ -182,7 +211,7 @@ module Check = struct
     | None ->
         Lwt.return errors
 
-  let of_dir ~master ~job ~packages cwd =
+  let of_dir ~is_macos ~master ~job ~packages cwd =
     let master = Current_git.Commit.hash master in
     exec ~cwd ~job [|"git"; "merge"; "-q"; "--"; master|] >>/= fun () ->
     Lwt_list.fold_left_s (fun errors (pkg, kind) ->
@@ -225,7 +254,7 @@ module Check = struct
               opam.OpamFile.OPAM.build
           in
           (* Check correct constraint for dune *)
-          check_dune_constraints ~errors ~pkg opam >>= fun errors ->
+          check_dune_constraints ~is_macos ~errors ~pkg opam >>= fun errors ->
           (* Check directory structure correctness *)
           scan_dir ~cwd errors pkg >>= fun (errors, check_extra_files) ->
           (* opam lint *)
@@ -265,13 +294,11 @@ module Lint = struct
   end
 
   module Value = struct
-    type t = unit
+    type t = {
+      is_macos : bool
+    } [@@deriving to_yojson]
 
-    let digest () =
-      let json = `Assoc [
-        ]
-      in
-      Yojson.Safe.to_string json
+    let digest t = Yojson.Safe.to_string @@ to_yojson t
   end
 
   module Outcome = Check
@@ -328,10 +355,10 @@ module Lint = struct
           Fmt.str "Error in %s: Failed to download the archive. Details: %s" pkg msg
     )
 
-  let run {master} job { Key.src; packages } () =
+  let run {master} job { Key.src; packages } { Value.is_macos } =
     Current.Job.start job ~pool ~level:Current.Level.Harmless >>= fun () ->
     Current_git.with_checkout ~job src @@ fun dir ->
-    Check.of_dir ~master ~job ~packages dir >|= fun errors ->
+    Check.of_dir ~is_macos ~master ~job ~packages dir >|= fun errors ->
     let errors = msg_of_errors errors in
     List.iter (Current.Job.log job "%s") errors;
     match errors with
@@ -347,9 +374,9 @@ end
 
 module Lint_cache = Current_cache.Generic(Lint)
 
-let check ~master ~packages src =
+let check ~is_macos ~master ~packages src =
   Current.component "Lint" |>
-  let> src = src
-  and> packages = packages
-  and> master = master in
-  Lint_cache.run {Lint.master} { Lint.Key.src; packages } ()
+  let> src
+  and> packages
+  and> master in
+  Lint_cache.run { master } { src; packages } { is_macos }

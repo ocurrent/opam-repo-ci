@@ -389,7 +389,7 @@ let analyze ~master src =
   Analyse.examine ~master src
   |> Current.cutoff ~eq:Analyse.Analysis.equal
 
-let test_pr ~ocluster ~master ~head =
+let test_pr ~is_macos ~ocluster ~master ~head =
   let repo = Current.map Current_github.Api.Commit.repo_id head in
   let commit_id = Current.map Github.Api.Commit.id head in
   let hash = Current.map Git.Commit_id.hash commit_id in
@@ -404,7 +404,7 @@ let test_pr ~ocluster ~master ~head =
           (Analyse.Analysis.packages x))
         analysis
     in
-    Lint.check ~master ~packages src
+    Lint.check ~is_macos ~master ~packages src
   in
   let builds =
     Node.root
@@ -457,28 +457,28 @@ let github_set_statuses ~head statuses =
   in
   ()
 
-let test_repo ~ocluster ~push_status repo =
+let test_repo ~is_macos ~ocluster ~push_status repo =
   let master, prs = get_prs repo in
   let master = latch ~label:"master" master in  (* Don't cancel builds while fetching updates to this *)
   let prs = set_active_refs ~repo prs in
   prs |> Current.list_iter ~collapse_key:"pr" (module Github.Api.Commit) @@ fun head ->
-    test_pr ~ocluster ~master ~head
+    test_pr ~is_macos ~ocluster ~master ~head
     |> github_status_of_state ~head
     |> (if push_status then github_set_statuses ~head
         else Current.ignore_value)
 
-let local_test ~ocluster repo () =
+let local_test ~is_macos ~ocluster repo () =
   let { Github.Repo_id.owner; name = _ } = Github.Api.Repo.id repo in
   Index.set_active_accounts @@ Index.Account_set.singleton owner;
   let ocluster = Build.config ~timeout:Conf.build_timeout ocluster in
-  test_repo ~ocluster ~push_status:false (Current.return repo)
+  test_repo ~is_macos ~ocluster ~push_status:false (Current.return repo)
 
 let set_metrics_primary_repo repo =
   let repo = Current.map Current_github.Api.Repo.id repo in
   let+ repo = repo in
   Metrics.set_primary_repo repo
 
-let v ~ocluster ~app () =
+let v ~is_macos ~ocluster ~app () =
   let ocluster = Build.config ~timeout:Conf.build_timeout ocluster in
   let installations = Github.App.installations app |> set_active_installations in
   installations |> Current.list_iter (module Github.Installation) @@ fun installation ->
@@ -486,5 +486,5 @@ let v ~ocluster ~app () =
   repos |> Current.list_iter (module Github.Api.Repo) @@ fun repo ->
   Current.all [
     set_metrics_primary_repo repo;
-    test_repo ~ocluster ~push_status:(Conf.profile = `Production) repo
+    test_repo ~is_macos ~ocluster ~push_status:(Conf.profile = `Production) repo
   ]

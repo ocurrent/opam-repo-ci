@@ -14,12 +14,12 @@ let () =
   Metrics.set_primary_repo opam_repository;
   Prometheus.CollectorRegistry.(register_pre_collect default) Metrics.update
 
-let main config mode capnp_address submission_uri api repo_id prometheus_config =
+let main config mode capnp_address submission_uri api repo_id is_macos prometheus_config =
   Lwt_main.run begin
     Capnp_setup.run capnp_address >>= fun (vat, rpc_engine_resolver) ->
     let repo = (api, repo_id) in
     let ocluster = Capnp_rpc_unix.Vat.import_exn vat submission_uri in
-    let engine = Current.Engine.create ~config (Pipeline.local_test ~ocluster repo) in
+    let engine = Current.Engine.create ~config (Pipeline.local_test ~is_macos ~ocluster repo) in
     rpc_engine_resolver |> Option.iter (fun r -> Capability.resolve_ok r (Api_impl.make_ci ~engine));
     let routes = Current_web.routes engine in
     let site = Current_web.Site.(v ~has_role:allow_all) ~name:"opam-repo-ci-local" routes in
@@ -50,9 +50,18 @@ let submission_service =
   Arg.required @@
   Arg.opt Arg.(some Capnp_rpc_unix.sturdy_uri) None @@
   Arg.info
-    ~doc:"The submission.cap file for the build scheduler service"
+    ~doc:"The submission.cap file for the build scheduler service."
     ~docv:"FILE"
     ["submission-service"]
+
+(* https://github.com/ocurrent/opam-repo-ci/issues/260 *)
+let is_macos =
+  Arg.value @@
+  Arg.flag @@
+  Arg.info
+    ~doc:"Tells the service that the host is running MacOS. opam-repo-ci may have errors otherwise."
+    ~docv:"MACOS"
+    ["macos"]
 
 let cmd =
   let doc = "Test opam-repo-ci on a local Git clone" in
@@ -66,6 +75,7 @@ let cmd =
       $ submission_service
       $ Current_github.Api.cmdliner
       $ repo
+      $ is_macos
       $ Prometheus_unix.opts))
 
 let () = exit @@ Cmd.eval cmd
