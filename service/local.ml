@@ -8,7 +8,8 @@ let () =
   Unix.putenv "DOCKER_BUILDKIT" "1";
   Prometheus_unix.Logging.init ()
 
-let main config mode is_macos capnp_address repo branch =
+let main config mode is_macos capnp_address repo branch level =
+  Logs.set_level level;
   Lwt_main.run begin
     let repo = Current_git.Local.v (Result.get_ok @@ Fpath.of_string repo) in
     let engine = Current.Engine.create ~config (Pipeline.local_test_pr ~is_macos repo branch) in
@@ -63,6 +64,7 @@ let cmd =
       $ is_macos
       $ Capnp_setup.cmdliner
       $ repo
-      $ branch))
+      $ branch
+      $ Logs_cli.level ()))
 
 let () = exit @@ Cmd.eval cmd
