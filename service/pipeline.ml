@@ -260,9 +260,9 @@ module Build_with = struct
             Node.leaf ~label:"lower-bounds" action
           else
             Node.empty
-        (* and revdeps =
+        and revdeps =
           if revdeps then test_revdeps ~ocluster ~opam_version ~master ~base ~platform ~pkgopt source ~after:image
-          else Node.empty *)
+          else Node.empty
         in
         let label = Current.map OpamPackage.to_string pkg in
         ignore revdeps;
@@ -270,7 +270,7 @@ module Build_with = struct
         Node.actioned_branch_dyn ~label build [
           tests;
           lower_bounds_check;
-          (* revdeps; *)
+          revdeps;
         ]
       )
     |> (fun x -> Node.branch ~label [x])
