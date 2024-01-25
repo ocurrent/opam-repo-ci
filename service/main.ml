@@ -117,14 +117,14 @@ let add_default_matching_log_rules () =
   in
   List.iter Current.Log_matcher.add_rule default_rules
 
-let main config mode app capnp_address github_auth submission_uri prometheus_config level =
+let main config mode app capnp_address github_auth submission_uri is_macos prometheus_config level =
   add_default_matching_log_rules ();
   Logs.set_level level;
   Lwt_main.run begin
     let listen_address = Capnp_rpc_unix.Network.Location.tcp ~host:"0.0.0.0" ~port:Conf.Capnp.internal_port in
     Capnp_setup.run ~listen_address capnp_address >>= fun (vat, rpc_engine_resolver) ->
     let ocluster = Capnp_rpc_unix.Vat.import_exn vat submission_uri in
-    let engine = Current.Engine.create ~config (Pipeline.v ~ocluster ~app) in
+    let engine = Current.Engine.create ~config (Pipeline.v ~is_macos ~ocluster ~app) in
     rpc_engine_resolver |> Option.iter (fun r -> Capability.resolve_ok r (Api_impl.make_ci ~engine));
     let authn = Option.map Current_github.Auth.make_login_uri github_auth in
     let webhook_secret = Current_github.App.webhook_secret app in
@@ -160,6 +160,15 @@ let submission_service =
     ~docv:"FILE"
     ["submission-service"]
 
+(* https://github.com/ocurrent/opam-repo-ci/issues/260 *)
+let is_macos =
+  Arg.value @@
+  Arg.flag @@
+  Arg.info
+    ~doc:"Tells the service that the host is running MacOS. opam-repo-ci may have errors otherwise."
+    ~docv:"MACOS"
+    ["macos"]
+
 let cmd =
   let doc = "Build OCaml projects on GitHub" in
   let info = Cmd.info "opam-repo-ci" ~doc ~envs:Conf.cmdliner_envs in
@@ -172,6 +181,7 @@ let cmd =
       $ Capnp_setup.cmdliner
       $ Current_github.Auth.cmdliner
       $ submission_service
+      $ is_macos
       $ Prometheus_unix.opts
       $ Logs_cli.level ()))
 

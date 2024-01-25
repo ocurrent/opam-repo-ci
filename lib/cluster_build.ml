@@ -4,68 +4,7 @@ open Lwt.Infix
 
 module Git = Current_git
 
-(* TODO: Make macOS use docker images *)
-type base =
-  | Docker of Current_docker.Raw.Image.t
-  | MacOS of string
-  | FreeBSD of string
-
-let base_to_string = function
-  | Docker img -> Current_docker.Raw.Image.hash img
-  | MacOS base -> base
-  | FreeBSD base -> base
-
 let ( >>!= ) = Lwt_result.bind
-
-module Spec = struct
-  type package = OpamPackage.t
-
-  let package_to_yojson x = `String (OpamPackage.to_string x)
-
-  type opam_build = {
-    revdep : package option;
-    with_tests : bool;
-    lower_bounds : bool;
-    opam_version : [`V2_0 | `V2_1 | `Dev];
-  } [@@deriving to_yojson]
-
-  type list_revdeps = {
-    opam_version : [`V2_0 | `V2_1 | `Dev];
-  } [@@deriving to_yojson]
-
-  type ty = [
-    | `Opam of [ `Build of opam_build | `List_revdeps of list_revdeps ] * package
-  ] [@@deriving to_yojson]
-
-  type t = {
-    platform : Platform.t;
-    ty : ty;
-  }
-
-  let opam ?revdep ~platform ~lower_bounds ~with_tests ~opam_version pkg =
-    let ty = `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) in
-    { platform; ty }
-
-  let pp_pkg ?revdep f pkg =
-    match revdep with
-    | Some revdep -> Fmt.pf f "%s with %s" (OpamPackage.to_string revdep) (OpamPackage.to_string pkg)
-    | None -> Fmt.string f (OpamPackage.to_string pkg)
-
-  let pp_opam_version = function
-    | `V2_0 -> "2.0"
-    | `V2_1 -> "2.1"
-    | `Dev -> "dev"
-
-  let pp_ty f = function
-    | `Opam (`List_revdeps {opam_version}, pkg) ->
-        Fmt.pf f "list revdeps of %s, using opam %s" (OpamPackage.to_string pkg)
-          (pp_opam_version opam_version)
-    | `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) ->
-      let action = if with_tests then "test" else "build" in
-      Fmt.pf f "%s %a%s, using opam %s" action (pp_pkg ?revdep) pkg
-        (if lower_bounds then ", lower-bounds" else "")
-        (pp_opam_version opam_version)
-end
 
 type t = {
   connection : Current_ocluster.Connection.t;
@@ -101,7 +40,7 @@ module Op = struct
     config : t;
     master : Current_git.Commit.t;
     urgent : ([`High | `Low] -> bool) option;
-    base : base;
+    base : Spec.base;
   }
 
   let id = "ci-ocluster-build"
@@ -125,25 +64,15 @@ module Op = struct
     let digest t = Yojson.Safe.to_string (to_json t)
   end
 
-  module Value = struct
-    type t = unit
+  module Value = Current.String
 
-    let to_json () =
-      `Assoc [
-      ]
-
-    let digest t = Yojson.Safe.to_string (to_json t)
-  end
-
-  module Outcome = Current.String
-
-  let run { config = { connection; timeout }; master; urgent; base } job { Key.pool; commit; variant; ty } () =
+  let build { config = { connection; timeout }; master; urgent; base } job { Key.pool; commit; variant; ty } =
     let master = Current_git.Commit.hash master in
     let os = match Variant.os variant with
       | `macOS | `linux | `FreeBSD -> `Unix
     in
     let build_spec ~for_docker =
-      let base = base_to_string base in
+      let base = Spec.base_to_string base in
       match ty with
       | `Opam (`List_revdeps { opam_version }, pkg) -> Opam_build.revdeps ~for_docker ~opam_version ~base ~variant ~pkg
       | `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) -> Opam_build.spec ~for_docker ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_tests ~pkg
@@ -172,7 +101,7 @@ module Op = struct
         | `Opam (`List_revdeps _, pkg)
         | `Opam (`Build _, pkg) -> OpamPackage.to_string pkg
       in
-      Fmt.str "%s-%s-%s" (base_to_string base) pkg (Git.Commit_id.hash commit)
+      Fmt.str "%s-%s-%s" (Spec.base_to_string base) pkg (Git.Commit_id.hash commit)
     in
     Current.Job.log job "Using cache hint %S" cache_hint;
     Current.Job.log job "Using OBuilder spec:@.%s@." spec_str;
@@ -192,17 +121,16 @@ module Op = struct
       | [_; rest ] when Astring.String.is_prefix ~affix:"@@@OUTPUT\n" rest -> Lwt_result.return ""
       | _ -> Lwt_result.fail (`Msg "Missing output from command")
 
-  let pp f ({ Key.pool = _; commit; variant; ty }, _) =
+  let pp f { Key.pool = _; commit; variant; ty } =
     Fmt.pf f "@[<v>%a@,from %a@,on %a@]"
       Spec.pp_ty ty
       Current_git.Commit_id.pp commit
       Variant.pp variant
 
   let auto_cancel = true
-  let latched = true
 end
 
-module BC = Current_cache.Generic(Op)
+module BC = Current_cache.Make(Op)
 
 let config ~timeout sr =
   let connection = Current_ocluster.Connection.create sr in
@@ -211,26 +139,26 @@ let config ~timeout sr =
 let v t ~label ~spec ~base ~master ~urgent commit =
   Current.component "%s" label |>
   let> { Spec.platform; ty } = spec
-  and> base = base
-  and> commit = commit
-  and> master = master
-  and> urgent = urgent in
+  and> base
+  and> commit
+  and> master
+  and> urgent in
   let t = { Op.config = t; master; urgent; base } in
   let { Platform.pool; variant; label = _ } = platform in
-  BC.run t { Op.Key.pool; commit; variant; ty } ()
+  BC.get t { Op.Key.pool; commit; variant; ty }
   |> Current.Primitive.map_result (Result.map ignore) (* TODO: Create a separate type of cache that doesn't parse the output *)
 
 let list_revdeps t ~platform ~opam_version ~pkgopt ~base ~master ~after commit =
   Current.component "list revdeps" |>
   let> {PackageOpt.pkg; urgent; has_tests = _} = pkgopt
-  and> base = base
-  and> commit = commit
-  and> master = master
+  and> base
+  and> commit
+  and> master
   and> () = after in
   let t = { Op.config = t; master; urgent; base } in
   let { Platform.pool; variant; label = _ } = platform in
   let ty = `Opam (`List_revdeps {Spec.opam_version}, pkg) in
-  BC.run t { Op.Key.pool; commit; variant; ty } ()
+  BC.get t { Op.Key.pool; commit; variant; ty }
   |> Current.Primitive.map_result (Result.map (fun output ->
       String.split_on_char '\n' output |>
       List.fold_left (fun acc -> function
