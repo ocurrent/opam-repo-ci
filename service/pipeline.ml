@@ -367,7 +367,6 @@ module Build_with = struct
       Node.leaf ~label:"(lint)" (Node.action `Linted lint);
       Node.branch ~label:"compilers" (compilers ~build);
       Node.branch ~label:"distributions" (linux_distributions ~build);
-      Node.branch ~label:"extras" (extras ~build);
     ]
 end
 
