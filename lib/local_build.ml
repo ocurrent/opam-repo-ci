@@ -26,38 +26,54 @@ module Commit_lock = struct
             Lwt.return_unit)
 end
 
-module Builder = struct
-  type t = {
-    docker_context : string option;
-    pool : unit Current.Pool.t;
-    build_timeout : Duration.t;
-  }
+(** Activate BuildKit experimental syntax. *)
+module Buildkit_syntax = struct
+  (* From `docker manifest inspect docker/dockerfile:experimental` *)
+  let hash_for = function
+    | `X86_64 ->
+        "sha256:8c69d118cfcd040a222bea7f7d57c6156faa938cb61b47657cd65343babc3664"
+    | `I386 ->
+        "sha256:8c69d118cfcd040a222bea7f7d57c6156faa938cb61b47657cd65343babc3664"
+    | `Aarch64 ->
+        "sha256:d9ced99b409ddb781c245c7c11f72566f940424fc3883ac0b5c5165f402e5a09"
+    | `Aarch32 ->
+        "sha256:5f502d5a34f8cd1780fde9301b69488e9c0cfcecde2d673b6bff19aa4979fdfc"
+    | `Ppc64le ->
+        "sha256:c0fe20821d527e147784f7e782513880bf31b0060b2a7da7a94582ecde81c85f"
+    | `S390x ->
+        "sha256:e2b9c21cc1d0067116c572db562f80de9b0c7a654ac41f094651a724408beafc"
 
-  let local =
-    let pool = Current.Pool.create ~label:"docker" 1 in
-    (* Maximum time for one Docker build. *)
-    let build_timeout = Duration.of_hour 1 in
-    { docker_context = None; pool; build_timeout }
-
-  let build { docker_context; pool; build_timeout } ~dockerfile source =
-    Current_docker.Raw.build (`Git source) ~dockerfile ~docker_context ~pool
-      ~timeout:build_timeout ~pull:false
-
-  let pull { docker_context; pool = _; build_timeout = _ } ~arch tag =
-    let arch =
-      if Ocaml_version.arch_is_32bit arch then
-        Some (Ocaml_version.to_docker_arch arch)
-      else None
+  (** [add arch] will activate BuildKit experimental syntax with a hash that will
+    work for that architecture. Defaults to x86_64 if no arch is specified. *)
+  let add arch =
+    let hash =
+      hash_for
+        (match arch with
+        | `X86_64 | `I386 -> `X86_64
+        | `Aarch64 | `Aarch32 -> `Aarch64
+        | `Ppc64le -> `Ppc64le
+        | `S390x -> `S390x
+        | `Riscv64 ->
+            failwith "No support for riscv64 in docker/dockerfile:experimental.")
     in
-    Current_docker.Raw.pull ?arch tag ~docker_context
-
-  let run { docker_context; pool; build_timeout = _ } ~args img =
-    Current_docker.Raw.run img ~docker_context ~pool ~args
+    Printf.sprintf "# syntax = docker/dockerfile:experimental@%s\n" hash
 end
+
+type t = {
+  docker_context : string option;
+  pool : unit Current.Pool.t;
+  build_timeout : Duration.t;
+}
+
+let local_builder =
+  let pool = Current.Pool.create ~label:"docker" 1 in
+  (* Maximum time for one Docker build. *)
+  let build_timeout = Duration.of_hour 1 in
+  { docker_context = None; pool; build_timeout }
 
 module Op = struct
   type nonrec t = {
-    config : Builder.t;
+    config : t;
     master : Current_git.Commit.t;
     urgent : ([`High | `Low] -> bool) option;
     base : Spec.base;
@@ -69,16 +85,14 @@ module Op = struct
   module Key = struct
     type t = {
       commit : Current_git.Commit.t; (* The source code to build and test *)
-      label : string; (* A unique ID for this build within the commit *)
       ty : Spec.ty;
       variant : Variant.t; (* Added as a comment in the Dockerfile *)
     }
 
-    let to_json { commit; label; ty; variant } =
+    let to_json { commit; ty; variant } =
       `Assoc
         [
           ("commit", `String (Current_git.Commit.hash commit));
-          ("label", `String label);
           ("op", Spec.ty_to_yojson ty);
           ("variant", Variant.to_yojson variant);
         ]
@@ -86,13 +100,47 @@ module Op = struct
     let digest t = Yojson.Safe.to_string (to_json t)
   end
 
-  module Value = Current.Unit
+  module Value = Current.String
 
   let or_raise = function Ok () -> () | Error (`Msg m) -> raise (Failure m)
 
+  (* Docker output lines are of the form:
+
+    #NN TTTTT OUTPUT
+
+    Where NN is the number of the command run, TTTTT is a timestamp,
+    and OUTPUT is a single line of output *)
+  let parse_docker_lines s =
+    Astring.String.cuts ~sep:"\n" s
+    |> List.filter_map (fun s ->
+      let split = Astring.String.cuts ~sep:" " s in
+      List.nth_opt split 2)
+    |> Astring.String.concat ~sep:"\n"
+
+  let parse_output ty job () =
+    let f () =
+      let log_path = Lwt.return @@ Current.Job.(log_path @@ id job) in
+      let read_log path =
+        Fpath.to_string path |>
+        Lwt_io.open_file ~flags:[Unix.O_RDONLY] ~mode:Input >>=
+        Lwt_io.read >>= fun s ->
+        Lwt.return @@ Result.ok s
+      in
+      Lwt_result.bind log_path read_log
+    in
+    match ty with
+    | `Opam (`List_revdeps _, _) -> begin
+        f () >>!= fun s ->
+        match Astring.String.cuts ~sep:" @@@OUTPUT\n" s with
+        | [_; output; _] -> Lwt_result.return @@ parse_docker_lines output
+        | [_; rest ] when Astring.String.is_prefix ~affix:"@@@OUTPUT\n" rest -> Lwt_result.return ""
+        | _ -> Lwt_result.fail (`Msg "Missing output from command")
+      end
+    | _ -> Lwt_result.return ""
+
   let build { config; master = _; urgent = _; base } job
-      { Key.commit; label = _; ty; variant } =
-    let { Builder.docker_context; pool; build_timeout } = config in
+      { Key.commit; ty; variant } =
+    let { docker_context; pool; build_timeout } = config in
     let build_spec =
       let base = Spec.base_to_string base in
       match ty with
@@ -101,57 +149,87 @@ module Op = struct
       | `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) ->
           Opam_build.spec ~for_docker:true ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_tests ~pkg
     in
-    match base with
-    | MacOS _s -> failwith "local macos docker not supported"
-    | FreeBSD _s -> failwith "local freebsd docker not supported"
-    | Docker base ->
-        let make_dockerfile ~for_user =
-          (if for_user then "" else Buildkit_syntax.add (Variant.arch variant))
-          ^ Obuilder_spec.Docker.dockerfile_of_spec ~buildkit:(not for_user)
-              ~os:`Unix build_spec
-        in
-        Current.Job.write job
-          (Fmt.str "@[<v>Base: %a@,%a@]@." Raw.Image.pp base Spec.pp_summary ty);
-        Current.Job.write job
-          (Fmt.str
-             "@.To reproduce locally:@.@.cd $(mktemp -d)@.%a@.cat > Dockerfile \
-              <<'END-OF-DOCKERFILE'@.\o033[34m%s\o033[0mEND-OF-DOCKERFILE@.docker \
-              build .@.END-REPRO-BLOCK@.@."
-             Current_git.Commit_id.pp_user_clone
-             (Current_git.Commit.id commit)
-             (make_dockerfile ~for_user:true));
-        let dockerfile = make_dockerfile ~for_user:false in
-        Current.Job.start ~timeout:build_timeout ~pool job
-          ~level:Current.Level.Average
-        >>= fun () ->
-        Commit_lock.with_lock ~job commit variant @@ fun () ->
-        Current_git.with_checkout ~pool:checkout_pool ~job commit @@ fun dir ->
-        Current.Job.write job
-          (Fmt.str "Writing BuildKit Dockerfile:@.%s@." dockerfile);
-        Bos.OS.File.write Fpath.(dir / "Dockerfile") (dockerfile ^ "\n")
-        |> or_raise;
-        Bos.OS.File.write Fpath.(dir / ".dockerignore") dockerignore |> or_raise;
-        let cmd =
-          Raw.Cmd.docker ~docker_context
-          @@ [ "build"; "--"; Fpath.to_string dir ]
-        in
-        let pp_error_command f = Fmt.string f "Docker build" in
-        Current.Process.exec ~cancellable:true ~pp_error_command ~job cmd
+    let base = 
+      match base with
+      | MacOS _s -> failwith "local macos docker not supported"
+      | FreeBSD _s -> failwith "local freebsd docker not supported"
+      | Docker base -> base
+    in
+    let make_dockerfile ~for_user =
+      (if for_user then "" else Buildkit_syntax.add (Variant.arch variant))
+      ^ Obuilder_spec.Docker.dockerfile_of_spec ~buildkit:(not for_user)
+          ~os:`Unix build_spec
+    in
+    Current.Job.write job
+      (Fmt.str "@[<v>Base: %a@,%a@]@." Raw.Image.pp base Spec.pp_summary ty);
+    Current.Job.write job
+      (Fmt.str
+          "@.To reproduce locally:@.@.cd $(mktemp -d)@.%a@.cat > Dockerfile \
+          <<'END-OF-DOCKERFILE'@.\o033[34m%s\o033[0mEND-OF-DOCKERFILE@.docker \
+          build .@.END-REPRO-BLOCK@.@."
+          Current_git.Commit_id.pp_user_clone
+          (Current_git.Commit.id commit)
+          (make_dockerfile ~for_user:true));
+    let dockerfile = make_dockerfile ~for_user:false in
+    Current.Job.start ~timeout:build_timeout ~pool job
+      ~level:Current.Level.Average
+    >>= fun () ->
+    Commit_lock.with_lock ~job commit variant @@ fun () ->
+    Current_git.with_checkout ~pool:checkout_pool ~job commit @@ fun dir ->
+    Current.Job.write job
+      (Fmt.str "Writing BuildKit Dockerfile:@.%s@." dockerfile);
+    Bos.OS.File.write Fpath.(dir / "Dockerfile") (dockerfile ^ "\n")
+    |> or_raise;
+    Bos.OS.File.write Fpath.(dir / ".dockerignore") dockerignore |> or_raise;
+    (* Don't cache Docker steps as revdeps requires the output of commands,
+       and the OCurrent cache deals with this anyway *)
+    let cmd =
+      Raw.Cmd.docker ~docker_context
+      @@ [ "build"; "--no-cache"; "--progress=plain"; "--"; Fpath.to_string dir ]
+    in
+    let pp_error_command f = Fmt.string f "Docker build" in
+    Current.Process.exec ~cancellable:true ~pp_error_command ~job cmd >>!=
+    parse_output ty job
 
-  let pp f { Key.commit; label; ty = _; variant } =
-    Fmt.pf f "test %a %a (%s)" Current_git.Commit.pp commit Variant.pp variant label
+  let pp f { Key.commit; ty = _; variant } =
+    Fmt.pf f "test %a %a" Current_git.Commit.pp commit Variant.pp variant
 
   let auto_cancel = true
 end
 
 module BC = Current_cache.Make(Op)
 
-let v ~label ~spec ~master ~urgent ~base commit =
+let v ~label ~spec ~base ~master ~urgent commit =
   Current.component "%s" label |>
   let> {Spec.platform; ty} = spec
   and> base
-  and> commit
+  and> commit = Git.fetch commit
   and> master
   and> urgent in
-  let t = { Op.config = Builder.local; master; urgent; base } in
-  BC.get t { commit; label; ty; variant = platform.variant }
+  let t = { Op.config = local_builder; master; urgent; base } in
+  BC.get t { commit; ty; variant = platform.variant }
+  |> Current.Primitive.map_result (Result.map ignore) (* TODO: Create a separate type of cache that doesn't parse the output *)
+
+let list_revdeps ~platform ~opam_version ~pkgopt ~base ~master ~after commit =
+  let label = "list revdeps" in
+  Current.component "%s" label |>
+  let> {PackageOpt.pkg; urgent; has_tests = _} = pkgopt
+  and> base
+  and> commit = Git.fetch commit
+  and> master
+  and> () = after in
+  let t = { Op.config = local_builder; master; urgent; base } in
+  let ty = `Opam (`List_revdeps {Spec.opam_version}, pkg) in
+  BC.get t { commit; ty; variant = platform.Platform.variant }
+  |> Current.Primitive.map_result (Result.map (fun output ->
+      String.split_on_char '\n' output |>
+      List.fold_left (fun acc -> function
+          | "" -> acc
+          | revdep ->
+              let revdep = OpamPackage.of_string revdep in
+              if OpamPackage.equal pkg revdep then
+                acc (* NOTE: opam list --recursive --depends-on <pkg> also returns <pkg> itself *)
+              else
+                OpamPackage.Set.add revdep acc
+        ) OpamPackage.Set.empty
+    ))
