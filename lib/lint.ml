@@ -183,11 +183,11 @@ module Check = struct
     in
     (!is_build, aux opam.OpamFile.OPAM.depends)
 
-  let check_dune_constraints ~is_macos ~errors ~pkg opam =
+  let check_dune_constraints ~host_is_macos ~errors ~pkg opam =
     match opam.OpamFile.OPAM.url with
     | Some url ->
         let get_dune_project_version =
-          if is_macos then get_dune_project_version_portable
+          if host_is_macos then get_dune_project_version_portable
           else get_dune_project_version
         in
         get_dune_project_version ~pkg url >|= fun dune_version ->
@@ -296,7 +296,7 @@ module Check = struct
       end errors
     end ()
 
-  let of_dir ~is_macos ~master ~job ~packages cwd =
+  let of_dir ~host_is_macos ~master ~job ~packages cwd =
     let master = Current_git.Commit.hash master in
     exec ~cwd ~job [|"git"; "merge"; "-q"; "--"; master|] >>/= fun () ->
     Lwt_list.fold_left_s (fun errors (pkg, kind) ->
@@ -308,7 +308,7 @@ module Check = struct
           let errors = check_name_field ~errors ~pkg opam in
           let errors = check_version_field ~errors ~pkg opam in
           let errors = check_dune_subst ~errors ~pkg opam in
-          check_dune_constraints ~is_macos ~errors ~pkg opam >>= fun errors ->
+          check_dune_constraints ~host_is_macos ~errors ~pkg opam >>= fun errors ->
           check_name_collisions ~errors ~pkg >>= fun errors ->
           (* Check directory structure correctness *)
           scan_dir ~cwd errors pkg >>= fun (errors, check_extra_files) ->
@@ -341,7 +341,7 @@ module Lint = struct
 
   module Value = struct
     type t = {
-      is_macos : bool
+      host_is_macos : bool
     } [@@deriving to_yojson]
 
     let digest t = Yojson.Safe.to_string @@ to_yojson t
@@ -403,10 +403,10 @@ module Lint = struct
           Fmt.str "Warning in %s: Possible name collision with package '%s'" pkg other_pkg
     )
 
-  let run {master} job { Key.src; packages } { Value.is_macos } =
+  let run {master} job { Key.src; packages } { Value.host_is_macos } =
     Current.Job.start job ~pool ~level:Current.Level.Harmless >>= fun () ->
     Current_git.with_checkout ~job src @@ fun dir ->
-    Check.of_dir ~is_macos ~master ~job ~packages dir >|= fun errors ->
+    Check.of_dir ~host_is_macos ~master ~job ~packages dir >|= fun errors ->
     let errors = msg_of_errors errors in
     List.iter (Current.Job.log job "%s") errors;
     match errors with
@@ -422,9 +422,10 @@ end
 
 module Lint_cache = Current_cache.Generic(Lint)
 
-let check ~is_macos ~master ~packages src =
+(** Locally run lint job in preemptive thread *)
+let check ~host_is_macos ~master ~packages src =
   Current.component "Lint" |>
   let> src
   and> packages
   and> master in
-  Lint_cache.run { master } { src; packages } { is_macos }
+  Lint_cache.run { master } { src; packages } { host_is_macos }
