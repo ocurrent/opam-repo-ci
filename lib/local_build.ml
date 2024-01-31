@@ -149,7 +149,7 @@ module Op = struct
       | `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) ->
           Opam_build.spec ~for_docker:true ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_tests ~pkg
     in
-    let base = 
+    let base =
       match base with
       | MacOS _s -> failwith "local macos docker not supported"
       | FreeBSD _s -> failwith "local freebsd docker not supported"

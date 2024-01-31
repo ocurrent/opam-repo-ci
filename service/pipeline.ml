@@ -92,8 +92,7 @@ module Build = struct
     let master_distro = Distro.tag_of_distro master_distro in
     (* The last eight releases of OCaml plus latest beta / release-candidate for each unreleased version. *)
     (* 4.02 -> 5.0 plus 5.1~alpha *)
-    (* (Ocaml_version.Releases.recent @ Ocaml_version.Releases.unreleased_betas) |> *)
-    Ocaml_version.Releases.recent |> List.rev |> fun x -> [ List.hd x] |>
+    (Ocaml_version.Releases.recent @ Ocaml_version.Releases.unreleased_betas) |>
     List.map (fun v ->
       let v = Ocaml_version.with_just_major_and_minor v in
       let revdeps = List.exists (Ocaml_version.equal v) default_compilers in (* TODO: Remove this when the cluster is ready *)
