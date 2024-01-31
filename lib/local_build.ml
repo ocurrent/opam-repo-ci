@@ -34,7 +34,7 @@ module Builder = struct
   }
 
   let local =
-    let pool = Current.Pool.create ~label:"docker" 4 in
+    let pool = Current.Pool.create ~label:"docker" 1 in
     (* Maximum time for one Docker build. *)
     let build_timeout = Duration.of_hour 1 in
     { docker_context = None; pool; build_timeout }
