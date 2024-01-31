@@ -27,6 +27,8 @@ type error =
   | FailedToDownload of string
   | NameCollision of string
 
+type host_os = Macos | Other [@@deriving to_yojson]
+
 module Check = struct
   type t = unit
 
@@ -183,12 +185,13 @@ module Check = struct
     in
     (!is_build, aux opam.OpamFile.OPAM.depends)
 
-  let check_dune_constraints ~host_is_macos ~errors ~pkg opam =
+  let check_dune_constraints ~host_os ~errors ~pkg opam =
     match opam.OpamFile.OPAM.url with
     | Some url ->
         let get_dune_project_version =
-          if host_is_macos then get_dune_project_version_portable
-          else get_dune_project_version
+          match host_os with
+          | Macos -> get_dune_project_version_portable
+          | Other -> get_dune_project_version
         in
         get_dune_project_version ~pkg url >|= fun dune_version ->
         let is_build, dune_constraint = get_dune_constraint opam in
@@ -296,7 +299,7 @@ module Check = struct
       end errors
     end ()
 
-  let of_dir ~host_is_macos ~master ~job ~packages cwd =
+  let of_dir ~host_os ~master ~job ~packages cwd =
     let master = Current_git.Commit.hash master in
     exec ~cwd ~job [|"git"; "merge"; "-q"; "--"; master|] >>/= fun () ->
     Lwt_list.fold_left_s (fun errors (pkg, kind) ->
@@ -308,7 +311,7 @@ module Check = struct
           let errors = check_name_field ~errors ~pkg opam in
           let errors = check_version_field ~errors ~pkg opam in
           let errors = check_dune_subst ~errors ~pkg opam in
-          check_dune_constraints ~host_is_macos ~errors ~pkg opam >>= fun errors ->
+          check_dune_constraints ~host_os ~errors ~pkg opam >>= fun errors ->
           check_name_collisions ~errors ~pkg >>= fun errors ->
           (* Check directory structure correctness *)
           scan_dir ~cwd errors pkg >>= fun (errors, check_extra_files) ->
@@ -341,7 +344,7 @@ module Lint = struct
 
   module Value = struct
     type t = {
-      host_os : string
+      host_os : host_os
     } [@@deriving to_yojson]
 
     let digest t = Yojson.Safe.to_string @@ to_yojson t
@@ -406,8 +409,7 @@ module Lint = struct
   let run {master} job { Key.src; packages } { Value.host_os } =
     Current.Job.start job ~pool ~level:Current.Level.Harmless >>= fun () ->
     Current_git.with_checkout ~job src @@ fun dir ->
-    let host_is_macos = String.equal host_os "macos" in
-    Check.of_dir ~host_is_macos ~master ~job ~packages dir >|= fun errors ->
+    Check.of_dir ~host_os ~master ~job ~packages dir >|= fun errors ->
     let errors = msg_of_errors errors in
     List.iter (Current.Job.log job "%s") errors;
     match errors with
@@ -429,4 +431,5 @@ let check ~host_os ~master ~packages src =
   let> src
   and> packages
   and> master in
+  let host_os = if String.equal host_os "macos" then Macos else Other in
   Lint_cache.run { master } { src; packages } { host_os }
