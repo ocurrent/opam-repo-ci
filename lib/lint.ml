@@ -341,7 +341,7 @@ module Lint = struct
 
   module Value = struct
     type t = {
-      host_is_macos : bool
+      host_os : string
     } [@@deriving to_yojson]
 
     let digest t = Yojson.Safe.to_string @@ to_yojson t
@@ -403,9 +403,10 @@ module Lint = struct
           Fmt.str "Warning in %s: Possible name collision with package '%s'" pkg other_pkg
     )
 
-  let run {master} job { Key.src; packages } { Value.host_is_macos } =
+  let run {master} job { Key.src; packages } { Value.host_os } =
     Current.Job.start job ~pool ~level:Current.Level.Harmless >>= fun () ->
     Current_git.with_checkout ~job src @@ fun dir ->
+    let host_is_macos = String.equal host_os "macos" in
     Check.of_dir ~host_is_macos ~master ~job ~packages dir >|= fun errors ->
     let errors = msg_of_errors errors in
     List.iter (Current.Job.log job "%s") errors;
@@ -423,9 +424,9 @@ end
 module Lint_cache = Current_cache.Generic(Lint)
 
 (** Locally run lint job in preemptive thread *)
-let check ~host_is_macos ~master ~packages src =
+let check ~host_os ~master ~packages src =
   Current.component "Lint" |>
   let> src
   and> packages
   and> master in
-  Lint_cache.run { master } { src; packages } { host_is_macos }
+  Lint_cache.run { master } { src; packages } { host_os }

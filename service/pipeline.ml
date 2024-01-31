@@ -7,28 +7,6 @@ module Docker = Current_docker.Default
 module Common = Opam_repo_ci_api.Common
 module Distro = Dockerfile_opam.Distro
 
-(* https://github.com/ocurrent/opam-repo-ci/issues/260 *)
-let host_is_macos =
-  Filename.quote_command "uname" ["-s"]
-  |> Unix.open_process_in
-  |> In_channel.input_line
-  |> Option.value ~default:"Linux"
-  |> String.equal "Darwin"
-
-let host_arch =
-  let arch =
-    Filename.quote_command "uname" ["-m"]
-    |> Unix.open_process_in
-    |> In_channel.input_line
-    |> Option.value ~default:"x86_64"
-  in
-  Ocaml_version.arch_of_string arch |> function
-  | Ok arch -> arch
-  | Error (`Msg _) ->
-    Logs.warn (fun m ->
-      m "Architecture couldn't be deduced from '%s', defaulting to x86-64" arch);
-    `X86_64
-
 let master_distro = (Distro.resolve_alias Distro.master_distro :> Distro.t)
 let default_compilers_full = Ocaml_version.Releases.[v4_14; Ocaml_version.Releases.latest] (* NOTE: Should probably stay with list length 2 *)
 let default_compilers = List.map Ocaml_version.with_just_major_and_minor default_compilers_full
@@ -389,8 +367,8 @@ module Build_with = struct
     let build = build_with_docker ~analysis ~pkgs ~master ~source in
     [
       Node.leaf ~label:"(lint)" (Node.action `Linted lint);
-      Node.branch ~label:"compilers" (compilers ~arch:host_arch ~build);
-      Node.branch ~label:"distributions" (linux_distributions ~arch:host_arch ~build);
+      Node.branch ~label:"compilers" (compilers ~arch:Conf.host_arch ~build);
+      Node.branch ~label:"distributions" (linux_distributions ~arch:Conf.host_arch ~build);
     ]
 end
 
@@ -554,7 +532,7 @@ let test_pr ~ocluster ~master ~head =
           (Analyse.Analysis.packages x))
         analysis
     in
-    Lint.check ~host_is_macos ~master ~packages src
+    Lint.check ~host_os:Conf.host_os ~master ~packages src
   in
   let builds =
     Node.root
@@ -614,7 +592,7 @@ let local_test_pr repo pr_branch () =
           (Analyse.Analysis.packages x))
         analysis
     in
-    Lint.check ~host_is_macos ~master ~packages pr_branch
+    Lint.check ~host_os:Conf.host_os ~master ~packages pr_branch
   in
   let builds =
     Node.root
