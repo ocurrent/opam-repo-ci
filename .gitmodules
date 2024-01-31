@@ -14,7 +14,3 @@
 	path = ocaml-version
 	url = https://github.com/ocurrent/ocaml-version.git
 	branch = master
-[submodule "opam"]
-	path = opam
-	url = https://github.com/ocaml/opam.git
-	branch = master
