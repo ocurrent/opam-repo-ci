@@ -113,7 +113,7 @@ let get_significant_available_pkg = function
   | _, {Analyse.Analysis.kind = Deleted | Unavailable | UnsignificantlyChanged; _} -> None
 
 module Build_with = struct
-  let compilers ~build =
+  let compilers ~arch ~build =
     let master_distro = Distro.tag_of_distro master_distro in
     (* The last eight releases of OCaml plus latest beta / release-candidate for each unreleased version. *)
     (* 4.02 -> 5.0 plus 5.1~alpha *)
@@ -122,11 +122,11 @@ module Build_with = struct
       let v = Ocaml_version.with_just_major_and_minor v in
       let revdeps = List.exists (Ocaml_version.equal v) default_compilers in (* TODO: Remove this when the cluster is ready *)
       let v = Ocaml_version.to_string v in
-      let variant = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(v, None) in
+      let variant = Variant.v ~arch ~distro:master_distro ~compiler:(v, None) in
       build ~opam_version ~lower_bounds:true ~revdeps v variant
     )
 
-  let linux_distributions ~build =
+  let linux_distributions ~arch ~build =
     let build ~distro ~arch ~compiler =
       let variant = Variant.v ~arch ~distro ~compiler in
       let label = Fmt.str "%s-ocaml-%s" distro (Variant.pp_ocaml_version variant) in
@@ -142,8 +142,8 @@ module Build_with = struct
             acc
         | _ ->
             let distro = Distro.tag_of_distro distro in
-            build ~arch:`X86_64 ~distro ~compiler:(comp, None) :: acc
-      ) acc (Distro.active_distros `X86_64)
+            build ~arch ~distro ~compiler:(comp, None) :: acc
+      ) acc (Distro.active_distros arch)
     ) [] default_compilers
 
   let macos ~build =
@@ -174,7 +174,7 @@ module Build_with = struct
       ) acc [`X86_64]
     ) [] default_compilers
 
-  (** Non-linux-x86_64 compiler variants. eg macos, ls390x, arm64, flambda, afl etc *)
+  (** Non-linux-x86_64 compiler variants. eg ls390x, arm64, flambda, afl etc *)
   let extras ~build =
     let build ~opam_version ~distro ~arch ~compiler label =
       let variant = Variant.v ~arch ~distro ~compiler in
@@ -345,6 +345,7 @@ module Build_with = struct
     |> (fun x -> Node.branch ~label [x])
     |> Node.collapse ~key:"platform" ~value:label ~input:analysis
 
+  (** Build jobs on a cluster *)
   let cluster ~ocluster ~analysis ~lint ~master source =
     ignore (linux_distributions, macos, freebsd, extras);
     let pkgs = Current.map (fun x -> Analyse.Analysis.packages x
@@ -352,21 +353,22 @@ module Build_with = struct
     let build = build_with_cluster ~ocluster ~analysis ~pkgs ~master ~source in
     [
       Node.leaf ~label:"(lint)" (Node.action `Linted lint);
-      Node.branch ~label:"compilers" (compilers ~build);
-      Node.branch ~label:"distributions" (linux_distributions ~build);
+      Node.branch ~label:"compilers" (compilers ~arch:`X86_64 ~build);
+      Node.branch ~label:"distributions" (linux_distributions ~arch:`X86_64 ~build);
       Node.branch ~label:"macos" (macos ~build);
       Node.branch ~label:"freebsd" (freebsd ~build);
       Node.branch ~label:"extras" (extras ~build);
     ]
 
+  (** Build jobs locally with Docker *)
   let docker ~analysis ~lint ~master source =
     let pkgs = Current.map (fun x -> Analyse.Analysis.packages x
       |> List.filter_map get_significant_available_pkg) analysis in
     let build = build_with_docker ~analysis ~pkgs ~master ~source in
     [
       Node.leaf ~label:"(lint)" (Node.action `Linted lint);
-      Node.branch ~label:"compilers" (compilers ~build);
-      Node.branch ~label:"distributions" (linux_distributions ~build);
+      Node.branch ~label:"compilers" (compilers ~arch:Conf.host_arch ~build);
+      Node.branch ~label:"distributions" (linux_distributions ~arch:Conf.host_arch ~build);
     ]
 end
 
@@ -515,7 +517,7 @@ let summarise ~repo ~hash builds =
   in
   summary
 
-let test_pr ~is_macos ~ocluster ~master ~head =
+let test_pr ~ocluster ~master ~head =
   let repo = Current.map Current_github.Api.Commit.repo_id head in
   let commit_id = Current.map Github.Api.Commit.id head in
   let hash = Current.map Git.Commit_id.hash commit_id in
@@ -530,7 +532,7 @@ let test_pr ~is_macos ~ocluster ~master ~head =
           (Analyse.Analysis.packages x))
         analysis
     in
-    Lint.check ~is_macos ~master ~packages src
+    Lint.check ~host_os:Conf.host_os ~master ~packages src
   in
   let builds =
     Node.root
@@ -545,12 +547,12 @@ let github_set_statuses ~head statuses =
   in
   ()
 
-let test_repo ~is_macos ~ocluster ~push_status repo =
+let test_repo ~ocluster ~push_status repo =
   let master, prs = get_prs repo in
   let master = latch ~label:"master" master in  (* Don't cancel builds while fetching updates to this *)
   let prs = set_active_refs ~repo prs in
   prs |> Current.list_iter ~collapse_key:"pr" (module Github.Api.Commit) @@ fun head ->
-    test_pr ~is_macos ~ocluster ~master ~head
+    test_pr ~ocluster ~master ~head
     |> github_status_of_state ~head
     |> (if push_status then github_set_statuses ~head
         else Current.ignore_value)
@@ -560,7 +562,7 @@ let set_metrics_primary_repo repo =
   let+ repo = repo in
   Metrics.set_primary_repo repo
 
-let v ~is_macos ~ocluster ~app () =
+let v ~ocluster ~app () =
   let ocluster = Cluster_build.config ~timeout:Conf.build_timeout ocluster in
   let installations = Github.App.installations app |> set_active_installations in
   installations |> Current.list_iter (module Github.Installation) @@ fun installation ->
@@ -568,7 +570,7 @@ let v ~is_macos ~ocluster ~app () =
   repos |> Current.list_iter (module Github.Api.Repo) @@ fun repo ->
   Current.all [
     set_metrics_primary_repo repo;
-    test_repo ~is_macos ~ocluster ~push_status:(Conf.profile = `Production) repo
+    test_repo ~ocluster ~push_status:(Conf.profile = `Production) repo
   ]
 
 let set_index_local ~repo gref hash =
@@ -577,7 +579,7 @@ let set_index_local ~repo gref hash =
   Index.(set_active_accounts @@ Account_set.singleton repo.Github.Repo_id.owner);
   Index.set_active_refs ~repo [(gref, hash)]
 
-let local_test_pr ~is_macos repo pr_branch () =
+let local_test_pr repo pr_branch () =
   let master = Git.Local.commit_of_ref repo "refs/heads/master" in
   let pr_gref = Printf.sprintf "refs/heads/%s" pr_branch in
   let pr_branch = Git.Local.commit_of_ref repo pr_gref in
@@ -590,7 +592,7 @@ let local_test_pr ~is_macos repo pr_branch () =
           (Analyse.Analysis.packages x))
         analysis
     in
-    Lint.check ~is_macos ~master ~packages pr_branch
+    Lint.check ~host_os:Conf.host_os ~master ~packages pr_branch
   in
   let builds =
     Node.root
