@@ -25,6 +25,7 @@ type error =
   | ForbiddenPerm of string
   | OpamLint of (int * [`Warning | `Error] * string)
   | FailedToDownload of string
+  | NameCollision of string
 
 module Check = struct
   type t = unit
@@ -211,6 +212,90 @@ module Check = struct
     | None ->
         Lwt.return errors
 
+  (** [package_name_collision p0 p1] returns true if [p0] is similar to [p1].
+    Similarity is defined to be case-insensitive string equality
+    considering '_' and '-' to be equal. As examples, by this relation:
+
+    - "lru-cache" and "lru_cache" collide
+    - "lru-cache" and "LRU-cache" collide
+    - "lru-cache" and "cache-lru" do not collide *)
+  let package_name_collision p0 p1 =
+    let f = function
+      | '_' -> '-'
+      | c -> c
+    in
+    let p0 = String.map f @@ String.lowercase_ascii p0 in
+    let p1 = String.map f @@ String.lowercase_ascii p1 in
+    String.equal p0 p1
+
+  let check_name_collisions ~errors ~pkg =
+    let pkg_name =
+      pkg.OpamPackage.name |> OpamPackage.Name.to_string
+    in
+    Lwt_preemptive.detach begin fun () ->
+      let ch = Unix.open_process_in "opam list --all --short --color=never" in
+      let packages = In_channel.input_all ch in
+      begin match Unix.close_process_in ch with
+        | Unix.WEXITED 0 -> ()
+        | _ -> failwith "Failed to get packages with 'opam list --all'"
+      end;
+      let packages =
+        String.split_on_char '\n' packages
+        |> List.filter (fun s ->
+          not @@ (String.equal s "" || String.equal s pkg_name))
+      in
+      List.fold_left
+        (fun errors other_pkg ->
+          if package_name_collision pkg_name other_pkg then
+            (pkg, NameCollision other_pkg) :: errors
+          else
+            errors)
+        errors packages
+    end ()
+
+  let check_name_field ~errors ~pkg opam =
+    match OpamFile.OPAM.name_opt opam with
+    | None -> errors
+    | Some name ->
+        if OpamPackage.Name.equal name (OpamPackage.name pkg) then
+          (pkg, UnnecessaryField "name") :: errors
+        else
+          (pkg, UnmatchedName name) :: errors
+
+  let check_version_field ~errors ~pkg opam =
+    match OpamFile.OPAM.version_opt opam with
+    | None -> errors
+    | Some version ->
+        if OpamPackage.Version.equal version (OpamPackage.version pkg) then
+          (pkg, UnnecessaryField "version") :: errors
+        else
+          (pkg, UnmatchedVersion version) :: errors
+
+  let check_dune_subst ~errors ~pkg opam =
+    List.fold_left
+      (fun errors -> function
+          | OpamTypes.([(CString "dune", None); (CString "subst", None)], filter) ->
+              begin match filter with
+              | Some (OpamTypes.FIdent ([], var, None)) when
+                  String.equal (OpamVariable.to_string var) "dev" -> errors
+              | _ -> (pkg, DubiousDuneSubst) :: errors
+              end
+          | _ -> errors
+      )
+      errors
+      opam.OpamFile.OPAM.build
+
+  let opam_lint ~check_extra_files ~errors ~pkg opam =
+    Lwt_preemptive.detach begin fun () ->
+      OpamFileTools.lint ~check_extra_files ~check_upstream:true opam |>
+      List.fold_left begin fun errors -> function
+        | (67, _, _) -> errors (* TODO: Disable error 67 (Checksum specified with a non archive url) while discussing a fix:
+                                  - https://github.com/ocaml/opam/pull/4834
+                                  - https://github.com/ocaml/opam/pull/4960 *)
+        | x -> (pkg, OpamLint x) :: errors
+      end errors
+    end ()
+
   let of_dir ~is_macos ~master ~job ~packages cwd =
     let master = Current_git.Commit.hash master in
     exec ~cwd ~job [|"git"; "merge"; "-q"; "--"; master|] >>/= fun () ->
@@ -220,53 +305,14 @@ module Check = struct
           Lwt.return errors (* TODO *)
       | Analyse.Analysis.(New | Unavailable | SignificantlyChanged | UnsignificantlyChanged) ->
           get_opam ~cwd pkg >>= fun opam ->
-          (* Check name field *)
-          let errors = match OpamFile.OPAM.name_opt opam with
-            | None -> errors
-            | Some name ->
-                if OpamPackage.Name.equal name (OpamPackage.name pkg) then
-                  (pkg, UnnecessaryField "name") :: errors
-                else
-                  (pkg, UnmatchedName name) :: errors
-          in
-          (* Check version field *)
-          let errors = match OpamFile.OPAM.version_opt opam with
-            | None -> errors
-            | Some version ->
-                if OpamPackage.Version.equal version (OpamPackage.version pkg) then
-                  (pkg, UnnecessaryField "version") :: errors
-                else
-                  (pkg, UnmatchedVersion version) :: errors
-          in
-          (* Check correct use of dune subst *)
-          let errors =
-            List.fold_left
-              (fun errors -> function
-                 | OpamTypes.([(CString "dune", None); (CString "subst", None)], filter) ->
-                     begin match filter with
-                     | Some (OpamTypes.FIdent ([], var, None)) when
-                         String.equal (OpamVariable.to_string var) "dev" -> errors
-                     | _ -> (pkg, DubiousDuneSubst) :: errors
-                     end
-                 | _ -> errors
-              )
-              errors
-              opam.OpamFile.OPAM.build
-          in
-          (* Check correct constraint for dune *)
+          let errors = check_name_field ~errors ~pkg opam in
+          let errors = check_version_field ~errors ~pkg opam in
+          let errors = check_dune_subst ~errors ~pkg opam in
           check_dune_constraints ~is_macos ~errors ~pkg opam >>= fun errors ->
+          check_name_collisions ~errors ~pkg >>= fun errors ->
           (* Check directory structure correctness *)
           scan_dir ~cwd errors pkg >>= fun (errors, check_extra_files) ->
-          (* opam lint *)
-          Lwt_preemptive.detach begin fun () ->
-            OpamFileTools.lint ~check_extra_files ~check_upstream:true opam |>
-            List.fold_left begin fun errors -> function
-              | (67, _, _) -> errors (* TODO: Disable error 67 (Checksum specified with a non archive url) while discussing a fix:
-                                        - https://github.com/ocaml/opam/pull/4834
-                                        - https://github.com/ocaml/opam/pull/4960 *)
-              | x -> (pkg, OpamLint x) :: errors
-            end errors
-          end () >>= fun errors ->
+          opam_lint ~check_extra_files ~errors ~pkg opam >>= fun errors ->
           Lwt.return errors
     ) [] packages
 end
@@ -353,6 +399,8 @@ module Lint = struct
           Fmt.str "Error in %s: %s" pkg warn
       | FailedToDownload msg ->
           Fmt.str "Error in %s: Failed to download the archive. Details: %s" pkg msg
+      | NameCollision other_pkg ->
+          Fmt.str "Warning in %s: Possible name collision with package '%s'" pkg other_pkg
     )
 
   let run {master} job { Key.src; packages } { Value.is_macos } =
