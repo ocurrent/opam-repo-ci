@@ -32,15 +32,8 @@ depends: [
   "capnp-rpc-lwt" {>= "0.8.0"}
   "capnp-rpc-unix" {>= "0.8.0"}
   "opam-repo-ci-api"
-  # "opam-state" {>= "2.1.0~beta4"}
-  # "opam-format" {>= "2.1.0~beta4"}
-  "sha" # needed for the opam vendor
-  "re" # needed for the opam vendor
-  "ocamlgraph" # needed for the opam vendor
-  "cppo" # needed for the opam vendor
-  "spdx_licenses" # needed for the opam vendor
-  "jsonm" # needed for the opam vendor
-  "swhid_core" # needed for the opam vendor
+  "opam-state" {>= "2.2.0~beta1"}
+  "opam-format" {>= "2.2.0~beta1"}
   "opam-file-format" {>= "2.1.2"}
   "sexplib" {>= "v0.14.0"}
   "conf-libev"
