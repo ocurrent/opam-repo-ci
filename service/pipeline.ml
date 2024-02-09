@@ -82,37 +82,12 @@ let revdep_spec ~platform ~opam_version ~revdep pkg =
   in
   Spec.opam ~platform ~lower_bounds:false ~with_tests:true ~revdep ~opam_version pkg
 
-(* List the revdeps of [pkg] (using [builder] and [image]) and test each one
-   (using [spec] and [base], merging [source] into [master]). *)
-let test_revdeps ~ocluster ~opam_version ~master ~base ~platform ~pkgopt ~after source =
-  let revdeps =
-    Cluster_build.list_revdeps ~opam_version ~base ocluster ~platform ~pkgopt ~master ~after source
-    |> Current.map OpamPackage.Set.elements
-  in
-  let pkg = Current.map (fun {PackageOpt.pkg = pkg; urgent = _; has_tests = _} -> pkg) pkgopt in
-  let urgent = Current.map (fun {PackageOpt.pkg = _; urgent; has_tests = _} -> urgent) pkgopt in
-  let tests =
-    revdeps
-    |> Node.list_map (module OpamPackage) (fun revdep ->
-        let image =
-          let spec = revdep_spec ~platform ~opam_version ~revdep pkg in
-          Cluster_build.v ocluster ~label:"build" ~base ~spec ~master ~urgent source
-        in
-        let label = Current.map OpamPackage.to_string revdep
-        and build = Node.action `Built image
-        in
-        Node.leaf_dyn ~label build
-      )
-  and list_revdeps = Node.action `Analysed revdeps
-  in
-  Node.actioned_branch ~label:"revdeps" list_revdeps [tests]
-
 let get_significant_available_pkg = function
   | pkg, {Analyse.Analysis.kind = New; has_tests} -> Some {PackageOpt.pkg; urgent = None; has_tests}
   | pkg, {Analyse.Analysis.kind = SignificantlyChanged; has_tests} -> Some {PackageOpt.pkg; urgent = Some (fun (`High | `Low) -> false); has_tests}
   | _, {Analyse.Analysis.kind = Deleted | Unavailable | UnsignificantlyChanged; _} -> None
 
-module Build_with = struct
+module Build = struct
   let compilers ~arch ~build =
     let master_distro = Distro.tag_of_distro master_distro in
     (* The last eight releases of OCaml plus latest beta / release-candidate for each unreleased version. *)
@@ -206,7 +181,32 @@ module Build_with = struct
       acc
     ) [] default_compilers_full
 
-  let build_with_cluster ~ocluster ~analysis ~pkgs ~master ~source ~opam_version ~lower_bounds ~revdeps label variant =
+  (** List the revdeps of [pkg] (using [builder] and [image]) and test each one
+      (using [spec] and [base], merging [source] into [master]). *)
+  let test_revdeps (module Builder : Build_intf.S) ~opam_version ~master ~base ~platform ~pkgopt ~after source =
+    let revdeps =
+      Builder.list_revdeps ~opam_version ~base ~platform ~pkgopt ~master ~after source
+      |> Current.map OpamPackage.Set.elements
+    in
+    let pkg = Current.map (fun {PackageOpt.pkg = pkg; urgent = _; has_tests = _} -> pkg) pkgopt in
+    let urgent = Current.map (fun {PackageOpt.pkg = _; urgent; has_tests = _} -> urgent) pkgopt in
+    let tests =
+      revdeps
+      |> Node.list_map (module OpamPackage) (fun revdep ->
+          let image =
+            let spec = revdep_spec ~platform ~opam_version ~revdep pkg in
+            Builder.v ~label:"build" ~base ~spec ~master ~urgent source
+          in
+          let label = Current.map OpamPackage.to_string revdep
+          and build = Node.action `Built image
+          in
+          Node.leaf_dyn ~label build
+        )
+    and list_revdeps = Node.action `Analysed revdeps
+    in
+    Node.actioned_branch ~label:"revdeps" list_revdeps [tests]
+
+  let build (module Builder : Build_intf.S) ~analysis ~pkgs ~master ~source ~opam_version ~lower_bounds ~revdeps label variant =
     let arch = Variant.arch variant in
     let pool = Conf.pool_of_arch variant in (* ocluster-pool eg linux-x86_64 *)
     let platform = {Platform.label; pool; variant} in
@@ -238,14 +238,14 @@ module Build_with = struct
         in
         let image =
           let spec = build_spec ~platform ~opam_version pkg in
-          Cluster_build.v ocluster ~label:"build" ~base ~spec ~master ~urgent source
+          Builder.v ~label:"build" ~spec ~base ~master ~urgent source
         in
         let build = Node.action `Built image
         and tests =
           Node.bool_map (fun () ->
             let action =
               let spec = test_spec ~platform ~opam_version pkg in
-              Cluster_build.v ocluster ~label:"test" ~base ~spec ~master ~urgent source
+              Builder.v ~label:"test" ~spec ~base ~master ~urgent source
             in
             let action = Node.action `Built action in
             Node.leaf ~label:"tests" action
@@ -254,19 +254,17 @@ module Build_with = struct
           if lower_bounds then
             let action =
               let spec = lower_bounds_spec ~platform ~opam_version pkg in
-              Cluster_build.v ocluster ~label:"lower-bounds" ~base ~spec ~master ~urgent source
+              Builder.v ~label:"lower-bounds" ~spec ~base ~master ~urgent source
             in
             let action = Node.action `Built action in
             Node.leaf ~label:"lower-bounds" action
           else
             Node.empty
         and revdeps =
-          if revdeps then test_revdeps ~ocluster ~opam_version ~master ~base ~platform ~pkgopt source ~after:image
+          if revdeps then test_revdeps (module Builder) ~opam_version ~master ~base ~platform ~pkgopt source ~after:image
           else Node.empty
         in
         let label = Current.map OpamPackage.to_string pkg in
-        ignore revdeps;
-        ignore test_revdeps;
         Node.actioned_branch_dyn ~label build [
           tests;
           lower_bounds_check;
@@ -276,81 +274,14 @@ module Build_with = struct
     |> (fun x -> Node.branch ~label [x])
     |> Node.collapse ~key:"platform" ~value:label ~input:analysis
 
-  let build_with_docker ~analysis ~pkgs ~master ~source ~opam_version ~lower_bounds ~revdeps label variant =
-    ignore revdeps;
-    let arch = Variant.arch variant in
-    let pool = Conf.pool_of_arch variant in (* ocluster-pool eg linux-x86_64 *)
-    let platform = {Platform.label; pool; variant} in
-    let analysis = with_label label analysis in
-    let pkgs =
-      (* Add fake dependency from pkgs to analysis so that the package being tested appears
-        below the platform, to make the diagram look nicer. Ideally, the pulls of the
-        base images should be moved to the top (not be per-package at all). *)
-      let+ _ = analysis
-      and+ pkgs in
-      pkgs
-    in
-    pkgs |> Node.list_map ~collapse_key:"pkg" (module PackageOpt) (fun pkgopt ->
-        let pkg = Current.map (fun {PackageOpt.pkg; urgent = _; has_tests = _} -> pkg) pkgopt in
-        let urgent = Current.return None in
-        let has_tests = Current.map (fun {PackageOpt.pkg = _; urgent = _; has_tests} -> has_tests) pkgopt in
-        let base =
-          match Variant.os variant with
-          | `macOS ->
-              Current.return (Spec.MacOS (Variant.docker_tag variant))
-          | `FreeBSD ->
-              Current.return (Spec.FreeBSD (Variant.docker_tag variant))
-          | `linux -> (* TODO: Use docker images as base for both macOS and linux *)
-              let+ repo_id =
-                Docker.peek ~schedule:weekly ~arch:(Ocaml_version.to_docker_arch arch)
-                  ("ocaml/opam:" ^ Variant.docker_tag variant)
-              in
-              Spec.Docker (Current_docker.Raw.Image.of_hash repo_id)
-        in
-        let image =
-          let spec = build_spec ~platform ~opam_version pkg in
-          Local_build.v ~label:"build" ~base ~spec ~master ~urgent source
-        in
-        let build = Node.action `Built image
-        and tests =
-          Node.bool_map (fun () ->
-            let action =
-              let spec = test_spec ~platform ~opam_version pkg in
-              Local_build.v ~label:"test" ~base ~spec ~master ~urgent source
-            in
-            let action = Node.action `Built action in
-            Node.leaf ~label:"tests" action
-          ) has_tests
-        and lower_bounds_check =
-          if lower_bounds then
-            let action =
-              let spec = lower_bounds_spec ~platform ~opam_version pkg in
-              Local_build.v ~label:"lower-bounds" ~base ~spec ~master ~urgent source
-            in
-            let action = Node.action `Built action in
-            Node.leaf ~label:"lower-bounds" action
-          else
-            Node.empty
-        (* and revdeps =
-          if revdeps then test_revdeps ~ocluster ~opam_version ~master ~base ~platform ~pkgopt source ~after:image
-          else Node.empty *)
-        in
-        let label = Current.map OpamPackage.to_string pkg in
-        Node.actioned_branch_dyn ~label build [
-          tests;
-          lower_bounds_check;
-          (* revdeps; *)
-        ]
-      )
-    |> (fun x -> Node.branch ~label [x])
-    |> Node.collapse ~key:"platform" ~value:label ~input:analysis
-
-  (** Build jobs on a cluster *)
-  let cluster ~ocluster ~analysis ~lint ~master source =
-    ignore (linux_distributions, macos, freebsd, extras);
+  let with_cluster ~ocluster ~analysis ~lint ~master source =
+    let module Builder : Build_intf.S = struct
+      let v = Cluster_build.v ocluster
+      let list_revdeps = Cluster_build.list_revdeps ocluster
+    end in
     let pkgs = Current.map (fun x -> Analyse.Analysis.packages x
       |> List.filter_map get_significant_available_pkg) analysis in
-    let build = build_with_cluster ~ocluster ~analysis ~pkgs ~master ~source in
+    let build = build (module Builder) ~analysis ~pkgs ~master ~source in
     [
       Node.leaf ~label:"(lint)" (Node.action `Linted lint);
       Node.branch ~label:"compilers" (compilers ~arch:`X86_64 ~build);
@@ -360,11 +291,11 @@ module Build_with = struct
       Node.branch ~label:"extras" (extras ~build);
     ]
 
-  (** Build jobs locally with Docker *)
-  let docker ~analysis ~lint ~master source =
+  let with_docker ~analysis ~lint ~master source =
+    let module Builder : Build_intf.S = Local_build in
     let pkgs = Current.map (fun x -> Analyse.Analysis.packages x
       |> List.filter_map get_significant_available_pkg) analysis in
-    let build = build_with_docker ~analysis ~pkgs ~master ~source in
+    let build = build (module Builder) ~analysis ~pkgs ~master ~source in
     [
       Node.leaf ~label:"(lint)" (Node.action `Linted lint);
       Node.branch ~label:"compilers" (compilers ~arch:Conf.host_arch ~build);
@@ -537,7 +468,7 @@ let test_pr ~ocluster ~master ~head =
   let builds =
     Node.root
       (Node.leaf ~label:"(analysis)" (Node.action `Analysed latest_analysis)
-      :: Build_with.cluster ~ocluster ~analysis ~lint ~master commit_id)
+      :: Build.with_cluster ~ocluster ~analysis ~lint ~master commit_id)
   in
   summarise ~repo ~hash builds
 
@@ -583,6 +514,7 @@ let local_test_pr repo pr_branch () =
   let master = Git.Local.commit_of_ref repo "refs/heads/master" in
   let pr_gref = Printf.sprintf "refs/heads/%s" pr_branch in
   let pr_branch = Git.Local.commit_of_ref repo pr_gref in
+  let pr_branch_id = Current.map Git.Commit.id pr_branch in
   let analysis = analyze ~master pr_branch in
   let lint =
     let packages =
@@ -597,7 +529,7 @@ let local_test_pr repo pr_branch () =
   let builds =
     Node.root
       (Node.leaf ~label:"(analysis)" (Node.action `Analysed analysis)
-      :: Build_with.docker ~analysis ~lint ~master pr_branch)
+      :: Build.with_docker ~analysis ~lint ~master pr_branch_id)
   in
   let dummy_repo =
     Current.return { Github.Repo_id.owner = "local-owner"; name = "local-repo" }

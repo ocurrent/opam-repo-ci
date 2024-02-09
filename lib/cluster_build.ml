@@ -66,6 +66,21 @@ module Op = struct
 
   module Value = Current.String
 
+  let parse_output ty job build_job =
+    let buffer =
+      match ty with
+      | `Opam (`List_revdeps _, _) -> Some (Buffer.create 1024)
+      | _ -> None
+    in
+    Capability.with_ref build_job (run_job ?buffer ~job) >>!= fun (_ : string) ->
+    match buffer with
+    | None -> Lwt_result.return ""
+    | Some buffer ->
+      match Astring.String.cuts ~sep:"\n@@@OUTPUT\n" (Buffer.contents buffer) with
+      | [_; output; _] -> Lwt_result.return output
+      | [_; rest ] when Astring.String.is_prefix ~affix:"@@@OUTPUT\n" rest -> Lwt_result.return ""
+      | _ -> Lwt_result.fail (`Msg "Missing output from command")
+
   let build { config = { connection; timeout }; master; urgent; base } job { Key.pool; commit; variant; ty } =
     let master = Current_git.Commit.hash master in
     let os = match Variant.os variant with
@@ -74,8 +89,10 @@ module Op = struct
     let build_spec ~for_docker =
       let base = Spec.base_to_string base in
       match ty with
-      | `Opam (`List_revdeps { opam_version }, pkg) -> Opam_build.revdeps ~for_docker ~opam_version ~base ~variant ~pkg
-      | `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) -> Opam_build.spec ~for_docker ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_tests ~pkg
+      | `Opam (`List_revdeps { opam_version }, pkg) ->
+          Opam_build.revdeps ~for_docker ~opam_version ~base ~variant ~pkg
+      | `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) ->
+          Opam_build.spec ~for_docker ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_tests ~pkg
     in
     Current.Job.write job
       (Fmt.str "@.\
@@ -106,20 +123,8 @@ module Op = struct
     Current.Job.log job "Using cache hint %S" cache_hint;
     Current.Job.log job "Using OBuilder spec:@.%s@." spec_str;
     let build_pool = Current_ocluster.Connection.pool ?urgent ~job ~pool ~action ~cache_hint ~src connection in
-    Current.Job.start_with ~pool:build_pool job ~timeout ~level:Current.Level.Average >>= fun build_job ->
-    let buffer =
-      match ty with
-      | `Opam (`List_revdeps _, _) -> Some (Buffer.create 1024)
-      | _ -> None
-    in
-    Capability.with_ref build_job (run_job ?buffer ~job) >>!= fun (_ : string) ->
-    match buffer with
-    | None -> Lwt_result.return ""
-    | Some buffer ->
-      match Astring.String.cuts ~sep:"\n@@@OUTPUT\n" (Buffer.contents buffer) with
-      | [_; output; _] -> Lwt_result.return output
-      | [_; rest ] when Astring.String.is_prefix ~affix:"@@@OUTPUT\n" rest -> Lwt_result.return ""
-      | _ -> Lwt_result.fail (`Msg "Missing output from command")
+    Current.Job.start_with ~pool:build_pool job ~timeout ~level:Current.Level.Average >>=
+    parse_output ty job
 
   let pp f { Key.pool = _; commit; variant; ty } =
     Fmt.pf f "@[<v>%a@,from %a@,on %a@]"
