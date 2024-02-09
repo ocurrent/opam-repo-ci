@@ -3,9 +3,9 @@ let fmt = Fmt.str
 let download_cache = "opam-archives"
 let cache ~variant =
   match Variant.os variant with
-  | `linux -> [ Obuilder_spec.Cache.v download_cache ~target:"/home/opam/.opam/download-cache" ]
-  | `FreeBSD -> [ Obuilder_spec.Cache.v download_cache ~target:"/usr/home/opam/.opam/download-cache" ]
-  | `macOS -> [ Obuilder_spec.Cache.v download_cache ~target:"/Users/mac1000/.opam/download-cache";
+  | `Linux -> [ Obuilder_spec.Cache.v download_cache ~target:"/home/opam/.opam/download-cache" ]
+  | `Freebsd -> [ Obuilder_spec.Cache.v download_cache ~target:"/usr/home/opam/.opam/download-cache" ]
+  | `Macos -> [ Obuilder_spec.Cache.v download_cache ~target:"/Users/mac1000/.opam/download-cache";
                 Obuilder_spec.Cache.v "homebrew" ~target:"/Users/mac1000/Library/Caches/Homebrew" ]
 let network = ["host"]
 
@@ -82,18 +82,18 @@ let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
 let setup_repository ~variant ~for_docker ~opam_version =
   let open Obuilder_spec in
   let home_dir = match Variant.os variant with
-    | `macOS -> None
-    | `FreeBSD -> Some "/usr/home/opam"
-    | `linux -> Some "/home/opam"
+    | `Macos -> None
+    | `Freebsd -> Some "/usr/home/opam"
+    | `Linux -> Some "/home/opam"
   in
   let prefix = match Variant.os variant with
-    | `macOS -> "~/local"
-    | `FreeBSD -> "/usr/local"
-    | `linux -> "/usr"
+    | `Macos -> "~/local"
+    | `Freebsd -> "/usr/local"
+    | `Linux -> "/usr"
   in
   let ln = match Variant.os variant with
-    | `macOS -> "ln"
-    | `FreeBSD | `linux -> "sudo ln"
+    | `Macos -> "ln"
+    | `Freebsd | `Linux -> "sudo ln"
   in
   let opam_version_str = match opam_version with
     | `V2_0 -> "2.0"
@@ -101,20 +101,20 @@ let setup_repository ~variant ~for_docker ~opam_version =
     | `Dev -> "dev"
   in
   let opam_repo_args = match Variant.os variant with
-    | `macOS -> " -k local" (* TODO: (copy ...) do not copy the content of .git or something like that and make the subsequent opam pin fail *)
-    | `FreeBSD | `linux -> ""
+    | `Macos -> " -k local" (* TODO: (copy ...) do not copy the content of .git or something like that and make the subsequent opam pin fail *)
+    | `Freebsd | `Linux -> ""
   in
   let opamrc = match Variant.os variant with
     (* NOTE: [for_docker] is required because docker does not support bubblewrap in docker build *)
     (* docker run has --privileged but docker build does not have it *)
     (* so we need to remove the part re-enabling the sandbox. *)
-    | `linux when not for_docker -> " --config .opamrc-sandbox"
-    | `FreeBSD | `macOS | `linux -> ""
-    (* TODO: On macOS, the sandbox is always (and should be) enabled by default but does not have those ~/.opamrc-sandbox files *)
+    | `Linux when not for_docker -> " --config .opamrc-sandbox"
+    | `Freebsd | `Macos | `Linux -> ""
+    (* TODO: On MacOS, the sandbox is always (and should be) enabled by default but does not have those ~/.opamrc-sandbox files *)
   in
   user_unix ~uid:1000 ~gid:1000 ::
   (match home_dir with Some home_dir -> [workdir home_dir] | None -> []) @
-  (* TODO: macOS seems to have a bug in (copy ...) so I am forced to remove the (workdir ...) here.
+  (* TODO: MacOS seems to have a bug in (copy ...) so I am forced to remove the (workdir ...) here.
      Otherwise the "opam pin" after the "opam repository set-url" will fail (cannot find the new package for some reason) *)
   run "%s -f %s/bin/opam-%s %s/bin/opam" ln prefix opam_version_str prefix ::
   run ~network "opam init --reinit%s -ni" opamrc :: (* TODO: Remove ~network when https://github.com/ocurrent/ocaml-dockerfile/pull/132 is merged *)

@@ -35,6 +35,21 @@ let run_job ?buffer ~job build_job =
   | Error (`Capnp e) -> Lwt_result.fail (`Msg (Fmt.to_to_string Capnp_rpc.Error.pp e))
   | Ok _ as x -> Lwt.return x
 
+let pool_of_variant v =
+  let os = match Variant.os v with
+    | `Macos -> "macos"
+    | `Freebsd -> "freebsd"
+    | `Linux -> "linux"
+  in
+  let arch = match Variant.arch v with
+    | `X86_64 | `I386 -> "x86_64"
+    | `Aarch32 | `Aarch64 -> "arm64"
+    | `Ppc64le -> "ppc64"
+    | `S390x -> "s390x"
+    | `Riscv64 -> "riscv64"
+  in
+  os^"-"^arch
+
 module Op = struct
   type nonrec t = {
     config : t;
@@ -81,10 +96,12 @@ module Op = struct
       | [_; rest ] when Astring.String.is_prefix ~affix:"@@@OUTPUT\n" rest -> Lwt_result.return ""
       | _ -> Lwt_result.fail (`Msg "Missing output from command")
 
-  let build { config = { connection; timeout }; master; urgent; base } job { Key.pool; commit; variant; ty } =
+  let build { config; master; urgent; base } job
+      { Key.pool; commit; variant; ty } =
+    let { connection; timeout } = config in
     let master = Current_git.Commit.hash master in
     let os = match Variant.os variant with
-      | `macOS | `linux | `FreeBSD -> `Unix
+      | `Macos | `Linux | `Freebsd -> `Unix
     in
     let build_spec ~for_docker =
       let base = Spec.base_to_string base in
@@ -143,25 +160,25 @@ let config ~timeout sr =
 
 let v t ~label ~spec ~base ~master ~urgent commit =
   Current.component "%s" label |>
-  let> { Spec.platform; ty } = spec
+  let> { Spec.variant; ty } = spec
   and> base
   and> commit
   and> master
   and> urgent in
+  let pool = pool_of_variant variant in
   let t = { Op.config = t; master; urgent; base } in
-  let { Platform.pool; variant; label = _ } = platform in
   BC.get t { Op.Key.pool; commit; variant; ty }
   |> Current.Primitive.map_result (Result.map ignore) (* TODO: Create a separate type of cache that doesn't parse the output *)
 
-let list_revdeps t ~platform ~opam_version ~pkgopt ~base ~master ~after commit =
+let list_revdeps t ~variant ~opam_version ~pkgopt ~base ~master ~after commit =
   Current.component "list revdeps" |>
-  let> {PackageOpt.pkg; urgent; has_tests = _} = pkgopt
+  let> {Package_opt.pkg; urgent; has_tests = _} = pkgopt
   and> base
   and> commit
   and> master
   and> () = after in
+  let pool = pool_of_variant variant in
   let t = { Op.config = t; master; urgent; base } in
-  let { Platform.pool; variant; label = _ } = platform in
   let ty = `Opam (`List_revdeps {Spec.opam_version}, pkg) in
   BC.get t { Op.Key.pool; commit; variant; ty }
   |> Current.Primitive.map_result (Result.map (fun output ->
