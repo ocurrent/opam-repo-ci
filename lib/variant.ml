@@ -17,8 +17,13 @@ let pp_ocaml_version t =
   t.ocaml_version^variant
 
 let arch t = t.arch
+
 let docker_tag t =
   t.distribution^"-ocaml-"^pp_ocaml_version t
+  |> String.map (function
+    | '+' | '~' -> '-'
+    | x -> x)
+
 let distribution t = t.distribution
 
 let pp f t = Fmt.pf f "%s/%s" (docker_tag t) (Ocaml_version.string_of_arch t.arch)
