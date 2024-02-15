@@ -231,30 +231,19 @@ module Check = struct
     let p1 = String.map f @@ String.lowercase_ascii p1 in
     String.equal p0 p1
 
-  let check_name_collisions ~errors ~pkg =
-    let pkg_name =
-      pkg.OpamPackage.name |> OpamPackage.Name.to_string
-    in
-    Lwt_preemptive.detach begin fun () ->
-      let ch = Unix.open_process_in "opam list --all --short --color=never" in
-      let packages = In_channel.input_all ch in
-      begin match Unix.close_process_in ch with
-        | Unix.WEXITED 0 -> ()
-        | _ -> failwith "Failed to get packages with 'opam list --all'"
-      end;
-      let packages =
-        String.split_on_char '\n' packages
-        |> List.filter (fun s ->
-          not @@ (String.equal s "" || String.equal s pkg_name))
-      in
-      List.fold_left
-        (fun errors other_pkg ->
-          if package_name_collision pkg_name other_pkg then
-            (pkg, NameCollision other_pkg) :: errors
-          else
-            errors)
-        errors packages
-    end ()
+  let check_name_collisions ~cwd ~errors ~pkg =
+    let pkg_name = pkg.OpamPackage.name |> OpamPackage.Name.to_string in
+    let repository_path = Fpath.to_string cwd // "packages" in
+    get_files repository_path >|= fun packages ->
+    let packages = List.filter (fun s -> not @@ String.equal s pkg_name) packages in
+    List.iter (fun s -> Logs.err (fun m -> m "%S" s)) packages;
+    List.fold_left
+      (fun errors other_pkg ->
+        if package_name_collision pkg_name other_pkg then
+          (pkg, NameCollision other_pkg) :: errors
+        else
+          errors)
+      errors packages
 
   let check_name_field ~errors ~pkg opam =
     match OpamFile.OPAM.name_opt opam with
@@ -312,7 +301,7 @@ module Check = struct
           let errors = check_version_field ~errors ~pkg opam in
           let errors = check_dune_subst ~errors ~pkg opam in
           check_dune_constraints ~host_os ~errors ~pkg opam >>= fun errors ->
-          check_name_collisions ~errors ~pkg >>= fun errors ->
+          check_name_collisions ~cwd ~errors ~pkg >>= fun errors ->
           (* Check directory structure correctness *)
           scan_dir ~cwd errors pkg >>= fun (errors, check_extra_files) ->
           opam_lint ~check_extra_files ~errors ~pkg opam >>= fun errors ->
