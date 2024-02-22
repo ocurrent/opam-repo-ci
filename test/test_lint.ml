@@ -4,12 +4,6 @@ module Analyse = Opam_repo_ci.Analyse
 open Lwt.Infix
 open Current.Syntax
 
-let get_packages master other =
-  let+ analysis = Analyse.examine ~master other in
-  List.map
-    (fun (pkg, {Analyse.Analysis.kind; has_tests = _}) -> (pkg, kind))
-    (Analyse.Analysis.packages analysis)
-
 (* Use [Lwt_stream] to make state in the pipeline observable while it's running *)
 let results, push_result = Lwt_stream.create ()
 
@@ -18,7 +12,9 @@ let pipeline repo_dir () =
   let repo = Local.v repo_dir in
   let master = Local.commit_of_ref repo "refs/heads/main" in
   let other = Local.commit_of_ref repo "refs/heads/new-branch" in
-  let packages = get_packages master other in
+  let packages =
+    Current.map Analyse.Analysis.packages @@ Analyse.examine ~master other
+  in
   let result = Lint.check ~host_os:"macos" ~master ~packages other in
   let+ result = Current.catch result in
   push_result @@ Option.some result

@@ -236,7 +236,6 @@ module Check = struct
     let repository_path = Fpath.to_string cwd // "packages" in
     get_files repository_path >|= fun packages ->
     let packages = List.filter (fun s -> not @@ String.equal s pkg_name) packages in
-    (* List.iter (fun s -> Logs.err (fun m -> m "%S" s)) packages; *)
     List.fold_left
       (fun errors other_pkg ->
         if package_name_collision pkg_name other_pkg then
@@ -415,6 +414,12 @@ end
 module Lint_cache = Current_cache.Generic(Lint)
 
 let check ~host_os ~master ~packages src =
+  let packages =
+    let+ packages in
+    List.map
+      (fun (pkg, {Analyse.Analysis.kind; has_tests = _}) -> (pkg, kind))
+      packages
+  in
   Current.component "Lint" |>
   let> src
   and> packages

@@ -199,16 +199,8 @@ let test_pr ~ocluster ~master ~head =
   let src = Git.fetch commit_id in
   let latest_analysis = analyse ~master src in
   let analysis = latest_analysis |> latch ~label:"analysis" (* ignore errors from a rerun *) in
-  let lint =
-    let packages =
-      Current.map (fun x ->
-        List.map (fun (pkg, {Analyse.Analysis.kind; has_tests = _}) ->
-          (pkg, kind))
-          (Analyse.Analysis.packages x))
-        analysis
-    in
-    Lint.check ~host_os:Conf.host_os ~master ~packages src
-  in
+  let packages = Current.map Analyse.Analysis.packages analysis in
+  let lint = Lint.check ~host_os:Conf.host_os ~master ~packages src in
   let builds =
     Node.root
       (Node.leaf ~label:"(analysis)" (Node.action `Analysed latest_analysis)
@@ -260,16 +252,8 @@ let local_test_pr repo pr_branch () =
   let pr_branch = Git.Local.commit_of_ref repo pr_gref in
   let pr_branch_id = Current.map Git.Commit.id pr_branch in
   let analysis = analyse ~master pr_branch in
-  let lint =
-    let packages =
-      Current.map (fun x ->
-        List.map (fun (pkg, {Analyse.Analysis.kind; has_tests = _}) ->
-          (pkg, kind))
-          (Analyse.Analysis.packages x))
-        analysis
-    in
-    Lint.check ~host_os:Conf.host_os ~master ~packages pr_branch
-  in
+  let packages = Current.map Analyse.Analysis.packages analysis in
+  let lint = Lint.check ~host_os:Conf.host_os ~master ~packages pr_branch in
   let builds =
     Node.root
       (Node.leaf ~label:"(analysis)" (Node.action `Analysed analysis)
