@@ -1,0 +1,91 @@
+From 87954d1c1f2ca2814915ca0e46405f34ae697032 Mon Sep 17 00:00:00 2001
+From: benmandrew <benmandrew@gmail.com>
+Date: Wed, 21 Feb 2024 13:25:54 +0100
+Subject: [PATCH] a
+
+---
+ packages/a_1/a_1.0.0.1/opam | 12 ++++++++++++
+ packages/a_1/a_1.0.0.2/opam | 12 ++++++++++++
+ packages/a_1/a_1.0.1.0/opam | 12 ++++++++++++
+ packages/a_1/a_1.0.1.1/opam | 12 ++++++++++++
+ 2 files changed, 24 insertions(+)
+ create mode 100644 packages/a_1/a_1.0.0.1/opam
+ create mode 100644 packages/a_1/a_1.0.0.2/opam
+ create mode 100644 packages/a_1/a_1.0.1.0/opam
+ create mode 100644 packages/a_1/a_1.0.1.1/opam
+
+diff --git a/packages/a_1/a_1.0.0.1/opam b/packages/a_1/a_1.0.0.1/opam
+new file mode 100644
+index 0000000..58229e8
+--- /dev/null
++++ b/packages/a_1/a_1.0.0.1/opam
+@@ -0,0 +1,12 @@
++opam-version: "2.0"
++synopsis: "Synopsis"
++description: "Description"
++maintainer: "Maintainer"
++author: "Author"
++license: "Apache-2.0"
++homepage: "https://github.com/ocurrent/opam-repo-ci"
++bug-reports: "https://github.com/ocurrent/opam-repo-ci/issues"
++dev-repo: "git+https://github.com/ocurrent/opam-repo-ci.git"
++doc: "https://ocurrent.github.io/ocurrent/"
++build: []
++depends: []
+diff --git a/packages/a_1/a_1.0.0.2/opam b/packages/a_1/a_1.0.0.2/opam
+new file mode 100644
+index 0000000..58229e8
+--- /dev/null
++++ b/packages/a_1/a_1.0.0.2/opam
+@@ -0,0 +1,12 @@
++opam-version: "2.0"
++synopsis: "Synopsis"
++description: "Description"
++maintainer: "Maintainer"
++author: "Author"
++license: "Apache-2.0"
++homepage: "https://github.com/ocurrent/opam-repo-ci"
++bug-reports: "https://github.com/ocurrent/opam-repo-ci/issues"
++dev-repo: "git+https://github.com/ocurrent/opam-repo-ci.git"
++doc: "https://ocurrent.github.io/ocurrent/"
++build: []
++depends: []
+diff --git a/packages/a_1/a_1.0.1.0/opam b/packages/a_1/a_1.0.1.0/opam
+new file mode 100644
+index 0000000..58229e8
+--- /dev/null
++++ b/packages/a_1/a_1.0.1.0/opam
+@@ -0,0 +1,12 @@
++opam-version: "2.0"
++synopsis: "Synopsis"
++description: "Description"
++maintainer: "Maintainer"
++author: "Author"
++license: "Apache-2.0"
++homepage: "https://github.com/ocurrent/opam-repo-ci"
++bug-reports: "https://github.com/ocurrent/opam-repo-ci/issues"
++dev-repo: "git+https://github.com/ocurrent/opam-repo-ci.git"
++doc: "https://ocurrent.github.io/ocurrent/"
++build: []
++depends: []
+diff --git a/packages/a_1/a_1.0.1.1/opam b/packages/a_1/a_1.0.1.1/opam
+new file mode 100644
+index 0000000..58229e8
+--- /dev/null
++++ b/packages/a_1/a_1.0.1.1/opam
+@@ -0,0 +1,12 @@
++opam-version: "2.0"
++synopsis: "Synopsis"
++description: "Description"
++maintainer: "Maintainer"
++author: "Author"
++license: "Apache-2.0"
++homepage: "https://github.com/ocurrent/opam-repo-ci"
++bug-reports: "https://github.com/ocurrent/opam-repo-ci/issues"
++dev-repo: "git+https://github.com/ocurrent/opam-repo-ci.git"
++doc: "https://ocurrent.github.io/ocurrent/"
++build: []
++depends: []
+-- 
+2.43.0
+

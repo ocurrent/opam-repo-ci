@@ -30,7 +30,7 @@ index 0000000..69040f4
 +doc: "https://ocurrent.github.io/ocurrent/"
 +build: []
 +depends: [
-+  "a" {>= "0.0.1"}
++  "a-1" {>= "0.0.1"}
 +]
 diff --git a/packages/b/b.0.0.2/opam b/packages/b/b.0.0.2/opam
 new file mode 100644
@@ -50,7 +50,7 @@ index 0000000..1581508
 +doc: "https://ocurrent.github.io/ocurrent/"
 +build: []
 +depends: [
-+  "a" {>= "0.0.2"}
++  "a-1" {>= "0.0.2"}
 +]
 diff --git a/packages/b/b.0.0.3/opam b/packages/b/b.0.0.3/opam
 new file mode 100644
@@ -70,7 +70,7 @@ index 0000000..5ec1dc4
 +doc: "https://ocurrent.github.io/ocurrent/"
 +build: []
 +depends: [
-+  "a" {< "0.0.2"}
++  "a-1" {< "0.0.2"}
 +]
 -- 
 2.43.0

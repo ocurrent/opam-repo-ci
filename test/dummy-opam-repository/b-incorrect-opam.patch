@@ -17,21 +17,19 @@ new file mode 100644
 index 0000000..69040f4
 --- /dev/null
 +++ b/packages/b/b.0.0.1/opam
-@@ -0,0 +1,15 @@
+@@ -0,0 +1,13 @@
 +opam-version: "2.0"
 +synopsis: "Synopsis"
 +description: "Description"
 +maintainer: "Maintainer"
-+author: "Author"
 +license: "Apache-2.0"
 +homepage: "https://github.com/ocurrent/opam-repo-ci"
 +bug-reports: "https://github.com/ocurrent/opam-repo-ci/issues"
 +dev-repo: "git+https://github.com/ocurrent/opam-repo-ci.git"
 +doc: "https://ocurrent.github.io/ocurrent/"
-+unknown-field : "Unknown"
 +build: []
 +depends: [
-+  "a" {>= "0.0.1"}
++  "a-1" {>= "0.0.1"}
 +]
 diff --git a/packages/b/b.0.0.2/opam b/packages/b/b.0.0.2/opam
 new file mode 100644
@@ -52,14 +50,14 @@ index 0000000..1581508
 +unknown-field : "Unknown"
 +build: []
 +depends: [
-+  "a" {>= "0.0.2"}
++  "a-1" {>= "0.0.2"}
 +]
 diff --git a/packages/b/b.0.0.3/opam b/packages/b/b.0.0.3/opam
 new file mode 100644
 index 0000000..5ec1dc4
 --- /dev/null
 +++ b/packages/b/b.0.0.3/opam
-@@ -0,0 +1,15 @@
+@@ -0,0 +1,14 @@
 +opam-version: "2.0"
 +synopsis: "Synopsis"
 +description: "Description"
@@ -70,10 +68,9 @@ index 0000000..5ec1dc4
 +bug-reports: "https://github.com/ocurrent/opam-repo-ci/issues"
 +dev-repo: "git+https://github.com/ocurrent/opam-repo-ci.git"
 +doc: "https://ocurrent.github.io/ocurrent/"
-+unknown-field : "Unknown"
 +build: []
 +depends: [
-+  "a" {< "0.0.2"}
++  "a-1" {< "0.0.2"}
 +]
 -- 
 2.43.0
