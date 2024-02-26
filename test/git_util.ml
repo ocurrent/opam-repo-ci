@@ -49,9 +49,14 @@ module Cmd = struct
     git ?cwd cmd
 end
 
+let set_config ~cwd =
+  Cmd.git ~cwd [ "config"; "--local"; "user.email"; "test@test.com" ] >>= fun () ->
+  Cmd.git ~cwd [ "config"; "--local"; "user.name"; "Test" ]
+
 let init cwd =
   Cmd.cp [ "-R" ] (Fpath.v "./dummy-opam-repository/.") cwd >>= fun () ->
   Cmd.git ~cwd [ "init"; "-q"; "." ] >>= fun () ->
+  set_config ~cwd >>= fun () ->
   Cmd.git ~cwd [ "add"; "." ] >>= fun () ->
   Cmd.git ~cwd [ "commit"; "-qm"; "init" ]
 
