@@ -55,7 +55,8 @@ let set_config ~cwd =
 
 let init cwd =
   Cmd.cp [ "-R" ] (Fpath.v "./dummy-opam-repository/.") cwd >>= fun () ->
-  Cmd.git ~cwd [ "init"; "--initial-branch=master"; "-q"; "." ] >>= fun () ->
+  Cmd.git ~cwd [ "init"; "-q"; "." ] >>= fun () ->
+  Cmd.git ~cwd [ "checkout"; "-b"; "master" ] >>= fun () ->
   set_config ~cwd >>= fun () ->
   Cmd.git ~cwd [ "add"; "." ] >>= fun () ->
   Cmd.git ~cwd [ "commit"; "-qm"; "init" ]
