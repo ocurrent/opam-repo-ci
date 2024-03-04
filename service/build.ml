@@ -129,7 +129,6 @@ let extras ~build =
     let arches =
       List.filter_map (function
         | `X86_64 -> None
-        | `Riscv64 -> None (* TODO: unlock this one when more machines are available *)
         | arch ->
             let label = Ocaml_version.to_opam_arch arch in
             Some (build ~opam_version ~arch ~distro:master_distro ~compiler:(comp, None) label)
