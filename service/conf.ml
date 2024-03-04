@@ -29,22 +29,6 @@ end
 (* TODO: Put back to 1 hour when the cluster issue has been fixed (see https://github.com/ocurrent/ocluster/issues/114) *)
 let build_timeout = Duration.of_hour 2
 
-let pool_of_arch variant =
-  let open Opam_repo_ci in
-  let os = match Variant.os variant with
-    | `macOS -> "macos"
-    | `FreeBSD -> "freebsd"
-    | `linux -> "linux"
-  in
-  let arch = match Variant.arch variant with
-    | `X86_64 | `I386 -> "x86_64"
-    | `Aarch32 | `Aarch64 -> "arm64"
-    | `Ppc64le -> "ppc64"
-    | `S390x -> "s390x"
-    | `Riscv64 -> "riscv64"
-  in
-  os^"-"^arch
-
 (* https://github.com/ocurrent/opam-repo-ci/issues/260 *)
 let host_os =
   let os =

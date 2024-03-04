@@ -414,7 +414,6 @@ end
 
 module Lint_cache = Current_cache.Generic(Lint)
 
-(** Locally run lint job in preemptive thread *)
 let check ~host_os ~master ~packages src =
   Current.component "Lint" |>
   let> src

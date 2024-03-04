@@ -141,6 +141,9 @@ module Op = struct
   let build { config; master = _; urgent = _; base } job
       { Key.commit; ty; variant } =
     let { docker_context; pool; build_timeout } = config in
+    let os = match Variant.os variant with
+      | `Macos | `Linux | `Freebsd -> `Unix
+    in
     let build_spec =
       let base = Spec.base_to_string base in
       match ty with
@@ -151,14 +154,14 @@ module Op = struct
     in
     let base =
       match base with
-      | MacOS _s -> failwith "local macos docker not supported"
-      | FreeBSD _s -> failwith "local freebsd docker not supported"
+      | Macos _s -> failwith "Local MacOS OBuilder worker not supported"
+      | Freebsd _s -> failwith "Local FreeBSD OBuilder worker not supported"
       | Docker base -> base
     in
     let make_dockerfile ~for_user =
       (if for_user then "" else Buildkit_syntax.add (Variant.arch variant))
       ^ Obuilder_spec.Docker.dockerfile_of_spec ~buildkit:(not for_user)
-          ~os:`Unix build_spec
+          ~os build_spec
     in
     Current.Job.write job
       (Fmt.str "@[<v>Base: %a@,%a@]@." Raw.Image.pp base Spec.pp_summary ty);
@@ -201,26 +204,26 @@ module BC = Current_cache.Make(Op)
 
 let v ~label ~spec ~base ~master ~urgent commit =
   Current.component "%s" label |>
-  let> {Spec.platform; ty} = spec
+  let> {Spec.variant; ty} = spec
   and> base
   and> commit = Git.fetch commit
   and> master
   and> urgent in
   let t = { Op.config = local_builder; master; urgent; base } in
-  BC.get t { commit; ty; variant = platform.variant }
+  BC.get t { commit; ty; variant }
   |> Current.Primitive.map_result (Result.map ignore) (* TODO: Create a separate type of cache that doesn't parse the output *)
 
-let list_revdeps ~platform ~opam_version ~pkgopt ~base ~master ~after commit =
+let list_revdeps ~variant ~opam_version ~pkgopt ~base ~master ~after commit =
   let label = "list revdeps" in
   Current.component "%s" label |>
-  let> {PackageOpt.pkg; urgent; has_tests = _} = pkgopt
+  let> {Package_opt.pkg; urgent; has_tests = _} = pkgopt
   and> base
   and> commit = Git.fetch commit
   and> master
   and> () = after in
   let t = { Op.config = local_builder; master; urgent; base } in
   let ty = `Opam (`List_revdeps {Spec.opam_version}, pkg) in
-  BC.get t { commit; ty; variant = platform.Platform.variant }
+  BC.get t { commit; ty; variant }
   |> Current.Primitive.map_result (Result.map (fun output ->
       String.split_on_char '\n' output |>
       List.fold_left (fun acc -> function

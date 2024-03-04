@@ -1,13 +1,13 @@
 (* TODO: Make macOS use docker images *)
 type base =
   | Docker of Current_docker.Raw.Image.t
-  | MacOS of string
-  | FreeBSD of string
+  | Macos of string
+  | Freebsd of string
 
 let base_to_string = function
   | Docker img -> Current_docker.Raw.Image.hash img
-  | MacOS base -> base
-  | FreeBSD base -> base
+  | Macos base -> base
+  | Freebsd base -> base
 
 type package = OpamPackage.t
 
@@ -25,24 +25,24 @@ type list_revdeps = {
 } [@@deriving to_yojson]
 
 type ty = [
-  | `Opam of [ `Build of opam_build | `List_revdeps of list_revdeps ] * package
+  `Opam of [ `Build of opam_build | `List_revdeps of list_revdeps ] * package
 ] [@@deriving to_yojson]
 
 type t = {
-  platform : Platform.t;
+  variant : Variant.t;
   ty : ty;
 }
 
-let opam ?revdep ~platform ~lower_bounds ~with_tests ~opam_version pkg =
+let opam ?revdep ~variant ~lower_bounds ~with_tests ~opam_version pkg =
   let ty = `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) in
-  { platform; ty }
+  { variant; ty }
 
 let pp_pkg ?revdep f pkg =
   match revdep with
   | Some revdep -> Fmt.pf f "%s with %s" (OpamPackage.to_string revdep) (OpamPackage.to_string pkg)
   | None -> Fmt.string f (OpamPackage.to_string pkg)
 
-let pp_opam_version = function
+let opam_version_to_string = function
   | `V2_0 -> "2.0"
   | `V2_1 -> "2.1"
   | `Dev -> "dev"
@@ -50,12 +50,12 @@ let pp_opam_version = function
 let pp_ty f = function
   | `Opam (`List_revdeps {opam_version}, pkg) ->
       Fmt.pf f "list revdeps of %s, using opam %s" (OpamPackage.to_string pkg)
-        (pp_opam_version opam_version)
+        (opam_version_to_string opam_version)
   | `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) ->
     let action = if with_tests then "test" else "build" in
     Fmt.pf f "%s %a%s, using opam %s" action (pp_pkg ?revdep) pkg
       (if lower_bounds then ", lower-bounds" else "")
-      (pp_opam_version opam_version)
+      (opam_version_to_string opam_version)
 
 let pp_summary f = function
   | `Opam (`List_revdeps _, _) -> Fmt.string f "Opam list revdeps"

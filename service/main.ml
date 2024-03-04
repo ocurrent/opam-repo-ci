@@ -117,6 +117,12 @@ let add_default_matching_log_rules () =
   in
   List.iter Current.Log_matcher.add_rule default_rules
 
+let routes ~engine app github_auth =
+  let webhook_secret = Current_github.App.webhook_secret app in
+  Routes.(s "webhooks" / s "github" /? nil @--> Current_github.webhook ~engine ~get_job_ids:Opam_repo_ci.Index.get_job_ids ~webhook_secret) ::
+  Routes.(s "login" /? nil @--> Current_github.Auth.login github_auth) ::
+  Current_web.routes engine
+
 let main config mode app capnp_address github_auth submission_uri prometheus_config level =
   add_default_matching_log_rules ();
   Logs.set_level level;
@@ -125,22 +131,18 @@ let main config mode app capnp_address github_auth submission_uri prometheus_con
     Capnp_setup.run ~listen_address capnp_address >>= fun (vat, rpc_engine_resolver) ->
     let ocluster = Capnp_rpc_unix.Vat.import_exn vat submission_uri in
     let engine = Current.Engine.create ~config (Pipeline.v ~ocluster ~app) in
-    rpc_engine_resolver |> Option.iter (fun r -> Capability.resolve_ok r (Api_impl.make_ci ~engine));
+    Option.iter (fun r -> Capability.resolve_ok r (Api_impl.make_ci ~engine)) rpc_engine_resolver;
     let authn = Option.map Current_github.Auth.make_login_uri github_auth in
-    let webhook_secret = Current_github.App.webhook_secret app in
     let has_role =
       if github_auth = None then Current_web.Site.allow_all
       else has_role
     in
-    let routes =
-      Routes.(s "webhooks" / s "github" /? nil @--> Current_github.webhook ~engine ~get_job_ids:Opam_repo_ci.Index.get_job_ids ~webhook_secret) ::
-      Routes.(s "login" /? nil @--> Current_github.Auth.login github_auth) ::
-      Current_web.routes engine in
-    let site = Current_web.Site.v ?authn ~has_role ~secure_cookies:true ~name:"opam-ci" routes in
+    let routes = routes ~engine app github_auth in
+    let site =
+      Current_web.Site.v ?authn ~has_role ~secure_cookies:true ~name:"opam-ci" routes
+    in
     let prometheus =
-      List.map
-        (Lwt.map @@ Result.ok)
-        (Prometheus_unix.serve prometheus_config)
+      List.map (Lwt.map @@ Result.ok) (Prometheus_unix.serve prometheus_config)
     in
     Lwt.choose ([
       Current.Engine.thread engine;
