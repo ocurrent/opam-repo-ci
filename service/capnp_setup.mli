@@ -5,6 +5,8 @@ type config = Capnp_rpc_unix.Network.Location.t option
 
 val run :
   ?listen_address:Capnp_rpc_unix.Network.Location.t ->
+  secret_key:string ->
+  cap_file:string ->
   config ->
   (Capnp_rpc_unix.Vat.t * Opam_repo_ci_api.Raw.Service.CI.t Capability.resolver option) Lwt.t
 (** [run (Some public_address)] runs a Cap'n Proto service advertising its

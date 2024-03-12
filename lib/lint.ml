@@ -236,7 +236,6 @@ module Check = struct
     let repository_path = Fpath.to_string cwd // "packages" in
     get_files repository_path >|= fun packages ->
     let packages = List.filter (fun s -> not @@ String.equal s pkg_name) packages in
-    List.iter (fun s -> Logs.err (fun m -> m "%S" s)) packages;
     List.fold_left
       (fun errors other_pkg ->
         if package_name_collision pkg_name other_pkg then
@@ -395,7 +394,7 @@ module Lint = struct
           Fmt.str "Warning in %s: Possible name collision with package '%s'" pkg other_pkg
     )
 
-  let run {master} job { Key.src; packages } { Value.host_os } =
+  let run { master } job { Key.src; packages } { Value.host_os } =
     Current.Job.start job ~pool ~level:Current.Level.Harmless >>= fun () ->
     Current_git.with_checkout ~job src @@ fun dir ->
     Check.of_dir ~host_os ~master ~job ~packages dir >|= fun errors ->
@@ -414,10 +413,20 @@ end
 
 module Lint_cache = Current_cache.Generic(Lint)
 
-let check ~host_os ~master ~packages src =
-  Current.component "Lint" |>
-  let> src
-  and> packages
-  and> master in
-  let host_os = if String.equal host_os "macos" then Macos else Other in
-  Lint_cache.run { master } { src; packages } { host_os }
+let get_packages_kind =
+  Current.map (fun packages ->
+    List.map (fun (pkg, {Analyse.Analysis.kind; has_tests = _}) ->
+      (pkg, kind))
+      packages)
+
+let check ?test_config ~host_os ~master ~packages src =
+  let res =
+    Current.component "Lint" |>
+    let> src
+    and> packages = get_packages_kind packages
+    and> master in
+    let host_os = if String.equal host_os "macos" then Macos else Other in
+    Lint_cache.run { master } { src; packages } { host_os }
+  in
+  Integration_test.check_lint ~test_config res;
+  res

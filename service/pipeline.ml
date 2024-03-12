@@ -192,7 +192,7 @@ let summarise ~repo ~hash builds =
   in
   summary
 
-let test_pr ~ocluster ~master ~head =
+let test_pr ~ocluster ~master head =
   let repo = Current.map Current_github.Api.Commit.repo_id head in
   let commit_id = Current.map Github.Api.Commit.id head in
   let hash = Current.map Git.Commit_id.hash commit_id in
@@ -200,13 +200,7 @@ let test_pr ~ocluster ~master ~head =
   let latest_analysis = analyse ~master src in
   let analysis = latest_analysis |> latch ~label:"analysis" (* ignore errors from a rerun *) in
   let lint =
-    let packages =
-      Current.map (fun x ->
-        List.map (fun (pkg, {Analyse.Analysis.kind; has_tests = _}) ->
-          (pkg, kind))
-          (Analyse.Analysis.packages x))
-        analysis
-    in
+    let packages = Current.map Analyse.Analysis.packages analysis in
     Lint.check ~host_os:Conf.host_os ~master ~packages src
   in
   let builds =
@@ -227,7 +221,7 @@ let test_repo ~ocluster ~push_status repo =
   let master = latch ~label:"master" master in  (* Don't cancel builds while fetching updates to this *)
   let prs = set_active_refs ~repo prs in
   prs |> Current.list_iter ~collapse_key:"pr" (module Github.Api.Commit) @@ fun head ->
-    test_pr ~ocluster ~master ~head
+    test_pr ~ocluster ~master head
     |> github_status_of_state ~head
     |> (if push_status then github_set_statuses ~head
         else Current.ignore_value)
@@ -254,26 +248,20 @@ let set_index_local ~repo gref hash =
   Index.(set_active_accounts @@ Account_set.singleton repo.Github.Repo_id.owner);
   Index.set_active_refs ~repo [(gref, hash)]
 
-let local_test_pr repo pr_branch () =
+let local_test_pr ?test_config repo pr_branch () =
   let master = Git.Local.commit_of_ref repo "refs/heads/master" in
   let pr_gref = Printf.sprintf "refs/heads/%s" pr_branch in
   let pr_branch = Git.Local.commit_of_ref repo pr_gref in
   let pr_branch_id = Current.map Git.Commit.id pr_branch in
   let analysis = analyse ~master pr_branch in
   let lint =
-    let packages =
-      Current.map (fun x ->
-        List.map (fun (pkg, {Analyse.Analysis.kind; has_tests = _}) ->
-          (pkg, kind))
-          (Analyse.Analysis.packages x))
-        analysis
-    in
-    Lint.check ~host_os:Conf.host_os ~master ~packages pr_branch
+    let packages = Current.map Analyse.Analysis.packages analysis in
+    Lint.check ?test_config ~host_os:Conf.host_os ~master ~packages pr_branch
   in
   let builds =
     Node.root
       (Node.leaf ~label:"(analysis)" (Node.action `Analysed analysis)
-      :: Build.with_docker ~analysis ~lint ~master pr_branch_id)
+      :: Build.with_docker ~host_arch:Conf.host_arch ~analysis ~lint ~master pr_branch_id)
   in
   let dummy_repo =
     Current.return { Github.Repo_id.owner = "local-owner"; name = "local-repo" }
