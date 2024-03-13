@@ -44,9 +44,10 @@ module Check = struct
     Analyse.Analysis.get_opam ~cwd (path_from_pkg pkg // "opam") >>/= fun opam ->
     Lwt.return (OpamFile.OPAM.read_from_string opam)
 
-  let is_perm_644 file =
+  let is_perm_correct file =
     Lwt_unix.stat file >|= function
     | {st_kind = S_REG; st_perm = 0o644; _} -> true
+    | {st_kind = S_REG; st_perm = 0o664; _} -> true
     | _ -> false
 
   let get_files dirname =
@@ -73,7 +74,7 @@ module Check = struct
     let rec aux errors extra_files = function
       | [] -> Lwt.return (errors, extra_files)
       | "opam"::files ->
-          is_perm_644 (dir // "opam") >|= begin function
+          is_perm_correct (dir // "opam") >|= begin function
           | true -> errors
           | false -> ((pkg, ForbiddenPerm (dir // "opam")) :: errors)
           end >>= fun errors ->
@@ -81,7 +82,7 @@ module Check = struct
       | "files"::files ->
           get_files (dir // "files") >>= fun extra_files ->
           Lwt_list.fold_left_s (fun errors file ->
-            is_perm_644 (dir // "files" // file) >|= function
+            is_perm_correct (dir // "files" // file) >|= function
             | true -> errors
             | false -> ((pkg, ForbiddenPerm ("files" // file)) :: errors)
           ) errors extra_files >>= fun errors ->
