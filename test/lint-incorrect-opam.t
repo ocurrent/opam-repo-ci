@@ -7,5 +7,5 @@ Tests the following:
   $ git apply "patches/b-incorrect-opam.patch"
   $ git add .
   $ git commit -qm b-incorrect-opam
-  $ opam-repo-ci-local --repo="." --branch=new-branch --lint-only --port=8081
+  $ opam-repo-ci-local --repo="." --branch=new-branch --lint-only --no-web-server
   Error "2 errors"

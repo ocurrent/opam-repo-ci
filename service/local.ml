@@ -22,7 +22,17 @@ let setup_capnp ~engine ~listen_address secret_key cap_file capnp_address =
     (fun r -> Capability.resolve_ok r (Api_impl.make_ci ~engine))
     rpc_engine_resolver
 
-let main config mode capnp_address repo branch lint_only level =
+let web_server_thread ~mode engine no_web_server =
+  if no_web_server then []
+  else
+    let routes = Current_web.routes engine in
+    let site =
+      Current_web.Site.(v
+        ~has_role:allow_all) ~name:"opam-repo-ci-local" routes
+    in
+    [ Current_web.run ~mode site ]
+
+let main config mode capnp_address repo branch lint_only no_web_server level =
   Logs.set_level level;
   Lwt_main.run begin
     let repo = Current_git.Local.v (Result.get_ok @@ Fpath.of_string repo) in
@@ -36,15 +46,10 @@ let main config mode capnp_address repo branch lint_only level =
     in
     setup_capnp ~engine ~listen_address Conf.Capnp.secret_key
       Conf.Capnp.cap_file capnp_address >>= fun () ->
-    let routes = Current_web.routes engine in
-    let site =
-      Current_web.Site.(v
-        ~has_role:allow_all) ~name:"opam-repo-ci-local" routes
-    in
+    let web_server_thread = web_server_thread ~mode engine no_web_server in
     Lwt.choose ([
       Current.Engine.thread engine;
-      Current_web.run ~mode site;
-    ])
+    ] @ web_server_thread)
   end
 
 (* Command-line parsing *)
@@ -75,6 +80,14 @@ let lint_only =
     ~docv:"LINT_ONLY"
     ["lint-only"]
 
+let no_web_server =
+  Arg.value @@
+  Arg.flag @@
+  Arg.info
+    ~doc:"Don't run web server. Used for integration testing to prevent port conflicts"
+    ~docv:"NO_WEB_SERVER"
+    ["no-web-server"]
+
 let cmd =
   let doc = "Test opam-repo-ci on a local Git repository" in
   let info = Cmd.info "opam-repo-ci-local" ~doc in
@@ -87,6 +100,7 @@ let cmd =
       $ repo
       $ branch
       $ lint_only
+      $ no_web_server
       $ Logs_cli.level ()))
 
 let () = exit @@ Cmd.eval cmd
