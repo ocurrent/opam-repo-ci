@@ -4,6 +4,7 @@ Tests the following:
 - [b.0.0.3] is correct
 
   $ sh "scripts/setup_repo.sh"
+  $ git checkout -qb new-branch
   $ git apply "patches/b-incorrect-opam.patch"
   $ git add .
   $ git commit -qm b-incorrect-opam

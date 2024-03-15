@@ -47,16 +47,20 @@ let get_significant_available_pkg = function
 
 (** The stable releases of OCaml since 4.02 plus the latest
     alpha / beta / release-candidate for each unreleased version. *)
-let compilers ~arch ~build =
+let compilers ?test_config ~arch ~build () =
+  let versions =
+    match test_config with
+    | None -> Ocaml_version.Releases.recent @ Ocaml_version.Releases.unreleased_betas
+    | Some _ -> [ List.hd @@ List.rev Ocaml_version.Releases.recent ]
+  in
   let master_distro = Distro.tag_of_distro master_distro in
-  (Ocaml_version.Releases.recent @ Ocaml_version.Releases.unreleased_betas) |>
   List.map (fun v ->
     let v = Ocaml_version.with_just_major_and_minor v in
     let revdeps = List.exists (Ocaml_version.equal v) default_compilers in (* TODO: Remove this when the cluster is ready *)
     let v = Ocaml_version.to_string v in
     let variant = Variant.v ~arch ~distro:master_distro ~compiler:(v, None) in
     build ~opam_version ~lower_bounds:true ~revdeps v variant
-  )
+  ) versions
 
 let linux_distributions ~arch ~build =
   let build ~distro ~arch ~compiler =
@@ -144,27 +148,6 @@ let extras ~build =
     switches @ arches @ acc
   ) [] default_compilers_full
 
-let test_revdeps (module Builder : Build_intf.S) ~opam_version ~master ~base ~variant ~pkgopt ~after source =
-  let revdeps =
-    Builder.list_revdeps ~opam_version ~base ~variant ~pkgopt ~master ~after source
-    |> Current.map OpamPackage.Set.elements
-  in
-  let pkg = Current.map (fun pkgopt -> pkgopt.Package_opt.pkg) pkgopt in
-  let urgent = Current.map (fun pkgopt -> pkgopt.Package_opt.urgent) pkgopt in
-  let build_revdep revdep =
-    let image =
-      let spec = revdep_spec ~variant ~opam_version ~revdep pkg in
-      Builder.v ~label:"build" ~base ~spec ~master ~urgent source
-    in
-    let label = Current.map OpamPackage.to_string revdep
-    and build = Node.action `Built image
-    in
-    Node.leaf_dyn ~label build
-  in
-  let tests = Node.list_map (module OpamPackage) build_revdep revdeps
-  and list_revdeps = Node.action `Analysed revdeps in
-  Node.actioned_branch ~label:"revdeps" list_revdeps [tests]
-
 let get_base ~arch variant =
   match Variant.os variant with
   | `Macos ->
@@ -178,91 +161,146 @@ let get_base ~arch variant =
       in
       Spec.Docker (Current_docker.Raw.Image.of_hash repo_id)
 
-let build (module Builder : Build_intf.S) ~analysis ~pkgs ~master ~source ~opam_version ~lower_bounds ~revdeps label variant =
-  let arch = Variant.arch variant in
-  let analysis = with_label label analysis in
-  let pkgs =
-    (* Add fake dependency from pkgs to analysis so that the package being tested appears
-      below the platform, to make the diagram look nicer. Ideally, the pulls of the
-      base images should be moved to the top (not be per-package at all). *)
-    let+ _ = analysis
-    and+ pkgs in
-    pkgs
-  in
-  let build_pkg pkgopt =
+module M (Builder : Build_intf.S) = struct
+  let get_image variant opam_version base master urgent source pkg =
+    let spec = build_spec ~variant ~opam_version pkg in
+    Builder.v ~label:"build" ~spec ~base ~master ~urgent source
+
+  let get_tests variant opam_version base master urgent source pkg has_tests =
+    Node.bool_map (fun () ->
+      let action =
+        let spec = test_spec ~variant ~opam_version pkg in
+        Builder.v ~label:"test" ~spec ~base ~master ~urgent source
+      in
+      let action = Node.action `Built action in
+      Node.leaf ~label:"tests" action
+    ) has_tests
+
+  let get_lower_bounds_check variant opam_version base master urgent source pkg lower_bounds =
+    if lower_bounds then
+      let action =
+        let spec = lower_bounds_spec ~variant ~opam_version pkg in
+        Builder.v ~label:"lower-bounds" ~spec ~base ~master ~urgent source
+      in
+      let action = Node.action `Built action in
+      Node.leaf ~label:"lower-bounds" action
+    else
+      Node.empty
+
+  let test_revdeps ~opam_version ~master ~base ~variant ~pkgopt ~after source =
+    let revdeps =
+      Builder.list_revdeps ~opam_version ~base ~variant ~pkgopt ~master ~after source
+      |> Current.map OpamPackage.Set.elements
+    in
     let pkg = Current.map (fun pkgopt -> pkgopt.Package_opt.pkg) pkgopt in
-    let urgent = Current.return None in
-    let has_tests = Current.map (fun pkgopt -> pkgopt.Package_opt.has_tests) pkgopt in
-    let base = get_base ~arch variant in
-    let image =
-      let spec = build_spec ~variant ~opam_version pkg in
-      Builder.v ~label:"build" ~spec ~base ~master ~urgent source
+    let urgent = Current.map (fun pkgopt -> pkgopt.Package_opt.urgent) pkgopt in
+    let build_revdep revdep =
+      let image =
+        let spec = revdep_spec ~variant ~opam_version ~revdep pkg in
+        Builder.v ~label:"build" ~base ~spec ~master ~urgent source
+      in
+      let label = Current.map OpamPackage.to_string revdep
+      and build = Node.action `Built image
+      in
+      Node.leaf_dyn ~label build
     in
-    let build = Node.action `Built image
-    and tests =
-      Node.bool_map (fun () ->
-        let action =
-          let spec = test_spec ~variant ~opam_version pkg in
-          Builder.v ~label:"test" ~spec ~base ~master ~urgent source
-        in
-        let action = Node.action `Built action in
-        Node.leaf ~label:"tests" action
-      ) has_tests
-    and lower_bounds_check =
-      if lower_bounds then
-        let action =
-          let spec = lower_bounds_spec ~variant ~opam_version pkg in
-          Builder.v ~label:"lower-bounds" ~spec ~base ~master ~urgent source
-        in
-        let action = Node.action `Built action in
-        Node.leaf ~label:"lower-bounds" action
-      else
-        Node.empty
-    and revdeps =
-      if revdeps then
-        test_revdeps (module Builder) ~opam_version ~master ~base ~variant
-          ~pkgopt source ~after:image
-      else Node.empty
+    let tests = Node.list_map (module OpamPackage) build_revdep revdeps
+    and list_revdeps = Node.action `Analysed revdeps in
+    Node.actioned_branch ~label:"revdeps" list_revdeps [tests]
+
+  let get_revdeps ?test_config variant opam_version base master source pkgopt revdeps image =
+    let after =
+      match test_config with
+      | None -> image
+      | Some _ -> Current.return ()
     in
-    let label = Current.map OpamPackage.to_string pkg in
-    Node.actioned_branch_dyn ~label build [
-      tests;
-      lower_bounds_check;
-      revdeps;
-    ]
-  in
-  Node.list_map ~collapse_key:"pkg" (module Package_opt) build_pkg pkgs
-  |> (fun x -> Node.branch ~label [x])
-  |> Node.collapse ~key:"platform" ~value:label ~input:analysis
+    if revdeps then
+      test_revdeps ~opam_version ~master ~base ~variant
+        ~pkgopt source ~after
+    else Node.empty
+
+  let build ?test_config ~analysis ~pkgs ~master ~source ~opam_version ~lower_bounds ~revdeps label variant =
+    let arch = Variant.arch variant in
+    let analysis = with_label label analysis in
+    let pkgs =
+      (* Add fake dependency from pkgs to analysis so that the package being tested appears
+        below the platform, to make the diagram look nicer. Ideally, the pulls of the
+        base images should be moved to the top (not be per-package at all). *)
+      let+ _ = analysis
+      and+ pkgs in
+      pkgs
+    in
+    let build_pkg pkgopt =
+      let pkg = Current.map (fun pkgopt -> pkgopt.Package_opt.pkg) pkgopt in
+      let urgent = Current.return None in
+      let has_tests =
+        Current.map (fun pkgopt -> pkgopt.Package_opt.has_tests) pkgopt
+      in
+      let base = get_base ~arch variant in
+      let image =
+        get_image variant opam_version
+          base master urgent source pkg
+      in
+      let build = Node.action `Built image in
+      let tests =
+        get_tests variant opam_version base
+          master urgent source pkg has_tests
+      in
+      let lower_bounds_check =
+        get_lower_bounds_check variant opam_version
+          base master urgent source pkg lower_bounds
+      in
+      let revdeps =
+        get_revdeps ?test_config variant opam_version base master
+          source pkgopt revdeps image
+      in
+      let label = Current.map OpamPackage.to_string pkg in
+      Node.actioned_branch_dyn ~label build [
+        tests;
+        lower_bounds_check;
+        revdeps;
+      ]
+    in
+    Node.list_map ~collapse_key:"pkg" (module Package_opt) build_pkg pkgs
+    |> (fun x -> Node.branch ~label [x])
+    |> Node.collapse ~key:"platform" ~value:label ~input:analysis
+end
 
 let with_cluster ~ocluster ~analysis ~lint ~master source =
-  let module Builder : Build_intf.S = struct
+  let module M = M (struct
     let v = Cluster_build.v ocluster
     let list_revdeps = Cluster_build.list_revdeps ocluster
-  end in
+  end) in
   let pkgs =
     Current.map (fun x -> Analyse.Analysis.packages x
     |> List.filter_map get_significant_available_pkg) analysis
   in
-  let build = build (module Builder) ~analysis ~pkgs ~master ~source in
+  let build = M.build ?test_config:None ~analysis ~pkgs ~master ~source in
   [
     Node.leaf ~label:"(lint)" (Node.action `Linted lint);
-    Node.branch ~label:"compilers" (compilers ~arch:`X86_64 ~build);
+    Node.branch ~label:"compilers" (compilers ?test_config:None ~arch:`X86_64 ~build ());
     Node.branch ~label:"distributions" (linux_distributions ~arch:`X86_64 ~build);
     Node.branch ~label:"macos" (macos ~build);
     Node.branch ~label:"freebsd" (freebsd ~build);
     Node.branch ~label:"extras" (extras ~build);
   ]
 
-let with_docker ~host_arch ~analysis ~lint ~master source =
-  let module Builder : Build_intf.S = Local_build in
+let with_docker ?test_config ~host_arch ~analysis ~lint ~master source =
+  let module M = M (struct
+    let v = Local_build.v ?test_config
+    let list_revdeps = Local_build.list_revdeps ?test_config
+  end) in
   let pkgs =
     Current.map (fun x -> Analyse.Analysis.packages x
     |> List.filter_map get_significant_available_pkg) analysis
   in
-  let build = build (module Builder) ~analysis ~pkgs ~master ~source in
+  let build = M.build ?test_config ~analysis ~pkgs ~master ~source in
   [
     Node.leaf ~label:"(lint)" (Node.action `Linted lint);
-    Node.branch ~label:"compilers" (compilers ~arch:host_arch ~build);
-    Node.branch ~label:"distributions" (linux_distributions ~arch:host_arch ~build);
-  ]
+    Node.branch ~label:"compilers" (compilers ?test_config ~arch:host_arch ~build ());
+  ] @
+  (match test_config with
+  | None ->
+    [ Node.branch ~label:"distributions"
+      (linux_distributions ~arch:host_arch ~build) ]
+  | Some _ -> [])

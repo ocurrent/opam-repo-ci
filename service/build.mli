@@ -11,6 +11,7 @@ val with_cluster :
 (** [with_docker ~analysis ~lint ~master commit] runs all the necessary builds
     for [commit] relative to [master] using local Docker containers. *)
 val with_docker :
+  ?test_config:Opam_repo_ci.Integration_test.t ->
   host_arch:Ocaml_version.arch ->
   analysis:Opam_repo_ci.Analyse.Analysis.t Current.t ->
   lint:unit Current.t ->

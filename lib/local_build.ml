@@ -202,7 +202,7 @@ end
 
 module BC = Current_cache.Make(Op)
 
-let v ~label ~spec ~base ~master ~urgent commit =
+let v ?test_config ~label ~spec ~base ~master ~urgent commit =
   Current.component "%s" label |>
   let> {Spec.variant; ty} = spec
   and> base
@@ -210,10 +210,25 @@ let v ~label ~spec ~base ~master ~urgent commit =
   and> master
   and> urgent in
   let t = { Op.config = local_builder; master; urgent; base } in
-  BC.get t { commit; ty; variant }
-  |> Current.Primitive.map_result (Result.map ignore) (* TODO: Create a separate type of cache that doesn't parse the output *)
+  match test_config with
+  | None ->
+    BC.get t { commit; ty; variant }
+    |> Current.Primitive.map_result (Result.map ignore) (* TODO: Create a separate type of cache that doesn't parse the output *)
+  | Some _ -> Current.Primitive.const ()
 
-let list_revdeps ~variant ~opam_version ~pkgopt ~base ~master ~after commit =
+let parse_revdeps pkg output =
+  String.split_on_char '\n' output |>
+    List.fold_left (fun acc -> function
+      | "" -> acc
+      | revdep ->
+        let revdep = OpamPackage.of_string revdep in
+        if OpamPackage.equal pkg revdep then
+          acc (* NOTE: opam list --recursive --depends-on <pkg> also returns <pkg> itself *)
+        else
+          OpamPackage.Set.add revdep acc
+    ) OpamPackage.Set.empty
+
+let list_revdeps ?test_config ~variant ~opam_version ~pkgopt ~base ~master ~after commit =
   let label = "list revdeps" in
   Current.component "%s" label |>
   let> {Package_opt.pkg; urgent; has_tests = _} = pkgopt
@@ -223,16 +238,12 @@ let list_revdeps ~variant ~opam_version ~pkgopt ~base ~master ~after commit =
   and> () = after in
   let t = { Op.config = local_builder; master; urgent; base } in
   let ty = `Opam (`List_revdeps {Spec.opam_version}, pkg) in
-  BC.get t { commit; ty; variant }
-  |> Current.Primitive.map_result (Result.map (fun output ->
-      String.split_on_char '\n' output |>
-      List.fold_left (fun acc -> function
-          | "" -> acc
-          | revdep ->
-              let revdep = OpamPackage.of_string revdep in
-              if OpamPackage.equal pkg revdep then
-                acc (* NOTE: opam list --recursive --depends-on <pkg> also returns <pkg> itself *)
-              else
-                OpamPackage.Set.add revdep acc
-        ) OpamPackage.Set.empty
-    ))
+  let f () =
+    BC.get t { commit; ty; variant }
+    |> Current.Primitive.map_result (Result.map (parse_revdeps pkg))
+  in
+  match test_config with
+  | None -> f ()
+  | Some Integration_test.List_revdeps ->
+    Current.Primitive.map_result Integration_test.check_list_revdeps @@ f ()
+  | Some _ -> Current.Primitive.const OpamPackage.Set.empty

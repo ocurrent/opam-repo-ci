@@ -1,16 +1,28 @@
-open Current.Syntax
-
 (* Which part of the pipeline should be tested *)
 type t =
   | Lint
+  | List_revdeps
 
-let check_lint ~test_config lint =
-  let f () =
-    let+ result = Current.catch lint in
-    begin match result with
-      | Ok () -> Printf.printf "Ok ()\n"
-      | Error (`Msg s) -> Printf.printf "Error \"%s\"\n" s
-    end;
-    exit 0
+let check_lint ?test_config output =
+  let f = function
+    | Ok () ->
+      Printf.printf "Ok ()\n";
+      exit 0
+    | Error (`Msg s) ->
+      Printf.printf "Error \"%s\"\n" s;
+      exit 0
+    | Error (`Active _) as s -> s
   in
-  Option.iter (fun _ -> ignore @@ f ()) test_config
+  match test_config with
+  | None -> output
+  | Some Lint -> f output
+  | Some _ -> Ok ()
+
+let check_list_revdeps = function
+  | Ok l ->
+    OpamPackage.Set.iter (fun p -> Printf.printf "%s\n" @@ OpamPackage.to_string p) l;
+    exit 0
+  | Error (`Msg s) ->
+    Printf.printf "Error \"%s\"\n" s;
+    exit 0
+  | Error (`Active _) as s -> s
