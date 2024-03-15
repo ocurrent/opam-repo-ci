@@ -3,8 +3,8 @@ let fmt = Fmt.str
 let download_cache = "opam-archives"
 let cache ~variant =
   match Variant.os variant with
+  | `Freebsd
   | `Linux -> [ Obuilder_spec.Cache.v download_cache ~target:"/home/opam/.opam/download-cache" ]
-  | `Freebsd -> [ Obuilder_spec.Cache.v download_cache ~target:"/usr/home/opam/.opam/download-cache" ]
   | `Macos -> [ Obuilder_spec.Cache.v download_cache ~target:"/Users/mac1000/.opam/download-cache";
                 Obuilder_spec.Cache.v "homebrew" ~target:"/Users/mac1000/Library/Caches/Homebrew" ]
 let network = ["host"]
@@ -83,7 +83,7 @@ let setup_repository ~variant ~for_docker ~opam_version =
   let open Obuilder_spec in
   let home_dir = match Variant.os variant with
     | `Macos -> None
-    | `Freebsd -> Some "/usr/home/opam"
+    | `Freebsd
     | `Linux -> Some "/home/opam"
   in
   let prefix = match Variant.os variant with
