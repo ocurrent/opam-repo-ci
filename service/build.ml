@@ -129,7 +129,11 @@ let extras ~build =
     let arches =
       List.filter_map (function
         | `X86_64 -> None
-        | `Riscv64 -> None (* TODO: unlock this one when more machines are available *)
+        | `Riscv64 ->
+            let label = Ocaml_version.to_opam_arch `Riscv64 in
+            let riscv_distro = (Distro.resolve_alias (`Ubuntu `LTS) :> Distro.t) in
+            let riscv_distro = Distro.tag_of_distro riscv_distro in
+            Some (build ~opam_version ~arch:`Riscv64 ~distro:riscv_distro ~compiler:(comp, None) label)
         | arch ->
             let label = Ocaml_version.to_opam_arch arch in
             Some (build ~opam_version ~arch ~distro:master_distro ~compiler:(comp, None) label)
