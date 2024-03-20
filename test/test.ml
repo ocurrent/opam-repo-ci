@@ -41,10 +41,18 @@ let header title variant ?(lower_bounds=false) ?(with_tests=false) opam_version 
     | `V2_1 -> "opam-2.1"
     | `V2_0 -> "opam-2.0"
   in
-  let lower_bounds = if lower_bounds then "lower-bounds " else "" in
-  let with_tests = if with_tests then "with-tests " else "" in
-  Format.asprintf "***** %s: %a %s %s%s*****\n"
+  let lower_bounds = if lower_bounds then " lower-bounds" else "" in
+  let with_tests = if with_tests then " with-tests" else "" in
+  Format.asprintf "%s: %a %s%s%s"
     title Variant.pp variant opam_version lower_bounds with_tests
+
+(* Indent every line of the dockerfile spec by 4 characters *)
+let indent str =
+  Astring.String.cuts ~sep:"\n" str
+  |> List.map (function
+    | "" -> ""
+    | s -> "    " ^ s)
+  |> Astring.String.concat ~sep:"\n"
 
 let dump () =
   Lwt_io.with_file ~mode:Lwt_io.Output "specs.output" @@ fun ch ->
@@ -67,10 +75,11 @@ let dump () =
           ~with_tests:ob.with_tests
           ~pkg
         |> Obuilder_spec.Docker.dockerfile_of_spec ~buildkit:true ~os:`Unix
+        |> indent
       in
       Lwt_io.write ch @@
       Format.asprintf "%s\n%s\n"
-        (header "BUILD" variant ~lower_bounds:ob.lower_bounds
+        (header "build" variant ~lower_bounds:ob.lower_bounds
           ~with_tests:ob.with_tests ob.opam_version) spec_str
     | `Opam (`List_revdeps lr, pkg) ->
       let spec_str =
@@ -81,10 +90,11 @@ let dump () =
           ~variant
           ~pkg
         |> Obuilder_spec.Docker.dockerfile_of_spec ~buildkit:true ~os:`Unix
+        |> indent
       in
       Lwt_io.write ch @@
       Format.asprintf "%s\n%s\n"
-        (header "LIST_REVDEPS" variant lr.opam_version) spec_str
+        (header "list-revdeps" variant lr.opam_version) spec_str
     ) specs
 
 let main dump_specs =
