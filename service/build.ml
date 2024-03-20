@@ -254,7 +254,7 @@ let with_cluster ~ocluster ~analysis ~lint ~master source =
     Node.branch ~label:"extras" (extras ~build);
   ]
 
-let with_docker ~analysis ~lint ~master source =
+let with_docker ~host_arch ~analysis ~lint ~master source =
   let module Builder : Build_intf.S = Local_build in
   let pkgs =
     Current.map (fun x -> Analyse.Analysis.packages x
@@ -263,6 +263,6 @@ let with_docker ~analysis ~lint ~master source =
   let build = build (module Builder) ~analysis ~pkgs ~master ~source in
   [
     Node.leaf ~label:"(lint)" (Node.action `Linted lint);
-    Node.branch ~label:"compilers" (compilers ~arch:Conf.host_arch ~build);
-    Node.branch ~label:"distributions" (linux_distributions ~arch:Conf.host_arch ~build);
+    Node.branch ~label:"compilers" (compilers ~arch:host_arch ~build);
+    Node.branch ~label:"distributions" (linux_distributions ~arch:host_arch ~build);
   ]

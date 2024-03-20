@@ -8,4 +8,4 @@ val v :
 
 (** [local_test repo branch] is a pipeline that tests branch [branch] on
     the local Git repository at path [repo] using local Docker containers. *)
-val local_test_pr : Current_git.Local.t -> string -> unit -> unit Current.t
+val local_test_pr : ?test_config:Opam_repo_ci.Integration_test.t -> Current_git.Local.t -> string -> unit -> unit Current.t
