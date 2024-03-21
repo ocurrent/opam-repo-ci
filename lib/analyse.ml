@@ -290,17 +290,9 @@ end
 module Examine_cache = Current_cache.Generic(Examine)
 
 let check ?test_config a =
-  Result.map (fun a ->
-    Analysis.packages a
-    |> List.map (fun (pkg, data) ->
-      pkg, Analysis.data_to_yojson data)) a
+  Result.map Analysis.to_yojson a
   |> Integration_test.check_analyse ?test_config
-  |> Result.map (fun p ->
-    let pkgs = List.map (fun (pkg, data) ->
-      pkg, Result.get_ok @@ Analysis.data_of_yojson data) p
-    in
-    Analysis.{packages=pkgs})
-
+  |> Result.map (fun p -> Result.get_ok @@ Analysis.of_yojson p)
 
 let examine ?test_config ~master src =
   Current.component "Analyse" |>

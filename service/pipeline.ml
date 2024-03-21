@@ -145,8 +145,8 @@ let get_prs repo =
   in
   master, prs
 
-let analyse ~master src =
-  Analyse.examine ~master src
+let analyse ?test_config ~master src =
+  Analyse.examine ?test_config ~master src
   |> Current.cutoff ~eq:Analyse.Analysis.equal
 
 let flatten builds =
@@ -253,7 +253,7 @@ let local_test_pr ?test_config repo pr_branch () =
   let pr_gref = Printf.sprintf "refs/heads/%s" pr_branch in
   let pr_branch = Git.Local.commit_of_ref repo pr_gref in
   let pr_branch_id = Current.map Git.Commit.id pr_branch in
-  let analysis = analyse ~master pr_branch in
+  let analysis = analyse ?test_config ~master pr_branch in
   let lint =
     let packages = Current.map Analyse.Analysis.packages analysis in
     Lint.check ?test_config ~host_os:Conf.host_os ~master ~packages pr_branch
