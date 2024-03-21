@@ -21,6 +21,7 @@ module Analysis : sig
 end
 
 val examine :
+  ?test_config:Integration_test.t ->
   master:Current_git.Commit.t Current.t ->
   Current_git.Commit.t Current.t ->
   Analysis.t Current.t
