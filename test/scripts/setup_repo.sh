@@ -2,6 +2,7 @@
 
 mkdir "capnp-secrets"
 git init -q .
+echo "var/" > .gitignore
 git config --local user.email test@test.com
 git config --local user.name Test
 git checkout -qb master
