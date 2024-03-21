@@ -4,7 +4,7 @@ module Analysis : sig
     | Deleted
     | Unavailable
     | SignificantlyChanged
-    | UnsignificantlyChanged
+    | InsignificantlyChanged
   [@@deriving yojson]
 
   type data = {

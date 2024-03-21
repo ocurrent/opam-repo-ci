@@ -41,7 +41,7 @@ let get_significant_available_pkg = function
       Some {Package_opt.pkg; urgent = None; has_tests}
   | pkg, {Analyse.Analysis.kind = SignificantlyChanged; has_tests} ->
       Some {Package_opt.pkg; urgent = Some (fun (`High | `Low) -> false); has_tests}
-  | _, {Analyse.Analysis.kind = Deleted | Unavailable | UnsignificantlyChanged; _} ->
+  | _, {Analyse.Analysis.kind = Deleted | Unavailable | InsignificantlyChanged; _} ->
       None
 
 (** The stable releases of OCaml since 4.02 plus the latest

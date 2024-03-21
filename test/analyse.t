@@ -35,11 +35,11 @@ Test packages with insignificant changes
     "packages": [
       [
         "a-1.0.0.1",
-        { "kind": [ "UnsignificantlyChanged" ], "has_tests": false }
+        { "kind": [ "InsignificantlyChanged" ], "has_tests": false }
       ],
       [
         "a-1.0.0.2",
-        { "kind": [ "UnsignificantlyChanged" ], "has_tests": false }
+        { "kind": [ "InsignificantlyChanged" ], "has_tests": false }
       ]
     ]
   }
