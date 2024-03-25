@@ -117,7 +117,7 @@ let setup_repository ~variant ~for_docker ~opam_version =
   (* TODO: MacOS seems to have a bug in (copy ...) so I am forced to remove the (workdir ...) here.
      Otherwise the "opam pin" after the "opam repository set-url" will fail (cannot find the new package for some reason) *)
   run "%s -f %s/bin/opam-%s %s/bin/opam" ln prefix opam_version_str prefix ::
-  run ~network "opam init --reinit%s -ni" opamrc :: (* TODO: Remove ~network when https://github.com/ocurrent/ocaml-dockerfile/pull/132 is merged *)
+  run "opam init --reinit%s -ni" opamrc ::
   run "uname -rs && opam exec -- ocaml -version && opam --version" ::
   env "OPAMDOWNLOADJOBS" "1" :: (* Try to avoid github spam detection *)
   env "OPAMERRLOGLEN" "0" :: (* Show the whole log if it fails *)
@@ -137,7 +137,7 @@ let set_personality ~variant =
   else
     []
 
-let spec ~for_docker ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_tests ~pkg =
+let spec ~for_docker ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_tests pkg =
   let opam_install = opam_install ~variant ~opam_version in
   let revdep = match revdep with
     | None -> []
@@ -159,11 +159,23 @@ let spec ~for_docker ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_te
     @ tests
   )
 
-let revdeps ~for_docker ~opam_version ~base ~variant ~pkg =
+(* If we are integration-testing the revdeps, we replace the
+   existing opam-repository with a dummy one. However, this
+   removes the required base compiler packages. This command
+   pins them to keep them around.
+   Related: https://github.com/ocaml/opam/issues/5895 *)
+let keep_installed = function
+  | Some Integration_test.List_revdeps -> [
+      Obuilder_spec.run "for pkg in $(opam list -s --installed) ; do opam pin --current \"$pkg\" ; done"
+    ]
+  | _ -> []
+
+let revdeps ?(test_config=None) ~for_docker ~opam_version ~base ~variant pkg =
   let open Obuilder_spec in
   let pkg = Filename.quote (OpamPackage.to_string pkg) in
   Obuilder_spec.stage ~from:base (
     setup_repository ~variant ~for_docker ~opam_version
+    @ keep_installed test_config
     @ [
       run "echo '@@@OUTPUT' && \
            opam list -s --color=never --depends-on %s --coinstallable-with %s --installable --all-versions --depopts && \

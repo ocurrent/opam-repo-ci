@@ -77,6 +77,7 @@ module Op = struct
     master : Current_git.Commit.t;
     urgent : ([`High | `Low] -> bool) option;
     base : Spec.base;
+    test_config : Integration_test.t option;
   }
 
   let id = "ci-build"
@@ -138,7 +139,7 @@ module Op = struct
       end
     | _ -> Lwt_result.return ""
 
-  let build { config; master = _; urgent = _; base } job
+  let build { config; master = _; urgent = _; base; test_config } job
       { Key.commit; ty; variant } =
     let { docker_context; pool; build_timeout } = config in
     let os = match Variant.os variant with
@@ -148,9 +149,9 @@ module Op = struct
       let base = Spec.base_to_string base in
       match ty with
       | `Opam (`List_revdeps { opam_version }, pkg) ->
-          Opam_build.revdeps ~for_docker:true ~opam_version ~base ~variant ~pkg
+          Opam_build.revdeps ~test_config ~for_docker:true ~opam_version ~base ~variant pkg
       | `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) ->
-          Opam_build.spec ~for_docker:true ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_tests ~pkg
+          Opam_build.spec ~for_docker:true ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_tests pkg
     in
     let base =
       match base with
@@ -209,7 +210,7 @@ let v ?test_config ~label ~spec ~base ~master ~urgent commit =
   and> commit = Git.fetch commit
   and> master
   and> urgent in
-  let t = { Op.config = local_builder; master; urgent; base } in
+  let t = { Op.config = local_builder; master; urgent; base; test_config } in
   match test_config with
   | None ->
     BC.get t { commit; ty; variant }
@@ -236,7 +237,7 @@ let list_revdeps ?test_config ~variant ~opam_version ~pkgopt ~base ~master ~afte
   and> commit = Git.fetch commit
   and> master
   and> () = after in
-  let t = { Op.config = local_builder; master; urgent; base } in
+  let t = { Op.config = local_builder; master; urgent; base; test_config } in
   let ty = `Opam (`List_revdeps {Spec.opam_version}, pkg) in
   let f () =
     BC.get t { commit; ty; variant }

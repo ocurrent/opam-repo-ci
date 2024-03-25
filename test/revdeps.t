@@ -7,4 +7,5 @@
   $ git add .
   $ git commit -qm a-1-update
   $ opam-repo-ci-local --repo="." --branch=new-branch --revdeps-only
-  Ok ()
+  b.0.0.1
+  b.0.0.2
