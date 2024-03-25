@@ -404,7 +404,9 @@ module Lint = struct
     match errors with
     | [] -> Ok ()
     | [msg] -> Error (`Msg msg)
-    | _::_ -> Error (`Msg (Fmt.str "%d errors" (List.length errors)))
+    | l ->
+      let err_str = String.concat "\n" l in
+      Error (`Msg (Fmt.str "%d errors:\n%s" (List.length errors) err_str))
 
   let pp f _ = Fmt.string f "Lint"
 
