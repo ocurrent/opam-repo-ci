@@ -217,17 +217,20 @@ module Check = struct
         Lwt.return errors
 
   (** [package_name_collision p0 p1] returns true if [p0] is similar to [p1].
-    Similarity is defined to be either case-insensitive string equality
-    considering '_' and '-' to be equal, or a Levenshtein distance within
-    1/6 of the length of the string (rounding up).
+    Similarity is defined to be either:
+
+    - Case-insensitive string equality considering underscores ([_])
+      and dashes ([-]) to be equal
+    - A Levenshtein distance within 1/6 of the length of the string (rounding up),
+      with names of three characters or less ignored as a special case
     
     As examples, by this relation:
 
-    - "lru-cache" and "lru_cache" collide
-    - "lru-cache" and "LRU-cache" collide
-    - "lru-cache" and "cache-lru" do not collide 
-    - "ocaml" and "dcaml" collide
-    - "ocamlfind" and "ocamlbind" do not collide *)
+    - [lru-cache] and [lru_cache] collide
+    - [lru-cache] and [LRU-cache] collide
+    - [lru-cache] and [cache-lru] do not collide
+    - [ocaml] and [pcaml] collide
+    - [ocamlfind] and [ocamlbind] do not collide *)
   let package_name_collision p0 p1 =
     let dash_underscore p0 p1 =
       let f = function
@@ -243,7 +246,7 @@ module Check = struct
       if l <= 3 then false
       else
         let k = ((l - 1) / 6) + 1 in
-        Option.is_none @@ Mula.Strings.Lev.get_distance ~k p0 p1
+        Option.is_some @@ Mula.Strings.Lev.get_distance ~k p0 p1
     in
     dash_underscore p0 p1 || levenstein_distance p0 p1
 

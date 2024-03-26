@@ -8,4 +8,3 @@ git checkout -qb master
 git apply "patches/a-1.patch"
 git add .
 git commit -qm a-1
-git checkout -qb new-branch
