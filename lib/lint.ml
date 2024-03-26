@@ -217,29 +217,46 @@ module Check = struct
         Lwt.return errors
 
   (** [package_name_collision p0 p1] returns true if [p0] is similar to [p1].
-    Similarity is defined to be case-insensitive string equality
-    considering '_' and '-' to be equal. As examples, by this relation:
+    Similarity is defined to be either case-insensitive string equality
+    considering '_' and '-' to be equal, or a Levenshtein distance within
+    1/6 of the length of the string (rounding up).
+    
+    As examples, by this relation:
 
     - "lru-cache" and "lru_cache" collide
     - "lru-cache" and "LRU-cache" collide
-    - "lru-cache" and "cache-lru" do not collide *)
+    - "lru-cache" and "cache-lru" do not collide 
+    - "ocaml" and "dcaml" collide
+    - "ocamlfind" and "ocamlbind" do not collide *)
   let package_name_collision p0 p1 =
-    let f = function
-      | '_' -> '-'
-      | c -> c
+    let dash_underscore p0 p1 =
+      let f = function
+        | '_' -> '-'
+        | c -> c
+      in
+      let p0 = String.map f p0 in
+      let p1 = String.map f p1 in
+      String.equal p0 p1
     in
-    let p0 = String.map f @@ String.lowercase_ascii p0 in
-    let p1 = String.map f @@ String.lowercase_ascii p1 in
-    String.equal p0 p1
+    let levenstein_distance p0 p1 =
+      let l = String.length p0 in
+      if l <= 3 then false
+      else
+        let k = ((l - 1) / 6) + 1 in
+        Option.is_none @@ Mula.Strings.Lev.get_distance ~k p0 p1
+    in
+    dash_underscore p0 p1 || levenstein_distance p0 p1
 
   let check_name_collisions ~cwd ~errors ~pkg =
     let pkg_name = pkg.OpamPackage.name |> OpamPackage.Name.to_string in
+    let pkg_name_lower = String.lowercase_ascii pkg_name in
     let repository_path = Fpath.to_string cwd // "packages" in
     get_files repository_path >|= fun packages ->
     let packages = List.filter (fun s -> not @@ String.equal s pkg_name) packages in
     List.fold_left
       (fun errors other_pkg ->
-        if package_name_collision pkg_name other_pkg then
+        let other_pkg_lower = String.lowercase_ascii other_pkg in
+        if package_name_collision pkg_name_lower other_pkg_lower then
           (pkg, NameCollision other_pkg) :: errors
         else
           errors)
