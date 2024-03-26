@@ -1,0 +1,26 @@
+diff --git a/packages/a-1/a-1.0.0.1/opam b/packages/a-1/a-1.0.0.1/opam
+index 5246a83..c17a1ba 100644
+--- a/packages/a-1/a-1.0.0.1/opam
++++ b/packages/a-1/a-1.0.0.1/opam
+@@ -1,7 +1,7 @@
+ opam-version: "2.0"
+ synopsis: "Synopsis"
+ description: "Description"
+-maintainer: "Maintainer"
++maintainer: "Another maintainer"
+ author: "Author"
+ license: "Apache-2.0"
+ homepage: "https://github.com/ocurrent/opam-repo-ci"
+diff --git a/packages/a-1/a-1.0.0.2/opam b/packages/a-1/a-1.0.0.2/opam
+index 5246a83..c018682 100644
+--- a/packages/a-1/a-1.0.0.2/opam
++++ b/packages/a-1/a-1.0.0.2/opam
+@@ -1,7 +1,7 @@
+ opam-version: "2.0"
+ synopsis: "Synopsis"
+ description: "Description"
+-maintainer: "Maintainer"
++maintainer: "Someone else"
+ author: "Author"
+ license: "Apache-2.0"
+ homepage: "https://github.com/ocurrent/opam-repo-ci"

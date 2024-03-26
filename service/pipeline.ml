@@ -261,7 +261,7 @@ let local_test_pr ?test_config repo pr_branch () =
   let builds =
     Node.root
       (Node.leaf ~label:"(analysis)" (Node.action `Analysed analysis)
-      :: Build.with_docker ~host_arch:Conf.host_arch ~analysis ~lint ~master pr_branch_id)
+      :: Build.with_docker ?test_config ~host_arch:Conf.host_arch ~analysis ~lint ~master pr_branch_id)
   in
   let dummy_repo =
     Current.return { Github.Repo_id.owner = "local-owner"; name = "local-repo" }

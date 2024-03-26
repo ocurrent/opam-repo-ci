@@ -4,6 +4,7 @@
     The job is labelled [label]. [urgent] has no effect, but is included
     to conform with the interface for [Cluster_build]. *)
 val v :
+  ?test_config:Integration_test.t ->
   label:string ->
   spec:Spec.t Current.t ->
   base:Spec.base Current.t ->
@@ -19,6 +20,7 @@ val v :
     The spec is generated on top of [base], and the OCurrent job is run after
     the job specified by [after], making it a dependency. *)
 val list_revdeps :
+  ?test_config:Integration_test.t ->
   variant:Variant.t ->
   opam_version:[ `Dev | `V2_0 | `V2_1 ] ->
   pkgopt:Package_opt.t Current.t ->

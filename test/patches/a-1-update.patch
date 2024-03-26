@@ -1,0 +1,30 @@
+From 87954d1c1f2ca2814915ca0e46405f34ae697032 Mon Sep 17 00:00:00 2001
+From: benmandrew <benmandrew@gmail.com>
+Date: Wed, 15 Mar 2024 17:14:32 +0100
+Subject: [PATCH] a
+
+---
+ packages/a-1/a-1.0.0.3/opam | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+ create mode 100644 packages/a-1/a-1.0.0.1/opam
+
+diff --git a/packages/a-1/a-1.0.0.3/opam b/packages/a-1/a-1.0.0.3/opam
+new file mode 100644
+index 0000000..58229e8
+--- /dev/null
++++ b/packages/a-1/a-1.0.0.3/opam
+@@ -0,0 +1,12 @@
++opam-version: "2.0"
++synopsis: "Synopsis"
++description: "Description"
++maintainer: "Maintainer"
++author: "Author"
++license: "Apache-2.0"
++homepage: "https://github.com/ocurrent/opam-repo-ci"
++bug-reports: "https://github.com/ocurrent/opam-repo-ci/issues"
++dev-repo: "git+https://github.com/ocurrent/opam-repo-ci.git"
++doc: "https://ocurrent.github.io/ocurrent/"
++build: []
++depends: []
+-- 
+2.43.0
