@@ -14,8 +14,11 @@
   (glob_files ./patches/*)))
 
 (rule
- (with-stdout-to specs.output (run ./test.exe --dump-specs)))
+ (with-stdout-to
+  specs.output
+  (run ./test.exe --dump-specs)))
 
 (rule
  (alias runtest)
- (action (diff specs.expected specs.output)))
+ (action
+  (diff specs.expected specs.output)))
