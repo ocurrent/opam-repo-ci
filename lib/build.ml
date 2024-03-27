@@ -143,10 +143,12 @@ let extras ~build =
     switches @ arches @ acc
   ) [] default_compilers_full
 
-let test_revdeps (module Builder : Build_intf.S) ~opam_version ~master ~base ~variant ~pkgopt ~after source =
+let test_revdeps (module Builder : Build_intf.S) ~opam_version ~master ~base ~variant ~pkgopt ~after ~all_new_pkgs source =
   let revdeps =
+    let* all_new_pkgs in
     Builder.list_revdeps ~opam_version ~base ~variant ~pkgopt ~master ~after source
-    |> Current.map OpamPackage.Set.elements
+    |> Current.map (fun p -> 
+      OpamPackage.Set.(elements @@ filter (fun p -> not @@ List.mem p all_new_pkgs) p))
   in
   let pkg = Current.map (fun pkgopt -> pkgopt.Package_opt.pkg) pkgopt in
   let urgent = Current.map (fun pkgopt -> pkgopt.Package_opt.urgent) pkgopt in
@@ -177,17 +179,18 @@ let get_base ~arch variant =
       in
       Spec.Docker (Current_docker.Raw.Image.of_hash repo_id)
 
-let build (module Builder : Build_intf.S) ~analysis ~pkgs ~master ~source ~opam_version ~lower_bounds ~revdeps label variant =
+let build (module Builder : Build_intf.S) ~analysis ~pkgopts ~master ~source ~opam_version ~lower_bounds ~revdeps label variant =
   let arch = Variant.arch variant in
   let analysis = with_label label analysis in
-  let pkgs =
+  let pkgopts =
     (* Add fake dependency from pkgs to analysis so that the package being tested appears
       below the platform, to make the diagram look nicer. Ideally, the pulls of the
       base images should be moved to the top (not be per-package at all). *)
     let+ _ = analysis
-    and+ pkgs in
-    pkgs
+    and+ pkgopts in
+    pkgopts
   in
+  let pkgs = Current.map (List.map (fun x ->x.Package_opt.pkg)) pkgopts in
   let build_pkg pkgopt =
     let pkg = Current.map (fun pkgopt -> pkgopt.Package_opt.pkg) pkgopt in
     let urgent = Current.return None in
@@ -220,7 +223,7 @@ let build (module Builder : Build_intf.S) ~analysis ~pkgs ~master ~source ~opam_
     and revdeps =
       if revdeps then
         test_revdeps (module Builder) ~opam_version ~master ~base ~variant
-          ~pkgopt source ~after:image
+          ~pkgopt source ~after:image ~all_new_pkgs:pkgs
       else Node.empty
     in
     let label = Current.map OpamPackage.to_string pkg in
@@ -230,7 +233,7 @@ let build (module Builder : Build_intf.S) ~analysis ~pkgs ~master ~source ~opam_
       revdeps;
     ]
   in
-  Node.list_map ~collapse_key:"pkg" (module Package_opt) build_pkg pkgs
+  Node.list_map ~collapse_key:"pkg" (module Package_opt) build_pkg pkgopts
   |> (fun x -> Node.branch ~label [x])
   |> Node.collapse ~key:"platform" ~value:label ~input:analysis
 
@@ -239,11 +242,11 @@ let with_cluster ~ocluster ~analysis ~lint ~master source =
     let v = Cluster_build.v ocluster
     let list_revdeps = Cluster_build.list_revdeps ocluster
   end in
-  let pkgs =
+  let pkgopts =
     Current.map (fun x -> Analyse.Analysis.packages x
     |> List.filter_map get_significant_available_pkg) analysis
   in
-  let build = build (module Builder) ~analysis ~pkgs ~master ~source in
+  let build = build (module Builder) ~analysis ~pkgopts ~master ~source in
   [
     Node.leaf ~label:"(lint)" (Node.action `Linted lint);
     Node.branch ~label:"compilers" (compilers ~arch:`X86_64 ~build);
@@ -255,11 +258,11 @@ let with_cluster ~ocluster ~analysis ~lint ~master source =
 
 let with_docker ~host_arch ~analysis ~lint ~master source =
   let module Builder : Build_intf.S = Local_build in
-  let pkgs =
+  let pkgopts =
     Current.map (fun x -> Analyse.Analysis.packages x
     |> List.filter_map get_significant_available_pkg) analysis
   in
-  let build = build (module Builder) ~analysis ~pkgs ~master ~source in
+  let build = build (module Builder) ~analysis ~pkgopts ~master ~source in
   [
     Node.leaf ~label:"(lint)" (Node.action `Linted lint);
     Node.branch ~label:"compilers" (compilers ~arch:host_arch ~build);
