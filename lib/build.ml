@@ -143,12 +143,10 @@ let extras ~build =
     switches @ arches @ acc
   ) [] default_compilers_full
 
-let test_revdeps (module Builder : Build_intf.S) ~opam_version ~master ~base ~variant ~pkgopt ~after ~all_new_pkgs source =
+let test_revdeps (module Builder : Build_intf.S) ~opam_version ~master ~base ~variant ~pkgopt ~after ~new_pkgs source =
   let revdeps =
-    let* all_new_pkgs in
-    Builder.list_revdeps ~opam_version ~base ~variant ~pkgopt ~master ~after source
-    |> Current.map (fun p -> 
-      OpamPackage.Set.(elements @@ filter (fun p -> not @@ List.mem p all_new_pkgs) p))
+    Builder.list_revdeps ~opam_version ~base ~variant ~pkgopt ~new_pkgs ~master ~after source
+    |> Current.map OpamPackage.Set.elements
   in
   let pkg = Current.map (fun pkgopt -> pkgopt.Package_opt.pkg) pkgopt in
   let urgent = Current.map (fun pkgopt -> pkgopt.Package_opt.urgent) pkgopt in
@@ -223,7 +221,7 @@ let build (module Builder : Build_intf.S) ~analysis ~pkgopts ~master ~source ~op
     and revdeps =
       if revdeps then
         test_revdeps (module Builder) ~opam_version ~master ~base ~variant
-          ~pkgopt source ~after:image ~all_new_pkgs:pkgs
+          ~pkgopt source ~after:image ~new_pkgs:pkgs
       else Node.empty
     in
     let label = Current.map OpamPackage.to_string pkg in
