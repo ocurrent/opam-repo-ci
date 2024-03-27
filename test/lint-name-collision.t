@@ -8,10 +8,10 @@ of a package [a_1] that conflicts with the existing [a-1] package
   $ git commit -qm a_1-name-collision
   $ opam-repo-ci-local --repo="." --branch=new-branch-1 --lint-only --no-web-server
   Error "4 errors:
-  Warning in a_1.0.1.1: Possible name collision with package 'a-1'
-  Warning in a_1.0.1.0: Possible name collision with package 'a-1'
+  Warning in a_1.0.0.1: Possible name collision with package 'a-1'
   Warning in a_1.0.0.2: Possible name collision with package 'a-1'
-  Warning in a_1.0.0.1: Possible name collision with package 'a-1'"
+  Warning in a_1.0.1.0: Possible name collision with package 'a-1'
+  Warning in a_1.0.1.1: Possible name collision with package 'a-1'"
 
 Delete OCurrent cache
 
@@ -31,7 +31,7 @@ to test various positive and negative cases
   $ git commit -qm levenshtein-2
   $ opam-repo-ci-local --repo="." --branch=new-branch-2 --lint-only --no-web-server
   Error "4 errors:
-  Warning in fielf.0.0.1: Possible name collision with package 'field'
-  Warning in fieffinder.0.0.1: Possible name collision with package 'fieffind'
   Warning in fieffind.0.0.1: Possible name collision with package 'fieffinder'
-  Warning in fieffind.0.0.1: Possible name collision with package 'fieldfind'"
+  Warning in fieffind.0.0.1: Possible name collision with package 'fieldfind'
+  Warning in fieffinder.0.0.1: Possible name collision with package 'fieffind'
+  Warning in fielf.0.0.1: Possible name collision with package 'field'"

@@ -425,7 +425,7 @@ module Lint = struct
     | [] -> Ok ()
     | [msg] -> Error (`Msg msg)
     | l ->
-      let err_str = String.concat "\n" l in
+      let err_str = String.concat "\n" @@ List.sort String.compare l in
       Error (`Msg (Fmt.str "%d errors:\n%s" (List.length errors) err_str))
 
   let pp f _ = Fmt.string f "Lint"
@@ -443,13 +443,10 @@ let get_packages_kind =
       packages)
 
 let check ?test_config ~host_os ~master ~packages src =
-  let res =
-    Current.component "Lint" |>
-    let> src
-    and> packages = get_packages_kind packages
-    and> master in
-    let host_os = if String.equal host_os "macos" then Macos else Other in
-    Lint_cache.run { master } { src; packages } { host_os }
-  in
-  Integration_test.check_lint ~test_config res;
-  res
+  Current.component "Lint" |>
+  let> src
+  and> packages = get_packages_kind packages
+  and> master in
+  let host_os = if String.equal host_os "macos" then Macos else Other in
+  Lint_cache.run { master } { src; packages } { host_os }
+  |> Current.Primitive.map_result @@ Integration_test.check_lint ?test_config
