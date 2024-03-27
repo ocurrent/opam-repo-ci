@@ -100,6 +100,9 @@ module Op = struct
       { Key.pool; commit; variant; ty } =
     let { connection; timeout } = config in
     let master = Current_git.Commit.hash master in
+    let timeout = match Variant.arch variant with
+      | `Riscv64 -> Int64.mul timeout 2L
+      | _ -> timeout in
     let os = match Variant.os variant with
       | `Macos | `Linux | `Freebsd -> `Unix
     in
