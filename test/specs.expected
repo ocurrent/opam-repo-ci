@@ -4,6 +4,7 @@ build: debian-12-ocaml-4.02/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -40,6 +41,7 @@ build: debian-12-ocaml-4.02/amd64 opam-dev lower-bounds
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -95,6 +97,7 @@ build: debian-12-ocaml-4.03/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -131,6 +134,7 @@ build: debian-12-ocaml-4.03/amd64 opam-dev lower-bounds
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -186,6 +190,7 @@ build: debian-12-ocaml-4.04/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -222,6 +227,7 @@ build: debian-12-ocaml-4.04/amd64 opam-dev lower-bounds
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -277,6 +283,7 @@ build: debian-12-ocaml-4.05/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -313,6 +320,7 @@ build: debian-12-ocaml-4.05/amd64 opam-dev lower-bounds
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -368,6 +376,7 @@ build: debian-12-ocaml-4.06/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -404,6 +413,7 @@ build: debian-12-ocaml-4.06/amd64 opam-dev lower-bounds
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -459,6 +469,7 @@ build: debian-12-ocaml-4.07/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -495,6 +506,7 @@ build: debian-12-ocaml-4.07/amd64 opam-dev lower-bounds
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -550,6 +562,7 @@ build: debian-12-ocaml-4.08/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -586,6 +599,7 @@ build: debian-12-ocaml-4.08/amd64 opam-dev lower-bounds
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -641,6 +655,7 @@ build: debian-12-ocaml-4.09/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -677,6 +692,7 @@ build: debian-12-ocaml-4.09/amd64 opam-dev lower-bounds
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -732,6 +748,7 @@ build: debian-12-ocaml-4.10/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -768,6 +785,7 @@ build: debian-12-ocaml-4.10/amd64 opam-dev lower-bounds
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -823,6 +841,7 @@ build: debian-12-ocaml-4.11/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -859,6 +878,7 @@ build: debian-12-ocaml-4.11/amd64 opam-dev lower-bounds
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -914,6 +934,7 @@ build: debian-12-ocaml-4.12/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -950,6 +971,7 @@ build: debian-12-ocaml-4.12/amd64 opam-dev lower-bounds
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -1005,6 +1027,7 @@ build: debian-12-ocaml-4.13/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -1041,6 +1064,7 @@ build: debian-12-ocaml-4.13/amd64 opam-dev lower-bounds
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -1096,6 +1120,7 @@ build: debian-12-ocaml-4.14/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -1132,6 +1157,7 @@ build: debian-12-ocaml-4.14/amd64 opam-dev lower-bounds
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -1187,6 +1213,7 @@ list-revdeps: debian-12-ocaml-4.14/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -1205,6 +1232,7 @@ build: debian-12-ocaml-4.14/amd64 opam-dev with-tests
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -1260,6 +1288,7 @@ build: debian-12-ocaml-5.0/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -1296,6 +1325,7 @@ build: debian-12-ocaml-5.0/amd64 opam-dev lower-bounds
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -1351,6 +1381,7 @@ build: debian-12-ocaml-5.1/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -1387,6 +1418,7 @@ build: debian-12-ocaml-5.1/amd64 opam-dev lower-bounds
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -1442,6 +1474,7 @@ list-revdeps: debian-12-ocaml-5.1/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -1460,6 +1493,7 @@ build: debian-12-ocaml-5.1/amd64 opam-dev with-tests
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -1515,6 +1549,7 @@ build: ubuntu-23.10-ocaml-5.1/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -1551,6 +1586,7 @@ build: ubuntu-23.04-ocaml-5.1/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -1587,6 +1623,7 @@ build: ubuntu-22.04-ocaml-5.1/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -1623,6 +1660,7 @@ build: ubuntu-20.04-ocaml-5.1/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -1659,6 +1697,7 @@ build: opensuse-tumbleweed-ocaml-5.1/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -1695,6 +1734,7 @@ build: opensuse-15.5-ocaml-5.1/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -1731,6 +1771,7 @@ build: oraclelinux-9-ocaml-5.1/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -1767,6 +1808,7 @@ build: oraclelinux-8-ocaml-5.1/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -1803,6 +1845,7 @@ build: fedora-38-ocaml-5.1/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -1839,6 +1882,7 @@ build: fedora-37-ocaml-5.1/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -1875,6 +1919,7 @@ build: debian-unstable-ocaml-5.1/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -1911,6 +1956,7 @@ build: debian-testing-ocaml-5.1/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -1947,6 +1993,7 @@ build: debian-10-ocaml-5.1/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -1983,6 +2030,7 @@ build: debian-11-ocaml-5.1/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -2019,6 +2067,7 @@ build: archlinux-ocaml-5.1/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -2055,6 +2104,7 @@ build: alpine-3.19-ocaml-5.1/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -2091,6 +2141,7 @@ build: ubuntu-23.10-ocaml-4.14/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -2127,6 +2178,7 @@ build: ubuntu-23.04-ocaml-4.14/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -2163,6 +2215,7 @@ build: ubuntu-22.04-ocaml-4.14/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -2199,6 +2252,7 @@ build: ubuntu-20.04-ocaml-4.14/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -2235,6 +2289,7 @@ build: opensuse-tumbleweed-ocaml-4.14/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -2271,6 +2326,7 @@ build: opensuse-15.5-ocaml-4.14/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -2307,6 +2363,7 @@ build: oraclelinux-9-ocaml-4.14/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -2343,6 +2400,7 @@ build: oraclelinux-8-ocaml-4.14/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -2379,6 +2437,7 @@ build: fedora-38-ocaml-4.14/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -2415,6 +2474,7 @@ build: fedora-37-ocaml-4.14/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -2451,6 +2511,7 @@ build: debian-unstable-ocaml-4.14/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -2487,6 +2548,7 @@ build: debian-testing-ocaml-4.14/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -2523,6 +2585,7 @@ build: debian-10-ocaml-4.14/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -2559,6 +2622,7 @@ build: debian-11-ocaml-4.14/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -2595,6 +2659,7 @@ build: archlinux-ocaml-4.14/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -2631,6 +2696,7 @@ build: alpine-3.19-ocaml-4.14/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -2666,6 +2732,7 @@ build: macos-homebrew-ocaml-5.1/amd64 opam-dev
     USER 1000:1000
     RUN ln -f ~/local/bin/opam-dev ~/local/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -2701,6 +2768,7 @@ build: macos-homebrew-ocaml-5.1/arm64 opam-dev
     USER 1000:1000
     RUN ln -f ~/local/bin/opam-dev ~/local/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -2736,6 +2804,7 @@ build: macos-homebrew-ocaml-4.14/amd64 opam-dev
     USER 1000:1000
     RUN ln -f ~/local/bin/opam-dev ~/local/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -2771,6 +2840,7 @@ build: macos-homebrew-ocaml-4.14/arm64 opam-dev
     USER 1000:1000
     RUN ln -f ~/local/bin/opam-dev ~/local/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -2807,6 +2877,7 @@ build: freebsd-ocaml-5.1/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/local/bin/opam-dev /usr/local/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -2843,6 +2914,7 @@ build: freebsd-ocaml-4.14/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/local/bin/opam-dev /usr/local/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -2879,6 +2951,7 @@ build: debian-12-ocaml-5.1/amd64 opam-2.0
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -2915,6 +2988,7 @@ build: debian-12-ocaml-5.1/amd64 opam-2.1
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -2951,6 +3025,7 @@ build: debian-12-ocaml-5.1-afl/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -2987,6 +3062,7 @@ build: debian-12-ocaml-5.1-flambda/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -3023,6 +3099,7 @@ build: debian-12-ocaml-5.1-no-flat-float-array/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -3060,6 +3137,7 @@ build: debian-12-ocaml-5.1/i386 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -3096,6 +3174,7 @@ build: debian-12-ocaml-5.1/arm64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -3132,6 +3211,7 @@ build: debian-12-ocaml-5.1/ppc64le opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -3169,6 +3249,7 @@ build: debian-12-ocaml-5.1/arm32v7 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -3205,6 +3286,7 @@ build: debian-12-ocaml-5.1/s390x opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -3241,6 +3323,7 @@ build: ubuntu-22.04-ocaml-5.1/riscv64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -3277,6 +3360,7 @@ build: debian-12-ocaml-4.14/amd64 opam-2.0
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -3313,6 +3397,7 @@ build: debian-12-ocaml-4.14/amd64 opam-2.1
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -3349,6 +3434,7 @@ build: debian-12-ocaml-4.14-afl/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -3385,6 +3471,7 @@ build: debian-12-ocaml-4.14-flambda/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -3421,6 +3508,7 @@ build: debian-12-ocaml-4.14-fp/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -3457,6 +3545,7 @@ build: debian-12-ocaml-4.14-flambda-fp/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -3493,6 +3582,7 @@ build: debian-12-ocaml-4.14-no-flat-float-array/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -3529,6 +3619,7 @@ build: debian-12-ocaml-4.14-nnp/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -3565,6 +3656,7 @@ build: debian-12-ocaml-4.14-nnpchecker/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -3602,6 +3694,7 @@ build: debian-12-ocaml-4.14/i386 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -3638,6 +3731,7 @@ build: debian-12-ocaml-4.14/arm64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -3674,6 +3768,7 @@ build: debian-12-ocaml-4.14/ppc64le opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -3711,6 +3806,7 @@ build: debian-12-ocaml-4.14/arm32v7 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -3747,6 +3843,7 @@ build: debian-12-ocaml-4.14/s390x opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
@@ -3783,6 +3880,7 @@ build: ubuntu-22.04-ocaml-4.14/riscv64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
+    RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMSOLVERTIMEOUT="500"
