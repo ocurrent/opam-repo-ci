@@ -18,4 +18,5 @@
   capnp-rpc-lwt
   obuilder-spec
   opam-format
-  opam-state))
+  opam-state
+  opam-repo-ci-api))

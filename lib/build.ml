@@ -1,5 +1,4 @@
 open Current.Syntax
-open Opam_repo_ci
 
 module Docker = Current_docker.Default
 module Distro = Dockerfile_opam.Distro

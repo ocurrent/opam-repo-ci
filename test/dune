@@ -12,3 +12,13 @@
   %{bin:opam-repo-ci-local}
   ./scripts/setup_repo.sh
   (glob_files ./patches/*)))
+
+(rule
+ (with-stdout-to
+  specs.output
+  (run ./test.exe --dump-specs)))
+
+(rule
+ (alias runtest)
+ (action
+  (diff specs.expected specs.output)))
