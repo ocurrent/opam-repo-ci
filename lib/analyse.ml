@@ -31,7 +31,7 @@ module Analysis = struct
     | Deleted
     | Unavailable
     | SignificantlyChanged
-    | UnsignificantlyChanged
+    | InsignificantlyChanged
   [@@deriving eq, yojson]
 
   type data = {
@@ -113,15 +113,15 @@ module Analysis = struct
       | (New | Deleted | Unavailable), (New | Deleted | Unavailable) ->
           old_kind (* old_kind instead of assert false because OpamStd.Map.update works this way :( *)
       (* NOTE: stronger_kind >= weaker_kind *)
-      | New, (SignificantlyChanged | UnsignificantlyChanged)
-      | Deleted, (SignificantlyChanged | UnsignificantlyChanged)
-      | Unavailable, (SignificantlyChanged | UnsignificantlyChanged)
-      | SignificantlyChanged, (SignificantlyChanged | UnsignificantlyChanged)
-      | UnsignificantlyChanged, UnsignificantlyChanged ->
+      | New, (SignificantlyChanged | InsignificantlyChanged)
+      | Deleted, (SignificantlyChanged | InsignificantlyChanged)
+      | Unavailable, (SignificantlyChanged | InsignificantlyChanged)
+      | SignificantlyChanged, (SignificantlyChanged | InsignificantlyChanged)
+      | InsignificantlyChanged, InsignificantlyChanged ->
           old_kind
       (* NOTE: weaker_kind < stronger_kind *)
       | SignificantlyChanged, (New | Deleted | Unavailable)
-      | UnsignificantlyChanged, (New | Deleted | Unavailable | SignificantlyChanged) ->
+      | InsignificantlyChanged, (New | Deleted | Unavailable | SignificantlyChanged) ->
           kind
     in
     OpamPackage.Map.update (get_package_name ~path ~name ~package) update kind pkgs
@@ -178,7 +178,7 @@ module Analysis = struct
                             depexts_equal old_file new_file
                     then
                       (* the changes are not significant so we ignore this package *)
-                      add_pkg ~path ~name ~package UnsignificantlyChanged pkgs
+                      add_pkg ~path ~name ~package InsignificantlyChanged pkgs
                     else
                       add_pkg ~path ~name ~package SignificantlyChanged pkgs
                 end
@@ -289,8 +289,14 @@ end
 
 module Examine_cache = Current_cache.Generic(Examine)
 
-let examine ~master src =
+let check ?test_config a =
+  Result.map Analysis.to_yojson a
+  |> Integration_test.check_analyse ?test_config
+  |> Result.map (fun p -> Result.get_ok @@ Analysis.of_yojson p)
+
+let examine ?test_config ~master src =
   Current.component "Analyse" |>
   let> src = src
   and> master = master in
   Examine_cache.run Examine.No_context { Examine.Key.src } { Examine.Value.master }
+  |> Current.Primitive.map_result @@ check ?test_config

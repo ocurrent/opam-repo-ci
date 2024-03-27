@@ -315,7 +315,7 @@ module Check = struct
       match kind with
       | Analyse.Analysis.Deleted ->
           Lwt.return errors (* TODO *)
-      | Analyse.Analysis.(New | Unavailable | SignificantlyChanged | UnsignificantlyChanged) ->
+      | Analyse.Analysis.(New | Unavailable | SignificantlyChanged | InsignificantlyChanged) ->
           get_opam ~cwd pkg >>= fun opam ->
           let errors = check_name_field ~errors ~pkg opam in
           let errors = check_version_field ~errors ~pkg opam in
