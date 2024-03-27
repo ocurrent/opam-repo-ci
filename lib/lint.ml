@@ -217,29 +217,49 @@ module Check = struct
         Lwt.return errors
 
   (** [package_name_collision p0 p1] returns true if [p0] is similar to [p1].
-    Similarity is defined to be case-insensitive string equality
-    considering '_' and '-' to be equal. As examples, by this relation:
+    Similarity is defined to be either:
 
-    - "lru-cache" and "lru_cache" collide
-    - "lru-cache" and "LRU-cache" collide
-    - "lru-cache" and "cache-lru" do not collide *)
+    - Case-insensitive string equality considering underscores ([_])
+      and dashes ([-]) to be equal
+    - A Levenshtein distance within 1/6 of the length of the string (rounding up),
+      with names of three characters or less ignored as a special case
+    
+    As examples, by this relation:
+
+    - [lru-cache] and [lru_cache] collide
+    - [lru-cache] and [LRU-cache] collide
+    - [lru-cache] and [cache-lru] do not collide
+    - [ocaml] and [pcaml] collide
+    - [ocamlfind] and [ocamlbind] do not collide *)
   let package_name_collision p0 p1 =
-    let f = function
-      | '_' -> '-'
-      | c -> c
+    let dash_underscore p0 p1 =
+      let f = function
+        | '_' -> '-'
+        | c -> c
+      in
+      let p0 = String.map f p0 in
+      let p1 = String.map f p1 in
+      String.equal p0 p1
     in
-    let p0 = String.map f @@ String.lowercase_ascii p0 in
-    let p1 = String.map f @@ String.lowercase_ascii p1 in
-    String.equal p0 p1
+    let levenstein_distance p0 p1 =
+      let l = String.length p0 in
+      if l <= 3 then false
+      else
+        let k = ((l - 1) / 6) + 1 in
+        Option.is_some @@ Mula.Strings.Lev.get_distance ~k p0 p1
+    in
+    dash_underscore p0 p1 || levenstein_distance p0 p1
 
   let check_name_collisions ~cwd ~errors ~pkg =
     let pkg_name = pkg.OpamPackage.name |> OpamPackage.Name.to_string in
+    let pkg_name_lower = String.lowercase_ascii pkg_name in
     let repository_path = Fpath.to_string cwd // "packages" in
     get_files repository_path >|= fun packages ->
     let packages = List.filter (fun s -> not @@ String.equal s pkg_name) packages in
     List.fold_left
       (fun errors other_pkg ->
-        if package_name_collision pkg_name other_pkg then
+        let other_pkg_lower = String.lowercase_ascii other_pkg in
+        if package_name_collision pkg_name_lower other_pkg_lower then
           (pkg, NameCollision other_pkg) :: errors
         else
           errors)
@@ -405,7 +425,7 @@ module Lint = struct
     | [] -> Ok ()
     | [msg] -> Error (`Msg msg)
     | l ->
-      let err_str = String.concat "\n" l in
+      let err_str = String.concat "\n" @@ List.sort String.compare l in
       Error (`Msg (Fmt.str "%d errors:\n%s" (List.length errors) err_str))
 
   let pp f _ = Fmt.string f "Lint"
@@ -423,13 +443,10 @@ let get_packages_kind =
       packages)
 
 let check ?test_config ~host_os ~master ~packages src =
-  let res =
-    Current.component "Lint" |>
-    let> src
-    and> packages = get_packages_kind packages
-    and> master in
-    let host_os = if String.equal host_os "macos" then Macos else Other in
-    Lint_cache.run { master } { src; packages } { host_os }
-  in
-  Integration_test.check_lint ~test_config res;
-  res
+  Current.component "Lint" |>
+  let> src
+  and> packages = get_packages_kind packages
+  and> master in
+  let host_os = if String.equal host_os "macos" then Macos else Other in
+  Lint_cache.run { master } { src; packages } { host_os }
+  |> Current.Primitive.map_result @@ Integration_test.check_lint ?test_config
