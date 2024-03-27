@@ -115,10 +115,10 @@ module Commit_info_cache = struct
 
   type elt = {
     build_status : build_status;
-    n_jobs : int
+    summary : Summary.t
   }
 
-  let empty_elt = { build_status = `Not_started; n_jobs = 0 }
+  let empty_elt = { build_status = `Not_started; summary = Summary.empty }
 
   let cache : (key, elt) Hashtbl.t = Hashtbl.create 1_000
   let cache_max_size = 1_000_000
@@ -144,7 +144,7 @@ module Commit_info_cache = struct
 
   let find_build_status ~owner ~name ~hash = (find ~owner ~name ~hash).build_status
 
-  let find_n_jobs ~owner ~name ~hash = (find ~owner ~name ~hash).n_jobs
+  let find_summary ~owner ~name ~hash = (find ~owner ~name ~hash).summary
 
   let remove ~owner ~name ~hash =
     let key = (owner, name, hash) in
@@ -160,7 +160,7 @@ module Commit_info_cache = struct
           List.find_opt (fun (_, hash') -> String.equal hash hash') refs
           |> function
           | None -> acc
-          | Some (ref, _) -> (ref, status.n_jobs) :: acc
+          | Some (ref, _) -> (ref, status.summary) :: acc
         else acc)
       cache
       []
@@ -168,10 +168,10 @@ end
 
 let get_build_status = Commit_info_cache.find_build_status
 
-let get_n_jobs = Commit_info_cache.find_n_jobs
+let get_summary = Commit_info_cache.find_summary
 
-let set_status ~owner ~name ~hash (build_status, n_jobs) =
-  Commit_info_cache.add ~owner ~name ~hash Commit_info_cache.{build_status; n_jobs}
+let set_status ~owner ~name ~hash (build_status, summary) =
+  Commit_info_cache.add ~owner ~name ~hash Commit_info_cache.{build_status; summary}
 
 let get_n_per_status () = !Metrics.n_per_status
 

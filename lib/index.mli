@@ -42,18 +42,18 @@ val get_build_status:
   build_status
 (** [get_build_status ~owner ~name ~hash] is the latest status for this combination. *)
 
-val get_n_jobs:
+val get_summary:
   owner:string ->
   name:string ->
   hash:string ->
-  int
-(** [get_n_jobs ~owner ~name ~hash] is the latest number of jobs for this combination. *)
+  Summary.t
+(** [get_summary ~owner ~name ~hash] is the latest number of jobs for this combination per state. *)
 
 val set_status:
   owner:string ->
   name:string ->
   hash:string ->
-  build_status * int ->
+  build_status * Summary.t ->
   unit
 (** [set_status ~owner ~name ~hash build_status] sets the latest status and number of jobs for this combination. *)
 
@@ -85,5 +85,5 @@ val get_active_refs : Current_github.Repo_id.t -> (string * string) list
 (** [get_active_refs repo] is the entries last set for [repo] with [set_active_refs], or
     [] if this repository isn't known. *)
 
-val get_jobs_per_ref : Current_github.Repo_id.t -> (string * int) list
+val get_jobs_per_ref : Current_github.Repo_id.t -> (string * Summary.t) list
 (** [get_jobs_per_ref repo] is the number of jobs run for each ref in [repo]. *)

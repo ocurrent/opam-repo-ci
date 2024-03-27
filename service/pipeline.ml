@@ -47,51 +47,6 @@ let set_active_refs ~repo xs =
   );
   xs
 
-module Summary = struct
-  type t = { ok: int; pending: int; err: int; skip: int; lint: int }
-
-  let merge a b =
-    {
-      ok = a.ok + b.ok;
-      pending = a.pending + b.pending;
-      err = a.err + b.err;
-      skip = a.skip + b.skip;
-      lint = a.lint + b.lint;
-    }
-
-  let empty = { ok = 0; pending = 0; err = 0; skip = 0; lint = 0 }
-  let ok = { empty with ok = 1 }
-  let pending = { empty with pending = 1 }
-  let err = { empty with err = 1 }
-  let skip = { empty with skip = 1 }
-  let lint = { empty with lint = 1 }
-
-  let of_current t =
-    let+ result = Current.state ~hidden:true t in
-    match result with
-    | Ok `Analysed -> empty
-    | Ok `Linted -> lint
-    | Ok `Built -> ok
-    | Error `Msg m when Astring.String.is_prefix ~affix:"[SKIP]" m -> skip
-    | Error `Msg _ -> err
-    | Error `Active _ -> pending
-
-  let to_string { ok; pending; err; skip; lint } =
-    let lint = lint > 0 in
-    let main_jobs =
-      if pending > 0 then Error (`Active `Running)
-      else match ok, err, skip with
-        | 0, 0, 0 -> Ok "No build was necessary"
-        | 0, 0, _skip -> Error (`Msg "Everything was skipped")
-        | ok, 0, 0 -> Ok (Fmt.str "%d jobs passed" ok)
-        | ok, 0, skip -> Ok (Fmt.str "%d jobs passed, %d jobs skipped" ok skip)
-        | ok, err, skip -> Error (`Msg (Fmt.str "%d jobs failed, %d jobs skipped, %d jobs passed" err skip ok))
-    in
-    (lint, main_jobs)
-
-  let n_jobs { ok; pending; err; skip; lint } = ok + pending + err + skip + lint
-end
-
 module Results : sig
   type t = Index.job_ids Current.t * Summary.t Current.t
   val empty : t
@@ -179,16 +134,15 @@ let summarise ~repo ~hash builds =
     let+ summary = summary
     and+ { Current_github.Repo_id.owner; name } = repo
     and+ hash = hash in
-    let n_jobs = Summary.n_jobs summary in
-    let summary = Summary.to_string summary in
+    let summary_str = Summary.to_string summary in
     let status =
-      match summary with
+      match summary_str with
       | _, Ok _ -> `Passed
       | _, Error (`Active `Running) -> `Pending
       | _, Error (`Msg _) -> `Failed
     in
-    Index.set_status ~owner ~name ~hash (status, n_jobs);
-    summary
+    Index.set_status ~owner ~name ~hash (status, summary);
+    summary_str
   in
   summary
 
