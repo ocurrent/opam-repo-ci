@@ -7,6 +7,10 @@ and 'a t = 'a tree list
 
 val add : key list -> 'a -> 'a t -> 'a t
 
+val filter : ?inv:bool -> (key -> bool) -> 'a t -> 'a t
+
+val partition : (key -> bool) -> 'a t -> 'a t * 'a t
+
 val is_skip : string -> bool
 
 val render :

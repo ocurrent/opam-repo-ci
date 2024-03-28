@@ -135,7 +135,10 @@ let link_jobs ~owner ~name ~hash ?selected jobs =
     in
     Status_tree.add k x trees
   in
-  let full_tree = Status_tree.render (List.fold_left render_job [] jobs) in
+  let status_tree = List.fold_left render_job [] jobs in
+  let revdeps_tree, main_tree =
+    Status_tree.partition (String.equal "revdeps") status_tree
+  in
   let error_tree =
     if errors = [] then []
     else [
@@ -145,8 +148,11 @@ let link_jobs ~owner ~name ~hash ?selected jobs =
   in
   error_tree @ [
     details
-      (summary [b [txt "Full results"]])
-      [full_tree]
+      (summary [b [txt "Main results"]])
+      [Status_tree.render main_tree];
+    details
+      (summary [b [txt "Reverse dependencies"]])
+      [Status_tree.render revdeps_tree];
   ]
 
 let short_hash = Astring.String.with_range ~len:6
