@@ -148,9 +148,9 @@ module Op = struct
       let base = Spec.base_to_string base in
       match ty with
       | `Opam (`List_revdeps { opam_version }, pkg) ->
-          Opam_build.revdeps ~for_docker:true ~opam_version ~base ~variant ~pkg
+          Opam_build.revdeps ~local:true ~for_docker:true ~opam_version ~base ~variant ~pkg ()
       | `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) ->
-          Opam_build.spec ~for_docker:true ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_tests ~pkg
+          Opam_build.spec ~local:true ~for_docker:true ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_tests ~pkg ()
     in
     let base =
       match base with

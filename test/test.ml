@@ -28,7 +28,7 @@ let specs =
     image @ lower_bounds @ revdeps
   in
   List.concat @@
-    (Build.compilers ~arch ~build) @
+    (Build.compilers ~arch ~build ()) @
     (Build.linux_distributions ~arch ~build) @
     (Build.macos ~build) @
     (Build.freebsd ~build) @
@@ -73,7 +73,7 @@ let dump () =
           ~revdep:None
           ~lower_bounds:ob.lower_bounds
           ~with_tests:ob.with_tests
-          ~pkg
+          ~pkg ()
         |> Obuilder_spec.Docker.dockerfile_of_spec ~buildkit:true ~os:`Unix
         |> indent
       in
@@ -88,7 +88,7 @@ let dump () =
           ~opam_version:lr.opam_version
           ~base
           ~variant
-          ~pkg
+          ~pkg ()
         |> Obuilder_spec.Docker.dockerfile_of_spec ~buildkit:true ~os:`Unix
         |> indent
       in
