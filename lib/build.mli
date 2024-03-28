@@ -1,4 +1,5 @@
 val compilers :
+  ?minimal:bool ->
   arch:Ocaml_version.arch ->
   build:
     (opam_version:[> `Dev ] ->
@@ -7,6 +8,7 @@ val compilers :
     string ->
     Variant.t ->
     'a) ->
+  unit ->
   'a list
 
 val linux_distributions :

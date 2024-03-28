@@ -207,6 +207,11 @@ let local_test_pr ?test_config repo pr_branch () =
   let pr_gref = Printf.sprintf "refs/heads/%s" pr_branch in
   let pr_branch = Git.Local.commit_of_ref repo pr_gref in
   let pr_branch_id = Current.map Git.Commit.id pr_branch in
+  let dummy_repo =
+    Current.return { Github.Repo_id.owner = "local-owner"; name = "local-repo" }
+  in
+  let pr_hash = Current.map Git.Commit.hash pr_branch in
+  let* () = set_index_local ~repo:dummy_repo pr_gref pr_hash in
   let analysis = analyse ?test_config ~master pr_branch in
   let lint =
     let packages = Current.map Analyse.Analysis.packages analysis in
@@ -217,11 +222,5 @@ let local_test_pr ?test_config repo pr_branch () =
       (Node.leaf ~label:"(analysis)" (Node.action `Analysed analysis)
       :: Build.with_docker ~host_arch:Conf.host_arch ~analysis ~lint ~master pr_branch_id)
   in
-  let dummy_repo =
-    Current.return { Github.Repo_id.owner = "local-owner"; name = "local-repo" }
-  in
-  let pr_hash = Current.map Git.Commit.hash pr_branch in
-  (let+ _ = set_index_local ~repo:dummy_repo pr_gref pr_hash
-  and+ result = summarise ~repo:dummy_repo ~hash:pr_hash builds in
-  result)
+  summarise ~repo:dummy_repo ~hash:pr_hash builds
   |> Current.ignore_value
