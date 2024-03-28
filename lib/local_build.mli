@@ -22,6 +22,7 @@ val list_revdeps :
   variant:Variant.t ->
   opam_version:[ `Dev | `V2_0 | `V2_1 ] ->
   pkgopt:Package_opt.t Current.t ->
+  new_pkgs:OpamPackage.t list Current.t ->
   base:Spec.base Current.t ->
   master:Current_git.Commit.t Current.t ->
   after:unit Current.t ->
