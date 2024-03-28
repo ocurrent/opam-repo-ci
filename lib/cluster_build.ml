@@ -107,9 +107,9 @@ module Op = struct
       let base = Spec.base_to_string base in
       match ty with
       | `Opam (`List_revdeps { opam_version }, pkg) ->
-          Opam_build.revdeps ~for_docker ~opam_version ~base ~variant ~pkg
+          Opam_build.revdeps ~for_docker ~opam_version ~base ~variant ~pkg ()
       | `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) ->
-          Opam_build.spec ~for_docker ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_tests ~pkg
+          Opam_build.spec ~for_docker ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_tests ~pkg ()
     in
     Current.Job.write job
       (Fmt.str "@.\
