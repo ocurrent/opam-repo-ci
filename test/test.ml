@@ -28,7 +28,7 @@ let specs =
     image @ lower_bounds @ revdeps
   in
   List.concat @@
-    (Build.compilers ~arch ~build) @
+    (Build.compilers ~arch ~build ()) @
     (Build.linux_distributions ~arch ~build) @
     (Build.macos ~build) @
     (Build.freebsd ~build) @
