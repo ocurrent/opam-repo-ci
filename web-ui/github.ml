@@ -74,73 +74,6 @@ let breadcrumbs steps page_title =
     List.rev steps
   )
 
-module StatusTree : sig
-  type key = string
-
-  type 'a tree =
-    | Leaf of key * 'a
-    | Branch of key * 'a option * 'a t
-  and 'a t = 'a tree list
-
-  val add : key list -> 'a -> 'a t -> 'a t
-end = struct
-  type key = string
-
-  type 'a tree =
-    | Leaf of key * 'a
-    | Branch of key * 'a option * 'a t
-  and 'a t = 'a tree list
-
-  let rec add k x ts = match k, ts with
-    | [], _ -> assert false
-    | [k], [] -> [Leaf (k, x)]
-    | [k], Leaf (k', _)::_ when String.equal k k' -> assert false
-    | [k], (Leaf _ as t)::ts -> t :: add [k] x ts
-    | [k], Branch (k', Some _, _)::_ when String.equal k k' -> assert false
-    | [k], Branch (k', None, t)::ts when String.equal k k' -> Branch (k, Some x, t) :: ts
-    | [k], (Branch _ as t)::ts -> t :: add [k] x ts
-    | k::ks, [] -> [Branch (k, None, add ks x [])]
-    | k::ks, Leaf (k', y)::ts when String.equal k k' -> Branch (k, Some y, add ks x []) :: ts
-    | k::ks, Branch (k', y, t)::ts when String.equal k k' -> Branch (k, y, add ks x t) :: ts
-    | _::_, t::ts -> t :: add k x ts
-end
-
-let is_skip = Astring.String.is_prefix ~affix:"[SKIP]"
-
-let statuses ss =
-  let open Tyxml.Html in
-  let status (s, elms1) elms2 =
-    let status_class_name =
-      match (s : Client.State.t) with
-      | NotStarted -> "not-started"
-      | Aborted -> "aborted"
-      | Failed m when is_skip m -> "skipped"
-      | Failed _ -> "failed"
-      | Passed -> "passed"
-      | Active -> "active"
-      | Undefined _ -> "undefined"
-    in
-    li ~a:[a_class [status_class_name]] (elms1 @ elms2)
-  in
-  let rec render_status : (Client.State.t * _) StatusTree.tree -> _ = function
-    | StatusTree.Leaf (_, x) ->
-        status x []
-    | StatusTree.Branch (b, None, ss) ->
-        (* TODO: Remove that *)
-        let b =
-          if Astring.String.is_prefix ~affix:"macos-homebrew" b ||
-             Astring.String.is_prefix ~affix:"freebsd" b
-          then b^" (experimental)"
-          else b
-        in
-        li ~a:[a_class ["none"]] [txt b; ul ~a:[a_class ["statuses"]] (List.map render_status ss)]
-    | StatusTree.Branch (_, Some (((NotStarted | Aborted | Failed _ | Undefined _), _) as x), _) ->
-        status x [] (* Do not show children of a node that has failed (guarenties in service/pipeline.ml means that only successful parents have children with meaningful error messages) *)
-    | StatusTree.Branch (_, Some (((Passed | Active), _) as x), ss) ->
-        status x [ul ~a:[a_class ["statuses"]] (List.map render_status ss)]
-  in
-  ul ~a:[a_class ["statuses"]] (List.map render_status ss)
-
 let format_refs ~owner ~name refs =
   let open Tyxml.Html in
   ul (
@@ -177,7 +110,7 @@ let link_github_refs ~owner ~name =
     )
 
 let is_error = function
-  | { Client.outcome = Failed msg; _ } -> not (is_skip msg)
+  | { Client.outcome = Failed msg; _ } -> not (Status_tree.is_skip msg)
   | _ -> false
 
 let show_status =
@@ -200,14 +133,14 @@ let link_jobs ~owner ~name ~hash ?selected jobs =
       let label = if selected = Some variant then b [label] else label in
       outcome, [a ~a:[a_href uri] [label]]
     in
-    StatusTree.add k x trees
+    Status_tree.add k x trees
   in
-  let full_tree = statuses (List.fold_left render_job [] jobs) in
+  let full_tree = Status_tree.render (List.fold_left render_job [] jobs) in
   let error_tree =
     if errors = [] then []
     else [
       h2 [txt "Summary of errors"];
-      statuses (List.fold_left render_job [] errors);
+      Status_tree.render (List.fold_left render_job [] errors);
     ]
   in
   error_tree @ [
@@ -263,7 +196,7 @@ let can_cancel job_info =
 let can_rebuild job_info =
   match job_info.Client.outcome with
   | Aborted -> true
-  | Failed m when not (is_skip m) -> true
+  | Failed m when not (Status_tree.is_skip m) -> true
   | Failed _ | Active | NotStarted | Passed | Undefined _ -> false
 
 module Repo_handle = struct
