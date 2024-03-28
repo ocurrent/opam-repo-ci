@@ -14,7 +14,7 @@ let handled_prs =
 
 let jobs_per_pr =
   let help = "Number of jobs per PR" in
-  Gauge.v_label ~label_name:"ref" ~help ~namespace ~subsystem
+  Gauge.v_labels ~label_names:["ref"; "status"] ~help ~namespace ~subsystem
     "jobs_per_pr"
 
 let primary_repo : Current_github.Repo_id.t option ref = ref None
@@ -40,12 +40,19 @@ let update () =
   let f repo =
     let jobs_per_ref =
       Index.get_jobs_per_ref repo
-      |> List.sort (fun (_, n0) (_, n1) -> Int.compare n0 n1)
+      |> List.sort (fun (_, s0) (_, s1) -> Int.compare (Summary.sum s0) (Summary.sum s1))
     in
-    List.iter (fun (ref, n) ->
-      Gauge.set
-        (jobs_per_pr @@ prettify_ref ref)
-        (float_of_int n))
+    List.iter (fun (ref, s) ->
+      Gauge.set (Gauge.labels jobs_per_pr ([prettify_ref ref; "lint"]))
+        (float_of_int s.Summary.lint);
+      Gauge.set (Gauge.labels jobs_per_pr ([prettify_ref ref; "skip"]))
+        (float_of_int s.skip);
+      Gauge.set (Gauge.labels jobs_per_pr ([prettify_ref ref; "error"]))
+        (float_of_int s.err);
+      Gauge.set (Gauge.labels jobs_per_pr ([prettify_ref ref; "pending"]))
+        (float_of_int s.pending);
+      Gauge.set (Gauge.labels jobs_per_pr ([prettify_ref ref; "ok"]))
+        (float_of_int s.ok))
       jobs_per_ref
   in
   Option.iter f !primary_repo
