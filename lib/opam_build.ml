@@ -79,7 +79,7 @@ let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
       pkg_s
   ]
 
-let setup_repository ~variant ~for_docker ~opam_version =
+let setup_repository ?(local=false) ~variant ~for_docker ~opam_version () =
   let open Obuilder_spec in
   let home_dir = match Variant.os variant with
     | `Macos -> None
@@ -112,6 +112,12 @@ let setup_repository ~variant ~for_docker ~opam_version =
     | `Freebsd | `Macos | `Linux -> ""
     (* TODO: On MacOS, the sandbox is always (and should be) enabled by default but does not have those ~/.opamrc-sandbox files *)
   in
+  (* If we are testing a minimal opam-repository without
+    the base packages, we have to pin them to keep them around.
+    Related: https://github.com/ocaml/opam/issues/5895 *)
+  let keep_installed =
+    run "for pkg in $(opam list -s --installed) ; do opam pin --current \"$pkg\" ; done"
+  in
   user_unix ~uid:1000 ~gid:1000 ::
   (match home_dir with Some home_dir -> [workdir home_dir] | None -> []) @
   (* TODO: MacOS seems to have a bug in (copy ...) so I am forced to remove the (workdir ...) here.
@@ -129,7 +135,8 @@ let setup_repository ~variant ~for_docker ~opam_version =
     copy ["."] ~dst:"opam-repository/";
     run "opam repository set-url%s --strict default opam-repository/" opam_repo_args;
     run ~network "opam %s || true" (match opam_version with `V2_1 | `Dev -> "update --depexts" | `V2_0 -> "depext -u");
-  ]
+  ] @
+  if local then [ keep_installed ] else []
 
 let set_personality ~variant =
   if Variant.arch variant |> Ocaml_version.arch_is_32bit then
@@ -137,7 +144,7 @@ let set_personality ~variant =
   else
     []
 
-let spec ~for_docker ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_tests ~pkg =
+let spec ?(local=false) ~for_docker ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_tests ~pkg () =
   let opam_install = opam_install ~variant ~opam_version in
   let revdep = match revdep with
     | None -> []
@@ -152,18 +159,18 @@ let spec ~for_docker ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_te
   in
   Obuilder_spec.stage ~from:base (
     set_personality ~variant
-    @ setup_repository ~variant ~for_docker ~opam_version
+    @ setup_repository ~local ~variant ~for_docker ~opam_version ()
     @ opam_install ~pin:true ~lower_bounds:false ~with_tests:false ~pkg
     @ lower_bounds
     @ revdep
     @ tests
   )
 
-let revdeps ~for_docker ~opam_version ~base ~variant ~pkg =
+let revdeps ?(local=false) ~for_docker ~opam_version ~base ~variant ~pkg () =
   let open Obuilder_spec in
   let pkg = Filename.quote (OpamPackage.to_string pkg) in
   Obuilder_spec.stage ~from:base (
-    setup_repository ~variant ~for_docker ~opam_version
+    setup_repository ~local ~variant ~for_docker ~opam_version ()
     @ [
       run "echo '@@@OUTPUT' && \
            opam list -s --color=never --depends-on %s --coinstallable-with %s --installable --all-versions --depopts && \
