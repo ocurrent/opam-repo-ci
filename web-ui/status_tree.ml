@@ -21,6 +21,12 @@ let rec add k x ts =
   | k::ks, Branch (k', y, t)::ts when String.equal k k' -> Branch (k, y, add ks x t) :: ts
   | _::_, t::ts -> t :: add k x ts
 
+(* Filters the status tree to contain the subtrees where
+   the root satisfies [f], maintaining the top-level
+   structure. If [inv=true] then we instead strip out
+   the subtrees that satisfy [f].
+
+   The logic is messy, could be improved *)
 let filter ?(inv=false) f ts =
   let f' = function
     | Leaf (k, _) -> f k
@@ -29,19 +35,26 @@ let filter ?(inv=false) f ts =
   let rec aux ts =
     if List.exists f' ts then begin
       if inv then
-        List.filter (fun x -> not @@ f' x) ts
+        Some (List.filter (fun x -> not @@ f' x) ts)
       else
-        List.filter f' ts
+        Some (List.filter f' ts)
       end
     else
-      List.map
-        (function
-        | Leaf _ as t -> t
-        | Branch (k, y, ts) ->
-          Branch (k, y, aux ts))
-        ts
+      let res =
+        List.filter_map
+          (function
+          | Leaf (k, _) as t ->
+            if inv then
+              if f k then None else Some t
+            else
+              if f k then Some t else None
+          | Branch (k, y, ts) ->
+            Option.map (fun ts -> Branch (k, y, ts)) @@ aux ts)
+          ts
+      in
+      if res = [] then None else Some res
   in
-  aux ts
+  Option.value ~default:[] @@ aux ts
 
 let partition f ts =
   filter f ts, filter ~inv:true f ts
