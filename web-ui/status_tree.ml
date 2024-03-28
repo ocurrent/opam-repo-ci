@@ -7,7 +7,8 @@ type 'a tree =
   | Branch of key * 'a option * 'a t
 and 'a t = 'a tree list
 
-let rec add k x ts = match k, ts with
+let rec add k x ts =
+  match k, ts with
   | [], _ -> assert false
   | [k], [] -> [Leaf (k, x)]
   | [k], Leaf (k', _)::_ when String.equal k k' -> assert false
@@ -19,6 +20,31 @@ let rec add k x ts = match k, ts with
   | k::ks, Leaf (k', y)::ts when String.equal k k' -> Branch (k, Some y, add ks x []) :: ts
   | k::ks, Branch (k', y, t)::ts when String.equal k k' -> Branch (k, y, add ks x t) :: ts
   | _::_, t::ts -> t :: add k x ts
+
+let filter ?(inv=false) f ts =
+  let f' = function
+    | Leaf (k, _) -> f k
+    | Branch (k, _, _) -> f k
+  in
+  let rec aux ts =
+    if List.exists f' ts then begin
+      if inv then
+        List.filter (fun x -> not @@ f' x) ts
+      else
+        List.filter f' ts
+      end
+    else
+      List.map
+        (function
+        | Leaf _ as t -> t
+        | Branch (k, y, ts) ->
+          Branch (k, y, aux ts))
+        ts
+  in
+  aux ts
+
+let partition f ts =
+  filter f ts, filter ~inv:true f ts
 
 let is_skip = Astring.String.is_prefix ~affix:"[SKIP]"
 
