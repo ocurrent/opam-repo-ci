@@ -266,17 +266,17 @@ let can_rebuild job_info =
   | Failed m when not (is_skip m) -> true
   | Failed _ | Active | NotStarted | Passed | Undefined _ -> false
 
-let repo_handle ~meth ~owner ~name ~repo path =
-  match meth, path with
-  | `GET, [] ->
+module Repo_handle = struct
+  let get ~owner ~name ~repo =
     Client.Repo.refs repo >>!= fun refs ->
     let body = Template.instance [
         breadcrumbs ["github", "github";
-                     owner, owner] name;
+                      owner, owner] name;
         format_refs ~owner ~name refs
       ] in
     Server.respond_string ~status:`OK ~body () |> normal_response
-  | `GET, ["commit"; hash] ->
+
+  let get_commit ~owner ~name ~repo hash =
     Capability.with_ref (Client.Repo.commit_of_hash repo hash) @@ fun commit ->
     let refs = Client.Commit.refs commit in
     let commit_status = Client.Commit.status commit in
@@ -306,55 +306,56 @@ let repo_handle ~meth ~owner ~name ~repo path =
     in
     let body = Template.instance Tyxml.Html.([
         breadcrumbs ["github", "github";
-                     owner, owner;
-                     name, name] (short_hash hash);
+                      owner, owner;
+                      name, name] (short_hash hash);
         link_github_refs ~owner ~name refs;
         div buttons;
       ] @ show_status commit_status @ link_jobs ~owner ~name ~hash jobs)
     in
     Server.respond_string ~status:`OK ~body () |> normal_response
-  | `GET, ["commit"; hash; "variant"; variant] ->
+
+  let get_variant ~owner ~name ~repo hash variant =
     Capability.with_ref (Client.Repo.commit_of_hash repo hash) @@ fun commit ->
-    let refs = Client.Commit.refs commit in
-    Capability.with_ref (Client.Commit.job_of_variant commit variant) @@ fun job ->
-    let status = Current_rpc.Job.status job in
-    Current_rpc.Job.log job ~start:0L >>!= fun chunk ->
-    (* (these will have resolved by now) *)
-    refs >>!= fun refs ->
-    status >>!= fun status ->
-    let headers =
-      (* Otherwise, an nginx reverse proxy will wait for the whole log before sending anything. *)
-      Cohttp.Header.init_with "X-Accel-Buffering" "no"
-    in
-    let res = Cohttp.Response.make ~status:`OK ~flush:true ~encoding:Cohttp.Transfer.Chunked ~headers () in
-    let write _ic oc =
-      let flush = Cohttp.Response.flush res in
-      let writer = Transfer_IO.make_writer ~flush Cohttp.Transfer.Chunked oc in
-      Lwt.finalize
-        (fun () ->
-           stream_logs job ~owner ~name ~refs ~hash ~variant ~status chunk writer >>= fun () ->
-           Server.IO.write oc "0\r\n\r\n"
-        )
-        (fun () ->
-           Capability.dec_ref job;
-           Lwt.return_unit
-        )
-    in
-    Capability.inc_ref job;
-    Lwt.return (`Expert (res, write))
-  | `POST, ["commit"; hash; "variant"; variant; "rebuild"] ->
+      let refs = Client.Commit.refs commit in
+      Capability.with_ref (Client.Commit.job_of_variant commit variant) @@ fun job ->
+      let status = Current_rpc.Job.status job in
+      Current_rpc.Job.log job ~start:0L >>!= fun chunk ->
+      (* (these will have resolved by now) *)
+      refs >>!= fun refs ->
+      status >>!= fun status ->
+      let headers =
+        (* Otherwise, an nginx reverse proxy will wait for the whole log before sending anything. *)
+        Cohttp.Header.init_with "X-Accel-Buffering" "no"
+      in
+      let res = Cohttp.Response.make ~status:`OK ~flush:true ~encoding:Cohttp.Transfer.Chunked ~headers () in
+      let write _ic oc =
+        let flush = Cohttp.Response.flush res in
+        let writer = Transfer_IO.make_writer ~flush Cohttp.Transfer.Chunked oc in
+        Lwt.finalize
+          (fun () ->
+             stream_logs job ~owner ~name ~refs ~hash ~variant ~status chunk writer >>= fun () ->
+             Server.IO.write oc "0\r\n\r\n"
+          )
+          (fun () ->
+             Capability.dec_ref job;
+             Lwt.return_unit
+          )
+      in
+      Capability.inc_ref job;
+      Lwt.return (`Expert (res, write))
+
+  let post_rebuild ~owner ~name ~repo hash variant =
     Capability.with_ref (Client.Repo.commit_of_hash repo hash) @@ fun commit ->
     Capability.with_ref (Client.Commit.job_of_variant commit variant) @@ fun job ->
     Capability.with_ref (Current_rpc.Job.rebuild job) @@ fun new_job ->
-    Capability.await_settled new_job >>= begin function
+    Capability.await_settled new_job >>= function
     | Ok () ->
-        let uri = job_url ~owner ~name ~hash variant |> Uri.of_string in
-        Server.respond_redirect ~uri () |> normal_response
+      let uri = job_url ~owner ~name ~hash variant |> Uri.of_string in
+      Server.respond_redirect ~uri () |> normal_response
     | Error { Capnp_rpc.Exception.reason; _ } ->
-        Server.respond_error ~body:reason () |> normal_response
-    end
-  | `POST, ["commit"; hash; ("rebuild-all" as rebuild_mode)]
-  | `POST, ["commit"; hash; ("rebuild-failed" as rebuild_mode)] ->
+      Server.respond_error ~body:reason () |> normal_response
+
+  let post_rebuild_mode ~owner ~name ~repo hash rebuild_mode =
     let rebuild_all =
       match rebuild_mode with
       | "rebuild-all" -> true
@@ -390,36 +391,36 @@ let repo_handle ~meth ~owner ~name ~repo path =
     Capability.with_ref (Client.Repo.commit_of_hash repo hash) @@ fun commit ->
     Client.Commit.refs commit >>!= fun refs ->
     Client.Commit.jobs commit >>!= fun jobs ->
-      begin rebuild_many commit jobs >>= fun (success, failed) ->
-        let open Tyxml.Html in
-        let uri = commit_url ~owner ~name hash in
-        let format_job_info ji =
-          li [span [txt @@ Fmt.str "Rebuild job: %s" ji.Client.variant]]
-        in
-        let success_msg =
-          match success with
-          | [] -> div [span [txt "No jobs were rebuilt."]]
-          | success -> ul (List.map format_job_info success)
-        in
-        let fail_msg = match failed with
-          | 0 -> div []
-          | n -> div [span [txt @@ Fmt.str "%d job%s could not be rebuilt. Check logs for more detail." n (if n >= 1 then "s" else "")]]
-        in
-        let return_link =
-          a ~a:[a_href uri] [txt @@ Fmt.str "Return to %s" (short_hash hash)]
-        in
-        let body = Template.instance [
-            breadcrumbs ["github", "github";
-                         owner, owner;
-                         name, name] (short_hash hash);
-            link_github_refs ~owner ~name refs;
-            success_msg;
-            fail_msg;
-            return_link;
-          ] in
-        Server.respond_string ~status:`OK ~headers ~body () |> normal_response
-      end
-  | `POST, ["commit"; hash; "cancel"] ->
+    rebuild_many commit jobs >>= fun (success, failed) ->
+    let open Tyxml.Html in
+    let uri = commit_url ~owner ~name hash in
+    let format_job_info ji =
+      li [span [txt @@ Fmt.str "Rebuild job: %s" ji.Client.variant]]
+    in
+    let success_msg =
+      match success with
+      | [] -> div [span [txt "No jobs were rebuilt."]]
+      | success -> ul (List.map format_job_info success)
+    in
+    let fail_msg = match failed with
+      | 0 -> div []
+      | n -> div [span [txt @@ Fmt.str "%d job%s could not be rebuilt. Check logs for more detail." n (if n >= 1 then "s" else "")]]
+    in
+    let return_link =
+      a ~a:[a_href uri] [txt @@ Fmt.str "Return to %s" (short_hash hash)]
+    in
+    let body = Template.instance [
+      breadcrumbs ["github", "github";
+                    owner, owner;
+                    name, name] (short_hash hash);
+      link_github_refs ~owner ~name refs;
+      success_msg;
+      fail_msg;
+      return_link;
+    ] in
+    Server.respond_string ~status:`OK ~headers ~body () |> normal_response
+
+  let post_cancel ~owner ~name ~repo hash =
     let can_cancel (commit: Client.Commit.t) (job_i: Client.job_info) =
       if can_cancel job_i then
         let variant = job_i.variant in
@@ -442,37 +443,46 @@ let repo_handle ~meth ~owner ~name ~repo path =
     Capability.with_ref (Client.Repo.commit_of_hash repo hash) @@ fun commit ->
     Client.Commit.refs commit >>!= fun refs ->
     Client.Commit.jobs commit >>!= fun jobs ->
-      begin cancel_many commit jobs >>= fun (success, failed) ->
-        let open Tyxml.Html in
-        let uri = commit_url ~owner ~name hash in
-        let format_job_info ji =
-          li [span [txt @@ Fmt.str "Cancelling job: %s" ji.Client.variant]]
-        in
-        let success_msg =
-          match success with
-          | [] -> div [span [txt "No jobs were cancelled."]]
-          | success -> ul (List.map format_job_info success)
-        in
-        let fail_msg = match failed with
-          | 0 -> div []
-          | n -> div [span [txt @@ Fmt.str "%d job%s could not be cancelled. Check logs for more detail." n (if n >= 1 then "s" else "")]]
-        in
-        let return_link =
-          a ~a:[a_href uri] [txt @@ Fmt.str "Return to %s" (short_hash hash)]
-        in
-        let body = Template.instance [
-            breadcrumbs ["github", "github";
-                         owner, owner;
-                         name, name] (short_hash hash);
-            link_github_refs ~owner ~name refs;
-            success_msg;
-            fail_msg;
-            return_link;
-          ] in
-        Server.respond_string ~status:`OK ~headers ~body () |> normal_response
-      end
-  | _ ->
-    Server.respond_not_found () |> normal_response
+    cancel_many commit jobs >>= fun (success, failed) ->
+    let open Tyxml.Html in
+    let uri = commit_url ~owner ~name hash in
+    let format_job_info ji =
+      li [span [txt @@ Fmt.str "Cancelling job: %s" ji.Client.variant]]
+    in
+    let success_msg =
+      match success with
+      | [] -> div [span [txt "No jobs were cancelled."]]
+      | success -> ul (List.map format_job_info success)
+    in
+    let fail_msg = match failed with
+      | 0 -> div []
+      | n -> div [span [txt @@ Fmt.str "%d job%s could not be cancelled. Check logs for more detail." n (if n >= 1 then "s" else "")]]
+    in
+    let return_link =
+      a ~a:[a_href uri] [txt @@ Fmt.str "Return to %s" (short_hash hash)]
+    in
+    let body = Template.instance [
+        breadcrumbs ["github", "github";
+                      owner, owner;
+                      name, name] (short_hash hash);
+        link_github_refs ~owner ~name refs;
+        success_msg;
+        fail_msg;
+        return_link;
+      ] in
+    Server.respond_string ~status:`OK ~headers ~body () |> normal_response
+
+  let v ~meth ~owner ~name ~repo path =
+    match meth, path with
+    | `GET, [] -> get ~owner ~name ~repo
+    | `GET, ["commit"; hash] -> get_commit ~owner ~name ~repo hash
+    | `GET, ["commit"; hash; "variant"; variant] -> get_variant ~owner ~name ~repo hash variant
+    | `POST, ["commit"; hash; "variant"; variant; "rebuild"] -> post_rebuild ~owner ~name ~repo hash variant
+    | `POST, ["commit"; hash; ("rebuild-all" as mode)]
+    | `POST, ["commit"; hash; ("rebuild-failed" as mode)] -> post_rebuild_mode ~owner ~name ~repo hash mode
+    | `POST, ["commit"; hash; "cancel"] -> post_cancel ~owner ~name ~repo hash
+    | _ -> Server.respond_not_found () |> normal_response
+end
 
 let format_org org =
   let open Tyxml.Html in
@@ -502,10 +512,11 @@ let handle ~backend ~meth path =
   Backend.ci backend >>= fun ci ->
   match meth, path with
   | `GET, [] -> list_orgs ci
-  | `GET, [owner] -> Capability.with_ref (Client.CI.org ci owner) @@ list_repos ~owner
+  | `GET, [owner] ->
+    Capability.with_ref (Client.CI.org ci owner) @@ list_repos ~owner
   | meth, (owner :: name :: path) ->
     Capability.with_ref (Client.CI.org ci owner) @@ fun org ->
     Capability.with_ref (Client.Org.repo org name) @@ fun repo ->
-    repo_handle ~meth ~owner ~name ~repo path
+    Repo_handle.v ~meth ~owner ~name ~repo path
   | _ ->
     Server.respond_not_found () |> normal_response
