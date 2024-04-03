@@ -151,10 +151,13 @@ let link_jobs ~owner ~name ~hash ?selected jobs =
     details
       (summary [b [txt "Main results"]])
       [Status_tree.render main_tree];
+  ] @
+  begin if revdeps_tree = [] then []
+  else [
     details
       (summary [b [txt "Reverse dependencies"]])
       [Status_tree.render revdeps_tree];
-  ]
+  ] end
 
 let short_hash = Astring.String.with_range ~len:6
 
