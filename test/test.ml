@@ -104,7 +104,10 @@ let main dump_specs =
     Lwt.bind (dump ()) (fun _ -> Lwt.return_unit)
   else
     Alcotest_lwt.run "opam-repo-ci"
-      [ ("index", Test_index.tests) ]
+      [
+        ("index", Test_index.tests);
+        ("status-tree", Test_status_tree.tests);
+      ]
 
 open Cmdliner
 

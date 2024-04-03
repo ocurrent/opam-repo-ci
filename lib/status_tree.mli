@@ -1,9 +1,9 @@
-type key = string
+type key = string [@@deriving eq, show]
 
 type 'a tree =
   | Leaf of key * 'a
   | Branch of key * 'a option * 'a t
-and 'a t = 'a tree list
+and 'a t = 'a tree list [@@deriving eq, show]
 
 val add : key list -> 'a -> 'a t -> 'a t
 
