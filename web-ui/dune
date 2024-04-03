@@ -8,6 +8,7 @@
   cohttp-lwt-unix
   tyxml
   prometheus-app.unix
+  opam_repo_ci
   opam-repo-ci-api
   capnp-rpc-unix
   yojson
