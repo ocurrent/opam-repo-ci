@@ -10,34 +10,27 @@ type base =
 
 val base_to_string : base -> string
 
-type package = OpamPackage.t
-
 (** Configuration for an [opam_build] job *)
 type opam_build = {
-  revdep : package option;
+  revdep : Opam_package.t option;
   with_tests : bool;
   lower_bounds : bool;
   opam_version : [ `Dev | `V2_0 | `V2_1 ];
-}
+} [@@deriving to_yojson]
 
 (** Configuration for a [list_revdeps] job *)
 type list_revdeps = {
   opam_version : [ `Dev | `V2_0 | `V2_1 ];
-}
+} [@@deriving to_yojson]
 
-(** Configuration for any job along with the package to build *)
-type ty = [
-  `Opam of [ `Build of opam_build | `List_revdeps of list_revdeps ] * package
-] [@@deriving to_yojson]
-
-type t = { variant : Variant.t; ty : ty; }
+type t = { variant : Variant.t; spec : opam_build; pkg : Opam_package.t }
 
 (** Generate configuration for an [opam_build] job *)
 val opam :
-  ?revdep:package ->
+  ?revdep:Opam_package.t ->
   variant:Variant.t ->
   lower_bounds:bool ->
-  with_tests:bool -> opam_version:[ `Dev | `V2_0 | `V2_1 ] -> package -> t
+  with_tests:bool -> opam_version:[ `Dev | `V2_0 | `V2_1 ] -> Opam_package.t -> t
 
 val pp_ty :
   Format.formatter ->

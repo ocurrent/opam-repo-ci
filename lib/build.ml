@@ -188,7 +188,7 @@ let build (module Builder : Build_intf.S) ~analysis ~pkgopts ~master ~source ~op
     and+ pkgopts in
     pkgopts
   in
-  let pkgs = Current.map (List.map (fun x ->x.Package_opt.pkg)) pkgopts in
+  let pkgs = Current.map (List.map (fun x -> x.Package_opt.pkg)) pkgopts in
   let build_pkg pkgopt =
     let pkg = Current.map (fun pkgopt -> pkgopt.Package_opt.pkg) pkgopt in
     let urgent = Current.return None in

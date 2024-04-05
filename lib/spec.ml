@@ -9,12 +9,8 @@ let base_to_string = function
   | Macos base -> base
   | Freebsd base -> base
 
-type package = OpamPackage.t
-
-let package_to_yojson x = `String (OpamPackage.to_string x)
-
 type opam_build = {
-  revdep : package option;
+  revdep : Opam_package.t option;
   with_tests : bool;
   lower_bounds : bool;
   opam_version : [`V2_0 | `V2_1 | `Dev];
@@ -24,18 +20,15 @@ type list_revdeps = {
   opam_version : [`V2_0 | `V2_1 | `Dev];
 } [@@deriving to_yojson]
 
-type ty = [
-  `Opam of [ `Build of opam_build | `List_revdeps of list_revdeps ] * package
-] [@@deriving to_yojson]
-
 type t = {
   variant : Variant.t;
-  ty : ty;
+  spec : opam_build;
+  pkg : Opam_package.t;
 }
 
 let opam ?revdep ~variant ~lower_bounds ~with_tests ~opam_version pkg =
-  let ty = `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) in
-  { variant; ty }
+  let spec = { revdep; lower_bounds; with_tests; opam_version } in
+  { variant; spec; pkg }
 
 let pp_pkg ?revdep f pkg =
   match revdep with

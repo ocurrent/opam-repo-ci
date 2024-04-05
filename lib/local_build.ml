@@ -71,7 +71,7 @@ let local_builder =
   let build_timeout = Duration.of_hour 1 in
   { docker_context = None; pool; build_timeout }
 
-module Op = struct
+module Op (S : Common.S) = struct
   type nonrec t = {
     config : t;
     master : Current_git.Commit.t;
@@ -85,72 +85,36 @@ module Op = struct
   module Key = struct
     type t = {
       commit : Current_git.Commit.t; (* The source code to build and test *)
-      ty : Spec.ty;
+      spec : S.spec;
+      pkg : OpamPackage.t;
       variant : Variant.t; (* Added as a comment in the Dockerfile *)
     }
 
-    let to_json { commit; ty; variant } =
+    let to_json { commit; spec; pkg; variant } =
       `Assoc
         [
-          ("commit", `String (Current_git.Commit.hash commit));
-          ("op", Spec.ty_to_yojson ty);
-          ("variant", Variant.to_yojson variant);
+          "commit", `String (Current_git.Commit.hash commit);
+          "op", S.spec_to_yojson spec;
+          "pkg", Opam_package.to_yojson pkg;
+          "variant", Variant.to_yojson variant;
         ]
 
     let digest t = Yojson.Safe.to_string (to_json t)
   end
 
-  module Value = Current.String
+  module Value = S.Value
 
   let or_raise = function Ok () -> () | Error (`Msg m) -> raise (Failure m)
 
-  (* Docker output lines are of the form:
-
-    #NN TTTTT OUTPUT
-
-    Where NN is the number of the command run, TTTTT is a timestamp,
-    and OUTPUT is a single line of output *)
-  let parse_docker_lines s =
-    Astring.String.cuts ~sep:"\n" s
-    |> List.filter_map (fun s ->
-      let split = Astring.String.cuts ~sep:" " s in
-      List.nth_opt split 2)
-    |> Astring.String.concat ~sep:"\n"
-
-  let parse_output ty job () =
-    let f () =
-      let log_path = Lwt.return @@ Current.Job.(log_path @@ id job) in
-      let read_log path =
-        Fpath.to_string path |>
-        Lwt_io.open_file ~flags:[Unix.O_RDONLY] ~mode:Input >>=
-        Lwt_io.read >>= fun s ->
-        Lwt.return @@ Result.ok s
-      in
-      Lwt_result.bind log_path read_log
-    in
-    match ty with
-    | `Opam (`List_revdeps _, _) -> begin
-        f () >>!= fun s ->
-        match Astring.String.cuts ~sep:" @@@OUTPUT\n" s with
-        | [_; output; _] -> Lwt_result.return @@ parse_docker_lines output
-        | [_; rest ] when Astring.String.is_prefix ~affix:"@@@OUTPUT\n" rest -> Lwt_result.return ""
-        | _ -> Lwt_result.fail (`Msg "Missing output from command")
-      end
-    | _ -> Lwt_result.return ""
-
   let build { config; master = _; urgent = _; base } job
-      { Key.commit; ty; variant } =
+      { Key.commit; spec; pkg; variant } =
     let { docker_context; pool; build_timeout } = config in
     let os = match Variant.os variant with
       | `Macos | `Linux | `Freebsd -> `Unix
     in
     let build_spec =
       let base = Spec.base_to_string base in
-      match ty with
-      | `Opam (`List_revdeps { opam_version }, pkg) ->
-          Opam_build.revdeps ~for_docker:true ~opam_version ~base ~variant ~pkg
-      | `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) ->
-          Opam_build.spec ~for_docker:true ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_tests ~pkg
+      S.build_spec ~for_docker:true ~base ~variant spec pkg
     in
     let base =
       match base with
@@ -164,7 +128,7 @@ module Op = struct
           ~os build_spec
     in
     Current.Job.write job
-      (Fmt.str "@[<v>Base: %a@,%a@]@." Raw.Image.pp base Spec.pp_summary ty);
+      (Fmt.str "@[<v>Base: %a@,%a@]@." Raw.Image.pp base S.pp_summary (spec, pkg));
     Current.Job.write job
       (Fmt.str
           "@.To reproduce locally:@.@.cd $(mktemp -d)@.%a@.cat > Dockerfile \
@@ -191,27 +155,83 @@ module Op = struct
       @@ [ "build"; "--no-cache"; "--progress=plain"; "--"; Fpath.to_string dir ]
     in
     let pp_error_command f = Fmt.string f "Docker build" in
-    Current.Process.exec ~cancellable:true ~pp_error_command ~job cmd >>!=
-    parse_output ty job
+    Current.Process.exec ~cancellable:true ~pp_error_command ~job cmd
+    >>!= fun () -> S.parse_output job None
 
-  let pp f { Key.commit; ty = _; variant } =
+  let pp f { Key.commit; spec = _; pkg = _; variant } =
     Fmt.pf f "test %a %a" Current_git.Commit.pp commit Variant.pp variant
 
   let auto_cancel = true
 end
 
-module BC = Current_cache.Make(Op)
+module B = Op (struct
+  type spec = Spec.opam_build [@@deriving to_yojson]
+
+  module Value = Current.Unit
+
+  let pp_ty f (spec, pkg) = Spec.pp_ty f (`Opam (`Build spec, pkg))
+  let pp_summary f (spec, pkg) = Spec.pp_summary f (`Opam (`Build spec, pkg))
+
+  let build_spec ~for_docker ~base ~variant (spec : spec) pkg =
+    let { Spec.revdep; with_tests; lower_bounds; opam_version } = spec in
+    Opam_build.spec ~for_docker ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_tests ~pkg
+
+  let parse_output _ _ = Lwt_result.return ()
+end)
+
+module BC = Current_cache.Make(B)
 
 let v ~label ~spec ~base ~master ~urgent commit =
   Current.component "%s" label |>
-  let> {Spec.variant; ty} = spec
+  let> { Spec.variant; spec; pkg } = spec
   and> base
   and> commit = Git.fetch commit
   and> master
   and> urgent in
-  let t = { Op.config = local_builder; master; urgent; base } in
-  BC.get t { commit; ty; variant }
+  let t = { B.config = local_builder; master; urgent; base } in
+  BC.get t { commit; spec; pkg; variant }
   |> Current.Primitive.map_result (Result.map ignore) (* TODO: Create a separate type of cache that doesn't parse the output *)
+
+module R = Op (struct
+  type spec = Spec.list_revdeps [@@deriving to_yojson]
+
+  module Value = Current.String
+
+  let pp_ty f (spec, pkg) = Spec.pp_ty f (`Opam (`List_revdeps spec, pkg))
+  let pp_summary f (spec, pkg) = Spec.pp_summary f (`Opam (`List_revdeps spec, pkg))
+
+  let build_spec ~for_docker ~base ~variant (spec : spec) pkg =
+    Opam_build.revdeps ~for_docker ~opam_version:spec.opam_version ~base ~variant ~pkg
+
+  (* Docker output lines are of the form:
+
+  #NN TTTTT OUTPUT
+
+  Where NN is the number of the command run, TTTTT is a timestamp,
+  and OUTPUT is a single line of output *)
+  let parse_docker_lines s =
+    Astring.String.cuts ~sep:"\n" s
+    |> List.filter_map (fun s ->
+      let split = Astring.String.cuts ~sep:" " s in
+      List.nth_opt split 2)
+    |> Astring.String.concat ~sep:"\n"
+
+  let parse_output job _ =
+    let log_path = Lwt.return @@ Current.Job.(log_path @@ id job) in
+    let read_log path =
+      Fpath.to_string path |>
+      Lwt_io.open_file ~flags:[Unix.O_RDONLY] ~mode:Input >>=
+      Lwt_io.read >>= fun s ->
+      Lwt.return @@ Result.ok s
+    in
+    log_path >>!= read_log >>!= fun s ->
+    match Astring.String.cuts ~sep:" @@@OUTPUT\n" s with
+    | [_; output; _] -> Lwt_result.return @@ parse_docker_lines output
+    | [_; rest ] when Astring.String.is_prefix ~affix:"@@@OUTPUT\n" rest -> Lwt_result.return ""
+    | _ -> Lwt_result.fail (`Msg "Missing output from command")
+end)
+
+module RC = Current_cache.Make(R)
 
 let list_revdeps ~variant ~opam_version ~pkgopt ~new_pkgs ~base ~master ~after commit =
   let label = "list revdeps" in
@@ -222,7 +242,7 @@ let list_revdeps ~variant ~opam_version ~pkgopt ~new_pkgs ~base ~master ~after c
   and> commit = Git.fetch commit
   and> master
   and> () = after in
-  let t = { Op.config = local_builder; master; urgent; base } in
-  let ty = `Opam (`List_revdeps {Spec.opam_version}, pkg) in
-  BC.get t { commit; ty; variant }
+  let t = { R.config = local_builder; master; urgent; base } in
+  let spec = { Spec.opam_version } in
+  RC.get t { commit; spec; pkg; variant }
   |> Current.Primitive.map_result (Result.map (Common.revdeps ~pkg ~new_pkgs))
