@@ -46,16 +46,21 @@ let get_significant_available_pkg = function
 
 (** The stable releases of OCaml since 4.02 plus the latest
     alpha / beta / release-candidate for each unreleased version. *)
-let compilers ~arch ~build =
+let compilers ?(minimal=false) ~arch ~build () =
   let master_distro = Distro.tag_of_distro master_distro in
-  (Ocaml_version.Releases.recent @ Ocaml_version.Releases.unreleased_betas) |>
+  let versions =
+    if minimal then
+      [ List.hd @@ List.rev Ocaml_version.Releases.recent ]
+    else
+      Ocaml_version.Releases.recent @ Ocaml_version.Releases.unreleased_betas
+  in
   List.map (fun v ->
     let v = Ocaml_version.with_just_major_and_minor v in
     let revdeps = List.exists (Ocaml_version.equal v) default_compilers in (* TODO: Remove this when the cluster is ready *)
     let v = Ocaml_version.to_string v in
     let variant = Variant.v ~arch ~distro:master_distro ~compiler:(v, None) in
     build ~opam_version ~lower_bounds:true ~revdeps v variant
-  )
+  ) versions
 
 let linux_distributions ~arch ~build =
   let build ~distro ~arch ~compiler =
@@ -247,7 +252,7 @@ let with_cluster ~ocluster ~analysis ~lint ~master source =
   let build = build (module Builder) ~analysis ~pkgopts ~master ~source in
   [
     Node.leaf ~label:"(lint)" (Node.action `Linted lint);
-    Node.branch ~label:"compilers" (compilers ~arch:`X86_64 ~build);
+    Node.branch ~label:"compilers" (compilers ~arch:`X86_64 ~build ());
     Node.branch ~label:"distributions" (linux_distributions ~arch:`X86_64 ~build);
     Node.branch ~label:"macos" (macos ~build);
     Node.branch ~label:"freebsd" (freebsd ~build);
@@ -263,6 +268,5 @@ let with_docker ~host_arch ~analysis ~lint ~master source =
   let build = build (module Builder) ~analysis ~pkgopts ~master ~source in
   [
     Node.leaf ~label:"(lint)" (Node.action `Linted lint);
-    Node.branch ~label:"compilers" (compilers ~arch:host_arch ~build);
-    Node.branch ~label:"distributions" (linux_distributions ~arch:host_arch ~build);
+    Node.branch ~label:"compilers" (compilers ~minimal:true ~arch:host_arch ~build ());
   ]

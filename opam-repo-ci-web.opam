@@ -29,6 +29,12 @@ depends: [
   "dockerfile"
   "ppx_deriving_yojson"
   "odoc" {with-doc}
+  "capnp-rpc-lwt" {>= "1.2.3"}
+  "mula" {>= "0.1.2"}
+  "opam-format" {>= "2.2.0~beta1"}
+  "opam-state" {>= "2.2.0~beta1"}
+  "ppx_deriving" {>= "5.2.1"}
+  "sexplib" {>= "v0.16.0"}
 ]
 conflicts: [
   "ocaml-migrate-parsetree" {= "1.7.1"}
