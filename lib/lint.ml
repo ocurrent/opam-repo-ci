@@ -258,7 +258,7 @@ module Check = struct
     let equal_pkgs, other_pkgs = List.partition (fun s -> String.equal s pkg_name) packages in
     (* If the package already exists then don't check name collisions *)
     if List.compare_length_with equal_pkgs 1 >= 0 then
-      []
+      errors
     else
       List.fold_left
         (fun errors other_pkg ->
