@@ -245,7 +245,7 @@ module Check = struct
       let l = String.length p0 in
       if l <= 3 then false
       else
-        let k = ((l - 1) / 6) + 1 in
+        let k = ((l - 1) / 16) + 1 in
         Option.is_some @@ Mula.Strings.Lev.get_distance ~k p0 p1
     in
     dash_underscore p0 p1 || levenstein_distance p0 p1
@@ -255,15 +255,19 @@ module Check = struct
     let pkg_name_lower = String.lowercase_ascii pkg_name in
     let repository_path = Fpath.to_string cwd // "packages" in
     get_files repository_path >|= fun packages ->
-    let packages = List.filter (fun s -> not @@ String.equal s pkg_name) packages in
-    List.fold_left
-      (fun errors other_pkg ->
-        let other_pkg_lower = String.lowercase_ascii other_pkg in
-        if package_name_collision pkg_name_lower other_pkg_lower then
-          (pkg, NameCollision other_pkg) :: errors
-        else
-          errors)
-      errors packages
+    let equal_pkgs, other_pkgs = List.partition (fun s -> String.equal s pkg_name) packages in
+    (* If the package already exists then don't check name collisions *)
+    if List.compare_length_with equal_pkgs 1 >= 0 then
+      []
+    else
+      List.fold_left
+        (fun errors other_pkg ->
+          let other_pkg_lower = String.lowercase_ascii other_pkg in
+          if package_name_collision pkg_name_lower other_pkg_lower then
+            (pkg, NameCollision other_pkg) :: errors
+          else
+            errors)
+        errors other_pkgs
 
   let check_name_field ~errors ~pkg opam =
     match OpamFile.OPAM.name_opt opam with
