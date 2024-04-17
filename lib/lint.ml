@@ -245,8 +245,13 @@ module Check = struct
       let l = String.length p0 in
       if l <= 3 then false
       else
-        let k = ((l - 1) / 16) + 1 in
-        Option.is_some @@ Mula.Strings.Lev.get_distance ~k p0 p1
+        let k = ((l - 1) / 16) + 2 in
+        (* Ignore distances of 1, too many false positives:
+           https://github.com/ocaml/opam-repository/pull/25678 *)
+        match Mula.Strings.Lev.get_distance ~k p0 p1 with
+        | None -> false
+        | Some n when n <= 1 -> false
+        | Some _ -> true
     in
     dash_underscore p0 p1 || levenstein_distance p0 p1
 
