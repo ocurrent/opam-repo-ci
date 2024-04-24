@@ -29,6 +29,8 @@ let is_valid_hash hash =
   let open Astring in
   String.length hash >= 6 && String.for_all Char.Ascii.is_alphanum hash
 
+let get_short_hash = Astring.String.with_range ~len:6
+
 let db = lazy (
   let db = Lazy.force Current.Db.v in
   Current_cache.Db.init ();
@@ -59,21 +61,22 @@ CREATE TABLE IF NOT EXISTS ci_build_index (
                                      WHERE owner = ? AND name = ? AND hash = ?" in
   let full_hash = Sqlite3.prepare db "SELECT DISTINCT hash FROM ci_build_index \
                                       WHERE owner = ? AND name = ? AND hash LIKE ?" in
-      {
-        record_job;
-        remove;
-        repo_exists;
-        get_jobs;
-        get_job;
-        get_job_ids;
-        list_repos;
-        full_hash
-      }
+  {
+    record_job;
+    remove;
+    repo_exists;
+    get_jobs;
+    get_job;
+    get_job_ids;
+    list_repos;
+    full_hash
+  }
 )
 
 let init () = ignore (Lazy.force db)
 
 let get_job_ids_with_variant t ~owner ~name ~hash =
+  Log.info (fun f -> f "@[<h>Index.get_job_ids_with_variant %s/%s %s@]" owner name (get_short_hash hash));
   Db.query t.get_job_ids Sqlite3.Data.[ TEXT owner; TEXT name; TEXT hash ]
   |> List.fold_left begin fun acc -> function
   | Sqlite3.Data.[ TEXT variant; NULL ] -> Job_map.add variant None acc
@@ -184,7 +187,7 @@ let record ~repo ~hash jobs =
   let merge variant prev job =
     let set job_id =
       Log.info (fun f -> f "@[<h>Index.record %s/%s %s %s -> %a@]"
-                   owner name (Astring.String.with_range ~len:6 hash) variant Fmt.(option ~none:(any "-") string) job_id);
+                   owner name (get_short_hash hash) variant Fmt.(option ~none:(any "-") string) job_id);
       match job_id with
       | None -> Db.exec t.record_job Sqlite3.Data.[ TEXT owner; TEXT name; TEXT hash; TEXT variant; NULL ]
       | Some id -> Db.exec t.record_job Sqlite3.Data.[ TEXT owner; TEXT name; TEXT hash; TEXT variant; TEXT id ]
@@ -197,7 +200,7 @@ let record ~repo ~hash jobs =
     in
     let remove () =
       Log.info (fun f -> f "@[<h>Index.record %s/%s %s %s REMOVED@]"
-                   owner name (Astring.String.with_range ~len:6 hash) variant);
+                   owner name (get_short_hash hash) variant);
       Db.exec t.remove Sqlite3.Data.[ TEXT owner; TEXT name; TEXT hash; TEXT variant ]
     in
     begin match prev, job with
@@ -213,6 +216,7 @@ let record ~repo ~hash jobs =
 
 let is_known_repo ~owner ~name =
   let t = Lazy.force db in
+  Log.info (fun f -> f "@[<h>Index.is_known_repo %s/%s@]" owner name);
   match Db.query_one t.repo_exists Sqlite3.Data.[ TEXT owner; TEXT name ] with
   | Sqlite3.Data.[ INT x ] -> x = 1L
   | _ -> failwith "repo_exists failed!"
@@ -220,15 +224,17 @@ let is_known_repo ~owner ~name =
 let get_full_hash ~owner ~name short_hash =
   let t = Lazy.force db in
   if is_valid_hash short_hash then (
+    Log.info (fun f -> f "@[<h>Index.get_full_hash %s/%s %s@]" owner name short_hash);
     match Db.query t.full_hash Sqlite3.Data.[ TEXT owner; TEXT name; TEXT (short_hash ^ "%") ] with
     | [] -> Error `Unknown
     | [Sqlite3.Data.[ TEXT hash ]] -> Ok hash
-    | [_] -> failwith "full_hash: invalid result!"
+    | [_] -> failwith "get_full_hash: invalid result!"
     | _ :: _ :: _ -> Error `Ambiguous
   ) else Error `Invalid
 
 let get_jobs ~owner ~name hash =
   let t = Lazy.force db in
+  Log.info (fun f -> f "@[<h>Index.get_jobs %s/%s %s@]" owner name (get_short_hash hash));
   Db.query t.get_jobs Sqlite3.Data.[ TEXT owner; TEXT name; TEXT hash ]
   |> List.map @@ function
   | Sqlite3.Data.[ TEXT variant; TEXT job_id; NULL; NULL ] ->
@@ -246,6 +252,7 @@ let get_jobs ~owner ~name hash =
 
 let get_job ~owner ~name ~hash ~variant =
   let t = Lazy.force db in
+  Log.info (fun f -> f "@[<h>Index.get_job %s/%s %s %s@]" owner name (get_short_hash hash) variant);
   match Db.query_some t.get_job Sqlite3.Data.[ TEXT owner; TEXT name; TEXT hash; TEXT variant ] with
   | None -> Error `No_such_variant
   | Some Sqlite3.Data.[ TEXT id ] -> Ok (Some id)
@@ -254,6 +261,7 @@ let get_job ~owner ~name ~hash ~variant =
 
 let list_repos owner =
   let t = Lazy.force db in
+  Log.info (fun f -> f "@[<h>Index.list_repos %s@]" owner);
   Db.query t.list_repos Sqlite3.Data.[ TEXT owner ]
   |> List.map @@ function
   | Sqlite3.Data.[ TEXT x ] -> x
