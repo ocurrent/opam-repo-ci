@@ -300,12 +300,7 @@ module Check = struct
   let opam_lint ~check_extra_files ~errors ~pkg opam =
     Lwt_preemptive.detach begin fun () ->
       OpamFileTools.lint ~check_extra_files ~check_upstream:true opam |>
-      List.fold_left begin fun errors -> function
-        | (67, _, _) -> errors (* TODO: Disable error 67 (Checksum specified with a non archive url) while discussing a fix:
-                                  - https://github.com/ocaml/opam/pull/4834
-                                  - https://github.com/ocaml/opam/pull/4960 *)
-        | x -> (pkg, OpamLint x) :: errors
-      end errors
+      List.fold_left (fun errors x -> (pkg, OpamLint x) :: errors) errors
     end ()
 
   let of_dir ~host_os ~master ~job ~packages cwd =
