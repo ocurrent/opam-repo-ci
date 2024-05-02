@@ -1,0 +1,3 @@
+(library
+ (name prototype)
+ (libraries opam-client))

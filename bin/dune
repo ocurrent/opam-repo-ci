@@ -1,0 +1,4 @@
+(executable
+ (public_name revdeps_prototype)
+ (name main)
+ (libraries prototype cmdliner opam-client))
