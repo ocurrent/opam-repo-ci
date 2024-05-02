@@ -37,15 +37,23 @@ let test_revdeps pkg local_repo_dir =
     (OpamPackage.Set.cardinal revdeps);
 
   (* Install and test the first reverse dependency *)
-  (* FIXME: Install the latest versions of all dependencies? *)
-  match OpamPackage.Set.elements revdeps with
-  | [] -> OpamConsole.msg "No reverse dependencies to install and test.\n"
-  | hd :: _ ->
-      OpamConsole.msg "Installing and testing the first package: %s\n"
-        (OpamPackage.to_string hd);
-      let _ = install_and_test_package hd in
-      ();
-      ()
+  let latest_versions = find_latest_versions revdeps in
+
+  OpamPackage.Set.iter
+    (fun pkg -> OpamConsole.msg "%s\n" (OpamPackage.to_string pkg))
+    latest_versions;
+  OpamConsole.msg "Number of reverse dependencies (latest versions): %d\n"
+    (OpamPackage.Set.cardinal latest_versions);
+
+  OpamPackage.Set.iter
+    (fun pkg ->
+      OpamConsole.msg "Installing latest version: %s\n"
+        (OpamPackage.to_string pkg);
+      (* Assume install_and_test_package handles the installation and testing *)
+      let _ = install_and_test_package pkg in
+      ())
+    latest_versions;
+  ()
 
 let opam_repo_dir =
   let parse s =

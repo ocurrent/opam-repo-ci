@@ -76,3 +76,12 @@ let install_and_test_package package =
   let version_contstaint = (`Eq, version) in
   with_locked_switch () @@ fun st ->
   OpamClient.install st [ (name, Some version_contstaint) ]
+
+let find_latest_versions packages =
+  let open OpamPackage in
+  let versions_map = to_map packages in
+  Name.Map.fold
+    (fun name _versions acc ->
+      let latest_version = max_version packages name in
+      Set.add latest_version acc)
+    versions_map Set.empty
