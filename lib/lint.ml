@@ -324,10 +324,9 @@ module Check = struct
       opam.OpamFile.OPAM.build
 
   let opam_lint ~check_extra_files ~errors ~pkg opam =
-    Lwt_preemptive.detach begin fun () ->
-      OpamFileTools.lint ~check_extra_files ~check_upstream:true opam |>
-      List.fold_left (fun errors x -> (pkg, OpamLint x) :: errors) errors
-    end ()
+    OpamFileTools.lint ~check_extra_files ~check_upstream:true opam |>
+    List.fold_left (fun errors x -> (pkg, OpamLint x) :: errors) errors |>
+    Lwt.return
 
   let of_dir ~host_os ~master ~job ~packages cwd =
     let master = Current_git.Commit.hash master in
