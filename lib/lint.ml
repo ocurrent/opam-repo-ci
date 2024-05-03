@@ -245,25 +245,51 @@ module Check = struct
       let l = String.length p0 in
       if l <= 3 then false
       else
-        let k = ((l - 1) / 6) + 1 in
-        Option.is_some @@ Mula.Strings.Lev.get_distance ~k p0 p1
+        let k = ((l - 1) / 16) + 2 in
+        (* Ignore distances of 1, too many false positives:
+           https://github.com/ocaml/opam-repository/pull/25678 *)
+        match Mula.Strings.Lev.get_distance ~k p0 p1 with
+        | None -> false
+        | Some n when n <= 1 -> false
+        | Some _ -> true
     in
     dash_underscore p0 p1 || levenstein_distance p0 p1
+
+  (* If a previous version of the package exists,
+     i.e. this is not a brand-new package *)
+  let prev_version_exists repo_path pkg pkg_name packages =
+    let f other_pkg_name =
+      let pkg_str = OpamPackage.to_string pkg in
+      if String.equal pkg_name other_pkg_name then
+        let package_path = repo_path // other_pkg_name in
+        get_files package_path >|= fun vs ->
+        List.exists (fun v -> not @@ String.equal v pkg_str) vs
+      else
+        Lwt.return_false
+    in
+    Lwt.all @@ List.map f packages >|=
+    List.fold_left (fun a b -> a || b) false
 
   let check_name_collisions ~cwd ~errors ~pkg =
     let pkg_name = pkg.OpamPackage.name |> OpamPackage.Name.to_string in
     let pkg_name_lower = String.lowercase_ascii pkg_name in
     let repository_path = Fpath.to_string cwd // "packages" in
-    get_files repository_path >|= fun packages ->
-    let packages = List.filter (fun s -> not @@ String.equal s pkg_name) packages in
-    List.fold_left
-      (fun errors other_pkg ->
-        let other_pkg_lower = String.lowercase_ascii other_pkg in
-        if package_name_collision pkg_name_lower other_pkg_lower then
-          (pkg, NameCollision other_pkg) :: errors
-        else
-          errors)
-      errors packages
+    get_files repository_path >>= fun packages ->
+    (* If the package already exists then don't check name collisions *)
+    (* TODO: Releasing multiple versions of the same package makes it
+       be considered as 'already existing' - fix this *)
+    prev_version_exists repository_path pkg pkg_name packages >|= fun b ->
+    if b then errors
+    else
+      let other_pkgs = List.filter (fun s -> not @@ String.equal s pkg_name) packages in
+      List.fold_left
+        (fun errors other_pkg ->
+          let other_pkg_lower = String.lowercase_ascii other_pkg in
+          if package_name_collision pkg_name_lower other_pkg_lower then
+            (pkg, NameCollision other_pkg) :: errors
+          else
+            errors)
+        errors other_pkgs
 
   let check_name_field ~errors ~pkg opam =
     match OpamFile.OPAM.name_opt opam with
