@@ -15,9 +15,6 @@ build: debian-12-ocaml-4.02/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -52,9 +49,6 @@ build: debian-12-ocaml-4.02/amd64 opam-dev lower-bounds
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -108,9 +102,6 @@ build: debian-12-ocaml-4.03/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -145,9 +136,6 @@ build: debian-12-ocaml-4.03/amd64 opam-dev lower-bounds
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -201,9 +189,6 @@ build: debian-12-ocaml-4.04/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -238,9 +223,6 @@ build: debian-12-ocaml-4.04/amd64 opam-dev lower-bounds
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -294,9 +276,6 @@ build: debian-12-ocaml-4.05/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -331,9 +310,6 @@ build: debian-12-ocaml-4.05/amd64 opam-dev lower-bounds
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -387,9 +363,6 @@ build: debian-12-ocaml-4.06/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -424,9 +397,6 @@ build: debian-12-ocaml-4.06/amd64 opam-dev lower-bounds
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -480,9 +450,6 @@ build: debian-12-ocaml-4.07/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -517,9 +484,6 @@ build: debian-12-ocaml-4.07/amd64 opam-dev lower-bounds
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -573,9 +537,6 @@ build: debian-12-ocaml-4.08/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -610,9 +571,6 @@ build: debian-12-ocaml-4.08/amd64 opam-dev lower-bounds
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -666,9 +624,6 @@ build: debian-12-ocaml-4.09/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -703,9 +658,6 @@ build: debian-12-ocaml-4.09/amd64 opam-dev lower-bounds
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -759,9 +711,6 @@ build: debian-12-ocaml-4.10/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -796,9 +745,6 @@ build: debian-12-ocaml-4.10/amd64 opam-dev lower-bounds
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -852,9 +798,6 @@ build: debian-12-ocaml-4.11/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -889,9 +832,6 @@ build: debian-12-ocaml-4.11/amd64 opam-dev lower-bounds
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -945,9 +885,6 @@ build: debian-12-ocaml-4.12/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -982,9 +919,6 @@ build: debian-12-ocaml-4.12/amd64 opam-dev lower-bounds
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -1038,9 +972,6 @@ build: debian-12-ocaml-4.13/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -1075,9 +1006,6 @@ build: debian-12-ocaml-4.13/amd64 opam-dev lower-bounds
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -1131,9 +1059,6 @@ build: debian-12-ocaml-4.14/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -1168,9 +1093,6 @@ build: debian-12-ocaml-4.14/amd64 opam-dev lower-bounds
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -1243,9 +1165,6 @@ build: debian-12-ocaml-4.14/amd64 opam-dev with-tests
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -1262,9 +1181,6 @@ build: debian-12-ocaml-4.14/amd64 opam-dev with-tests
         done; \
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN (opam reinstall --with-test a.0.0.1) || true
     RUN opam reinstall --with-test --verbose a.0.0.1; \
         res=$?; \
@@ -1299,9 +1215,6 @@ build: debian-12-ocaml-5.0/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -1336,9 +1249,6 @@ build: debian-12-ocaml-5.0/amd64 opam-dev lower-bounds
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -1392,9 +1302,6 @@ build: debian-12-ocaml-5.1/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -1429,9 +1336,6 @@ build: debian-12-ocaml-5.1/amd64 opam-dev lower-bounds
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -1504,9 +1408,6 @@ build: debian-12-ocaml-5.1/amd64 opam-dev with-tests
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -1523,9 +1424,6 @@ build: debian-12-ocaml-5.1/amd64 opam-dev with-tests
         done; \
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN (opam reinstall --with-test a.0.0.1) || true
     RUN opam reinstall --with-test --verbose a.0.0.1; \
         res=$?; \
@@ -1560,9 +1458,6 @@ build: debian-12-ocaml-5.2-beta2/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -1597,9 +1492,6 @@ build: debian-12-ocaml-5.2-beta2/amd64 opam-dev lower-bounds
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -1653,9 +1545,6 @@ build: ubuntu-23.10-ocaml-5.1/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -1690,9 +1579,6 @@ build: ubuntu-23.04-ocaml-5.1/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -1727,9 +1613,6 @@ build: ubuntu-22.04-ocaml-5.1/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -1764,9 +1647,6 @@ build: ubuntu-20.04-ocaml-5.1/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -1801,9 +1681,6 @@ build: opensuse-tumbleweed-ocaml-5.1/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -1838,9 +1715,6 @@ build: opensuse-15.5-ocaml-5.1/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -1875,9 +1749,6 @@ build: oraclelinux-9-ocaml-5.1/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -1912,9 +1783,6 @@ build: oraclelinux-8-ocaml-5.1/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -1949,9 +1817,6 @@ build: fedora-40-ocaml-5.1/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -1986,9 +1851,6 @@ build: fedora-39-ocaml-5.1/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -2023,9 +1885,6 @@ build: fedora-38-ocaml-5.1/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -2060,9 +1919,6 @@ build: debian-unstable-ocaml-5.1/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -2097,9 +1953,6 @@ build: debian-testing-ocaml-5.1/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -2134,9 +1987,6 @@ build: debian-10-ocaml-5.1/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -2171,9 +2021,6 @@ build: debian-11-ocaml-5.1/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -2208,9 +2055,6 @@ build: archlinux-ocaml-5.1/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -2245,9 +2089,6 @@ build: alpine-3.19-ocaml-5.1/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -2282,9 +2123,6 @@ build: ubuntu-23.10-ocaml-4.14/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -2319,9 +2157,6 @@ build: ubuntu-23.04-ocaml-4.14/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -2356,9 +2191,6 @@ build: ubuntu-22.04-ocaml-4.14/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -2393,9 +2225,6 @@ build: ubuntu-20.04-ocaml-4.14/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -2430,9 +2259,6 @@ build: opensuse-tumbleweed-ocaml-4.14/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -2467,9 +2293,6 @@ build: opensuse-15.5-ocaml-4.14/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -2504,9 +2327,6 @@ build: oraclelinux-9-ocaml-4.14/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -2541,9 +2361,6 @@ build: oraclelinux-8-ocaml-4.14/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -2578,9 +2395,6 @@ build: fedora-40-ocaml-4.14/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -2615,9 +2429,6 @@ build: fedora-39-ocaml-4.14/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -2652,9 +2463,6 @@ build: fedora-38-ocaml-4.14/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -2689,9 +2497,6 @@ build: debian-unstable-ocaml-4.14/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -2726,9 +2531,6 @@ build: debian-testing-ocaml-4.14/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -2763,9 +2565,6 @@ build: debian-10-ocaml-4.14/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -2800,9 +2599,6 @@ build: debian-11-ocaml-4.14/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -2837,9 +2633,6 @@ build: archlinux-ocaml-4.14/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -2874,9 +2667,6 @@ build: alpine-3.19-ocaml-4.14/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -2910,9 +2700,6 @@ build: macos-homebrew-ocaml-5.1/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url -k local --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/Users/mac1000/.opam/download-cache,uid=1000 --mount=type=cache,id=homebrew,target=/Users/mac1000/Library/Caches/Homebrew,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -2946,9 +2733,6 @@ build: macos-homebrew-ocaml-5.1/arm64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url -k local --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/Users/mac1000/.opam/download-cache,uid=1000 --mount=type=cache,id=homebrew,target=/Users/mac1000/Library/Caches/Homebrew,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -2982,9 +2766,6 @@ build: macos-homebrew-ocaml-4.14/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url -k local --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/Users/mac1000/.opam/download-cache,uid=1000 --mount=type=cache,id=homebrew,target=/Users/mac1000/Library/Caches/Homebrew,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -3018,9 +2799,6 @@ build: macos-homebrew-ocaml-4.14/arm64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url -k local --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/Users/mac1000/.opam/download-cache,uid=1000 --mount=type=cache,id=homebrew,target=/Users/mac1000/Library/Caches/Homebrew,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -3055,9 +2833,6 @@ build: freebsd-ocaml-5.1/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -3092,9 +2867,6 @@ build: freebsd-ocaml-4.14/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -3129,9 +2901,6 @@ build: debian-12-ocaml-5.1/amd64 opam-2.0
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam depext -u || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam depext a.0.0.1 && opam reinstall a.0.0.1; \
         res=$?; \
@@ -3166,9 +2935,6 @@ build: debian-12-ocaml-5.1/amd64 opam-2.1
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -3203,9 +2969,6 @@ build: debian-12-ocaml-5.1-afl/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -3240,9 +3003,6 @@ build: debian-12-ocaml-5.1-flambda/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -3277,9 +3037,6 @@ build: debian-12-ocaml-5.1-no-flat-float-array/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -3315,9 +3072,6 @@ build: debian-12-ocaml-5.1/i386 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -3352,9 +3106,6 @@ build: debian-12-ocaml-5.1/arm64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -3389,9 +3140,6 @@ build: debian-12-ocaml-5.1/ppc64le opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -3427,9 +3175,6 @@ build: debian-12-ocaml-5.1/arm32v7 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -3464,9 +3209,6 @@ build: debian-12-ocaml-5.1/s390x opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -3501,9 +3243,6 @@ build: ubuntu-22.04-ocaml-5.1/riscv64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -3538,9 +3277,6 @@ build: debian-12-ocaml-4.14/amd64 opam-2.0
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam depext -u || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam depext a.0.0.1 && opam reinstall a.0.0.1; \
         res=$?; \
@@ -3575,9 +3311,6 @@ build: debian-12-ocaml-4.14/amd64 opam-2.1
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -3612,9 +3345,6 @@ build: debian-12-ocaml-4.14-afl/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -3649,9 +3379,6 @@ build: debian-12-ocaml-4.14-flambda/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -3686,9 +3413,6 @@ build: debian-12-ocaml-4.14-fp/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -3723,9 +3447,6 @@ build: debian-12-ocaml-4.14-flambda-fp/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -3760,9 +3481,6 @@ build: debian-12-ocaml-4.14-no-flat-float-array/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -3797,9 +3515,6 @@ build: debian-12-ocaml-4.14-nnp/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -3834,9 +3549,6 @@ build: debian-12-ocaml-4.14-nnpchecker/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -3872,9 +3584,6 @@ build: debian-12-ocaml-4.14/i386 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -3909,9 +3618,6 @@ build: debian-12-ocaml-4.14/arm64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -3946,9 +3652,6 @@ build: debian-12-ocaml-4.14/ppc64le opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -3984,9 +3687,6 @@ build: debian-12-ocaml-4.14/arm32v7 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -4021,9 +3721,6 @@ build: debian-12-ocaml-4.14/s390x opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
@@ -4058,9 +3755,6 @@ build: ubuntu-22.04-ocaml-4.14/riscv64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
-    ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
     RUN opam pin add -k version -yn a.0.0.1 0.0.1
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
