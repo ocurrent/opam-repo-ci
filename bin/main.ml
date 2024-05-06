@@ -45,15 +45,15 @@ let test_revdeps pkg local_repo_dir =
   OpamConsole.msg "Number of reverse dependencies (latest versions): %d\n"
     (OpamPackage.Set.cardinal latest_versions);
 
-  OpamPackage.Set.iter
-    (fun pkg ->
-      OpamConsole.msg "Installing latest version: %s\n"
-        (OpamPackage.to_string pkg);
-      (* Assume install_and_test_package handles the installation and testing *)
-      let _ = install_and_test_package_with_opam pkg in
-      ())
-    latest_versions;
+  (match local_repo_dir with
+  | Some d ->
+      install_and_test_packages_with_dune d package
+        (OpamPackage.Set.to_list latest_versions)
+  | _ -> OpamConsole.msg "Opam local repository URL must be specified!\n");
   ()
+
+let make_abs_path s =
+  if Filename.is_relative s then Filename.concat (Sys.getcwd ()) s else s
 
 let opam_repo_dir =
   let parse s =
@@ -61,7 +61,7 @@ let opam_repo_dir =
       let repo_file = Filename.concat s "repo" in
       let packages_dir = Filename.concat s "packages" in
       if Sys.file_exists repo_file && Sys.is_directory packages_dir then
-        Ok (Some s)
+        Ok (Some (make_abs_path s))
       else
         Error
           (`Msg

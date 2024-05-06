@@ -1,3 +1,5 @@
+module H = Dune_helpers
+
 let set_default_repository path =
   OpamClientConfig.opam_init ();
   OpamGlobalState.with_ `Lock_write @@ fun gt ->
@@ -69,6 +71,15 @@ let list_revdeps package =
   in
   coinstallable_deps
 
+let find_latest_versions packages =
+  let open OpamPackage in
+  let versions_map = to_map packages in
+  Name.Map.fold
+    (fun name _versions acc ->
+      let latest_version = max_version packages name in
+      Set.add latest_version acc)
+    versions_map Set.empty
+
 let install_and_test_package_with_opam package =
   (* FIXME: We need to pin the target package when trying to install and test the new packages *)
   OpamConsole.msg "Installing and testing package: %s\n"
@@ -79,11 +90,10 @@ let install_and_test_package_with_opam package =
   with_locked_switch () @@ fun st ->
   OpamClient.install st [ (name, Some version_contstaint) ]
 
-let find_latest_versions packages =
-  let open OpamPackage in
-  let versions_map = to_map packages in
-  Name.Map.fold
-    (fun name _versions acc ->
-      let latest_version = max_version packages name in
-      Set.add latest_version acc)
-    versions_map Set.empty
+let install_and_test_packages_with_dune opam_repository target packages =
+  OpamConsole.msg
+    "Installing latest version of reverse dependencies with pinned %s\n"
+    (OpamPackage.to_string target);
+  let parent = H.create_temp_dir "revdeps_" in
+  let _ = H.create_dummy_projects parent opam_repository target packages in
+  ()
