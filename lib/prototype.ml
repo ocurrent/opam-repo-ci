@@ -36,6 +36,7 @@ let set_default_repository path =
   ()
 
 let with_locked_switch () =
+  OpamClientConfig.opam_init ();
   OpamGlobalState.with_ `Lock_write @@ fun gt ->
   OpamRepositoryState.with_ `Lock_write gt @@ fun _rt ->
   OpamSwitchState.with_ `Lock_write gt
