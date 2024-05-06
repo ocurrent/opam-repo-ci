@@ -68,7 +68,7 @@ let list_revdeps package =
   in
   coinstallable_deps
 
-let install_and_test_package package =
+let install_and_test_package_with_opam package =
   (* FIXME: We need to pin the target package when trying to install and test the new packages *)
   OpamConsole.msg "Installing and testing package: %s\n"
     (OpamPackage.to_string package);

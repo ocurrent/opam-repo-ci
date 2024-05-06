@@ -50,7 +50,7 @@ let test_revdeps pkg local_repo_dir =
       OpamConsole.msg "Installing latest version: %s\n"
         (OpamPackage.to_string pkg);
       (* Assume install_and_test_package handles the installation and testing *)
-      let _ = install_and_test_package pkg in
+      let _ = install_and_test_package_with_opam pkg in
       ())
     latest_versions;
   ()
