@@ -12,6 +12,7 @@ bug-reports: "https://github.com/username/reponame/issues"
 depends: [
   "ocaml"
   "dune" {>= "3.15"}
+  "sexplib0"
   "opam-client" {>= "2.2"}
   "odoc" {with-doc}
 ]
