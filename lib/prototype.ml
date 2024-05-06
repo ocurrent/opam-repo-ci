@@ -69,6 +69,7 @@ let list_revdeps package =
   coinstallable_deps
 
 let install_and_test_package package =
+  (* FIXME: We need to pin the target package when trying to install and test the new packages *)
   OpamConsole.msg "Installing and testing package: %s\n"
     (OpamPackage.to_string package);
   let name = OpamPackage.name package in
