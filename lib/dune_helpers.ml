@@ -81,9 +81,23 @@ let create_dummy_project root opam_repository packages =
   (* Create dune-workspace *)
   let contents = generate_dune_workspace opam_repository in
   chdir dir ~f:(fun () -> write_file ~file:"dune-workspace" ~contents);
-  print_endline (Printf.sprintf "Generated dune project in %s/dune-project" dir)
+  print_endline (Printf.sprintf "Generated dune project in %s/dune-project" dir);
+  dir
+
+let take n lst =
+  List.rev
+    (List.fold_left
+       (fun acc x -> if List.length acc < n then x :: acc else acc)
+       [] lst)
 
 let create_dummy_projects root opam_repository target packages =
-  List.iter
+  List.map
     (fun pkg -> create_dummy_project root opam_repository [ target; pkg ])
     packages
+
+let generate_lock_and_build dir =
+  chdir dir ~f:(fun () ->
+      let _ = Sys.command "dune pkg lock --verbose" in
+      (* FIXME: dune build runs with -j1 *)
+      let _ = Sys.command "dune build --verbose" in
+      ())
