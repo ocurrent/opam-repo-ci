@@ -92,7 +92,10 @@ let take n lst =
 
 let create_dummy_projects root opam_repository target packages =
   List.map
-    (fun pkg -> create_dummy_project root opam_repository [ target; pkg ])
+    (fun pkg ->
+      create_dummy_project root opam_repository
+        (* FIXME: Allow specifying OCaml version *)
+        [ target; pkg; OpamPackage.of_string "ocaml.5.1.1" ])
     packages
 
 let generate_lock_and_build dir =
