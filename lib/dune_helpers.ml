@@ -87,12 +87,28 @@ let take n lst =
        (fun acc x -> if List.length acc < n then x :: acc else acc)
        [] lst)
 
+let get_ocaml_version () =
+  let ic = Unix.open_process_in "ocamlc --version" in
+  let rec read_all acc =
+    try
+      let line = input_line ic in
+      read_all (acc ^ line ^ "\n")
+    with End_of_file -> acc
+  in
+  let output = read_all "" in
+  let exit_status = Unix.close_process_in ic in
+  match exit_status with
+  | Unix.WEXITED 0 -> output |> String.trim
+  | _ -> "5.1.1"
+
 let create_dummy_projects root opam_repository target packages =
+  let ocaml_version = get_ocaml_version () in
+  let ocaml_pkg = "ocaml-system." ^ ocaml_version in
   List.map
     (fun pkg ->
       create_dummy_project root opam_repository
-        (* FIXME: Allow specifying OCaml version *)
-        [ target; pkg; OpamPackage.of_string "ocaml-system.5.1.1" ])
+        (* FIXME: Current OCaml version? Should be configurable *)
+        [ target; pkg; OpamPackage.of_string ocaml_pkg ])
     packages
 
 let generate_lock_and_build dir =
