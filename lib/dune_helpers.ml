@@ -114,5 +114,7 @@ let create_dummy_projects root opam_repository target packages =
 let generate_lock_and_build dir =
   chdir dir ~f:(fun () ->
       let _ = Sys.command "dune pkg lock --verbose" in
+      (* FIXME: Just build won't run the tests of the revdep package. We can
+         create a dune file where runtest depends on running revdeps' tests. *)
       let _ = Sys.command "dune build --verbose" in
       ())
