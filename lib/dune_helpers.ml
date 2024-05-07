@@ -92,7 +92,7 @@ let create_dummy_projects root opam_repository target packages =
     (fun pkg ->
       create_dummy_project root opam_repository
         (* FIXME: Allow specifying OCaml version *)
-        [ target; pkg; OpamPackage.of_string "ocaml.5.1.1" ])
+        [ target; pkg; OpamPackage.of_string "ocaml-system.5.1.1" ])
     packages
 
 let generate_lock_and_build dir =
