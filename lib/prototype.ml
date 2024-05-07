@@ -95,9 +95,15 @@ let install_and_test_packages_with_dune opam_repository target packages =
     "Installing latest version of reverse dependencies with pinned %s\n"
     (OpamPackage.to_string target);
   let parent = H.create_temp_dir "revdeps_" in
+  (* FIXME: there can be 1000s of revdeps?! *)
+  let selected_packages = H.take 3 packages in
+  (* Prompt before creating the projects *)
+  Printf.printf "Do you want to generate %d dummy dune project in %s? (y/n): "
+    (List.length selected_packages)
+    parent;
+  (match read_line () with "y" | "Y" -> () | _ -> failwith "Quitting!");
   let dirs =
-    (* FIXME: there can be 1000s of revdeps?! *)
-    H.create_dummy_projects parent opam_repository target (H.take 3 packages)
+    H.create_dummy_projects parent opam_repository target selected_packages
   in
   List.iter H.generate_lock_and_build dirs;
   ()

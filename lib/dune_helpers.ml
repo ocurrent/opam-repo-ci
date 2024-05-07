@@ -71,9 +71,6 @@ let create_dummy_project root opam_repository packages =
     packages |> List.map OpamPackage.to_string |> String.concat "-"
   in
   let dir = Printf.sprintf "%s/%s" root dir_name in
-  (* Prompt before creating the project *)
-  Printf.printf "Do you want to generate a dune project in %s? (y/n): " dir;
-  (match read_line () with "y" | "Y" -> () | _ -> failwith "Quitting!");
   (* Create dune-project *)
   let contents = generate_dune_project packages in
   let _ = Sys.command (Printf.sprintf "mkdir -p %s" dir) in
