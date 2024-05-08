@@ -60,9 +60,12 @@ let list_revdeps package =
   let package_set = OpamPackage.Set.singleton package in
   let dependencies =
     with_locked_switch () @@ fun st ->
-    (* FIXME: Add other commands; This is --depopts *)
-    OpamSwitchState.reverse_dependencies st ~depopts:true ~build:true
-      ~post:false ~installed:false ~unavailable:false package_set
+    try
+      (* FIXME: Add other commands; This is --depopts *)
+      OpamSwitchState.reverse_dependencies st ~depopts:true ~build:true
+        ~post:false ~installed:false ~unavailable:false package_set
+    with Not_found ->
+      failwith "TODO: Handle packages that are not found in repo"
   in
   with_locked_switch () @@ fun st ->
   let installable_deps = filter_installable st dependencies in
