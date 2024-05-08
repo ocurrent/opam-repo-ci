@@ -62,6 +62,11 @@ let list_revdeps package =
     fun st ->
       let dependencies = try
           (* FIXME: Add other commands; This is --depopts *)
+          (* Shon: IIUC, this may already also be accounting for `recursive`:
+
+             The docs for the function say "Return the transitive dependency closures
+             of a collection of packages." And in my spot testing indicates that the
+             revdeps returned indeed include transitive revdeps *)
           OpamSwitchState.reverse_dependencies st ~depopts:true ~build:true
             ~post:false ~installed:false ~unavailable:false package_set
         with Not_found ->
