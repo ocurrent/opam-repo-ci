@@ -58,21 +58,21 @@ let filter_coinstallable st original_package packages =
 let list_revdeps package =
   OpamConsole.msg "Listing revdeps for %s\n" (OpamPackage.to_string package);
   let package_set = OpamPackage.Set.singleton package in
-  let dependencies =
-    with_locked_switch () @@ fun st ->
-    try
-      (* FIXME: Add other commands; This is --depopts *)
-      OpamSwitchState.reverse_dependencies st ~depopts:true ~build:true
-        ~post:false ~installed:false ~unavailable:false package_set
-    with Not_found ->
-      failwith "TODO: Handle packages that are not found in repo"
-  in
-  with_locked_switch () @@ fun st ->
-  let installable_deps = filter_installable st dependencies in
-  let coinstallable_deps =
-    filter_coinstallable st package_set installable_deps
-  in
-  coinstallable_deps
+  with_locked_switch () begin
+    fun st ->
+      let dependencies = try
+          (* FIXME: Add other commands; This is --depopts *)
+          OpamSwitchState.reverse_dependencies st ~depopts:true ~build:true
+            ~post:false ~installed:false ~unavailable:false package_set
+        with Not_found ->
+          failwith "TODO: Handle packages that are not found in repo"
+      in
+      let installable_deps = filter_installable st dependencies in
+      let coinstallable_deps =
+        filter_coinstallable st package_set installable_deps
+      in
+      coinstallable_deps
+  end
 
 let find_latest_versions packages =
   let open OpamPackage in
