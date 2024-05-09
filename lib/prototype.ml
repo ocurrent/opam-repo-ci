@@ -43,10 +43,6 @@ let with_locked_switch () =
   OpamRepositoryState.with_ `Lock_write gt @@ fun _rt ->
   OpamSwitchState.with_ `Lock_write gt
 
-let filter_installable st packages =
-  let universe = OpamSwitchState.universe st ~requested:packages Query in
-  OpamSolver.installable_subset universe packages
-
 let filter_coinstallable st original_package packages =
   let universe =
     OpamSwitchState.universe st
@@ -55,28 +51,64 @@ let filter_coinstallable st original_package packages =
   in
   OpamSolver.coinstallable_subset universe original_package packages
 
+let opam_file_of_package st p =
+  match OpamSwitchState.opam_opt st p with
+  | None -> OpamFile.OPAM.create p
+  | Some o ->
+    OpamFile.OPAM.(with_name p.OpamPackage.name
+                     (with_version p.OpamPackage.version o))
+
+let transitive_revdeps st package_set =
+  (* Optional dependencies are not transitive: if a optionally depends on b,
+     and b optionally depends on c, it does not follow that a optionally depends on c. *)
+  let depopts = false in
+  (* [with-only] dependencies are also not included in [reverse_dependencies]. *)
+  try
+    (* Computes the transitive closure of the reverse dependencies *)
+    OpamSwitchState.reverse_dependencies
+      ~depopts ~build:true ~post:false ~installed:false ~unavailable:false
+      st package_set
+  with Not_found ->
+    failwith "TODO: Handle packages that are not found in repo"
+
+(* Optional ([depopt]) and test-only ([with-test]) revdeps are not included in
+   [transitive_revdeps], but we still want those revdeps that depend on our
+   target package_set optionally or just for tests *directly*. The sole purpose
+   of this function is to compute the direct [depopt] and [with-test] revdeps.
+
+   This function adapts the core logic from the non-recursive case of [opam list
+   --depends-on].
+
+   See https://github.com/ocaml/opam/blob/b3d2f5c554e6ef3cc736a9f97e252486403e050f/src/client/opamListCommand.ml#L238-L244 *)
+let non_transitive_revdeps st package_set =
+  (* We filter through all packages known to the state, which follows the logic
+     of the [opam list] command, except that we omit inclusion of merely
+     installed packages that are not in a repository in the state. This is
+     because we are only concerned with revdep testing of installable packages,
+     not of random local things that a user may have installed in their system.
+
+     See https://github.com/ocaml/opam/blob/b3d2f5c554e6ef3cc736a9f97e252486403e050f/src/client/opamCommands.ml#L729-L731 *)
+  let all_known_packages = st.OpamStateTypes.packages in
+  let packages_depending_on_target_packages revdep_candidate_pkg =
+    let dependancy_on =
+      revdep_candidate_pkg
+      |> opam_file_of_package st
+      |> OpamPackageVar.all_depends ~test:true ~depopts:true st
+      |> OpamFormula.verifies
+    in
+    OpamPackage.Set.exists dependancy_on package_set
+  in
+  OpamPackage.Set.filter packages_depending_on_target_packages all_known_packages
+
 let list_revdeps package =
   OpamConsole.msg "Listing revdeps for %s\n" (OpamPackage.to_string package);
   let package_set = OpamPackage.Set.singleton package in
   with_locked_switch () begin
     fun st ->
-      let dependencies = try
-          (* FIXME: Add other commands; This is --depopts *)
-          (* Shon: IIUC, this may already also be accounting for `recursive`:
-
-             The docs for the function say "Return the transitive dependency closures
-             of a collection of packages." And in my spot testing indicates that the
-             revdeps returned indeed include transitive revdeps *)
-          OpamSwitchState.reverse_dependencies st ~depopts:true ~build:true
-            ~post:false ~installed:false ~unavailable:false package_set
-        with Not_found ->
-          failwith "TODO: Handle packages that are not found in repo"
-      in
-      let installable_deps = filter_installable st dependencies in
-      let coinstallable_deps =
-        filter_coinstallable st package_set installable_deps
-      in
-      coinstallable_deps
+      let transitive = transitive_revdeps st package_set in
+      let non_transitive = non_transitive_revdeps st package_set in
+      OpamPackage.Set.union transitive non_transitive
+      |> filter_coinstallable st package_set
   end
 
 let find_latest_versions packages =
