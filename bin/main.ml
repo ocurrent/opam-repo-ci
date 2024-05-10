@@ -22,7 +22,7 @@ let show_revdeps pkg local_repo_dir =
 
   ()
 
-let test_revdeps pkg local_repo_dir =
+let test_revdeps pkg local_repo_dir use_dune =
   let package = OpamPackage.of_string pkg in
   (* Set Local Opam Reposistory URL to default repo *)
   (match local_repo_dir with
@@ -45,11 +45,16 @@ let test_revdeps pkg local_repo_dir =
   OpamConsole.msg "Number of reverse dependencies (latest versions): %d\n"
     (OpamPackage.Set.cardinal latest_versions);
 
-  (match local_repo_dir with
-  | Some d ->
+  (match (use_dune, local_repo_dir) with
+  | true, Some d ->
       install_and_test_packages_with_dune d package
         (OpamPackage.Set.to_list latest_versions)
-  | _ -> OpamConsole.msg "Opam local repository URL must be specified!\n");
+  | true, None ->
+      OpamConsole.msg "Opam local repository URL must be specified!\n"
+  | false, _ ->
+      install_and_test_packages_with_opam package
+        (OpamPackage.Set.to_list latest_versions));
+
   ()
 
 let make_abs_path s =
@@ -82,6 +87,13 @@ let local_opam_repo_term =
   in
   Arg.value (Arg.opt opam_repo_dir None info)
 
+let use_dune_term =
+  let info =
+    Arg.info [ "d"; "use-dune" ]
+      ~doc:"Use dune to build, install and test the reverse dependencies."
+  in
+  Arg.value (Arg.opt Arg.bool false info)
+
 let pkg_term =
   let info = Arg.info [] ~doc:"Package name + version" in
   Arg.required (Arg.pos 0 (Arg.some Arg.string) None info)
@@ -96,7 +108,9 @@ let list_cmd =
 
 let test_cmd =
   let doc = "Test the revdeps for a package" in
-  let term = Term.(const test_revdeps $ pkg_term $ local_opam_repo_term) in
+  let term =
+    Term.(const test_revdeps $ pkg_term $ local_opam_repo_term $ use_dune_term)
+  in
   let info =
     Cmd.info "test" ~doc ~sdocs:"COMMON OPTIONS" ~exits:Cmd.Exit.defaults
   in

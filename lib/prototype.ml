@@ -55,8 +55,8 @@ let opam_file_of_package st p =
   match OpamSwitchState.opam_opt st p with
   | None -> OpamFile.OPAM.create p
   | Some o ->
-    OpamFile.OPAM.(with_name p.OpamPackage.name
-                     (with_version p.OpamPackage.version o))
+      OpamFile.OPAM.(
+        with_name p.OpamPackage.name (with_version p.OpamPackage.version o))
 
 let transitive_revdeps st package_set =
   (* Optional dependencies are not transitive: if a optionally depends on b,
@@ -65,9 +65,8 @@ let transitive_revdeps st package_set =
   (* [with-only] dependencies are also not included in [reverse_dependencies]. *)
   try
     (* Computes the transitive closure of the reverse dependencies *)
-    OpamSwitchState.reverse_dependencies
-      ~depopts ~build:true ~post:false ~installed:false ~unavailable:false
-      st package_set
+    OpamSwitchState.reverse_dependencies ~depopts ~build:true ~post:false
+      ~installed:false ~unavailable:false st package_set
   with Not_found ->
     failwith "TODO: Handle packages that are not found in repo"
 
@@ -91,25 +90,23 @@ let non_transitive_revdeps st package_set =
   let all_known_packages = st.OpamStateTypes.packages in
   let packages_depending_on_target_packages revdep_candidate_pkg =
     let dependancy_on =
-      revdep_candidate_pkg
-      |> opam_file_of_package st
+      revdep_candidate_pkg |> opam_file_of_package st
       |> OpamPackageVar.all_depends ~test:true ~depopts:true st
       |> OpamFormula.verifies
     in
     OpamPackage.Set.exists dependancy_on package_set
   in
-  OpamPackage.Set.filter packages_depending_on_target_packages all_known_packages
+  OpamPackage.Set.filter packages_depending_on_target_packages
+    all_known_packages
 
 let list_revdeps package =
   OpamConsole.msg "Listing revdeps for %s\n" (OpamPackage.to_string package);
   let package_set = OpamPackage.Set.singleton package in
-  with_locked_switch () begin
-    fun st ->
+  with_locked_switch () (fun st ->
       let transitive = transitive_revdeps st package_set in
       let non_transitive = non_transitive_revdeps st package_set in
       OpamPackage.Set.union transitive non_transitive
-      |> filter_coinstallable st package_set
-  end
+      |> filter_coinstallable st package_set)
 
 let find_latest_versions packages =
   let open OpamPackage in
@@ -120,15 +117,29 @@ let find_latest_versions packages =
       Set.add latest_version acc)
     versions_map Set.empty
 
-let install_and_test_package_with_opam package =
-  (* FIXME: We need to pin the target package when trying to install and test the new packages *)
-  OpamConsole.msg "Installing and testing package: %s\n"
-    (OpamPackage.to_string package);
-  let name = OpamPackage.name package in
-  let version = OpamPackage.version package in
+let install_and_test_package_with_opam package revdep =
+  OpamConsole.msg "Installing and testing: package - %s; revdep - %s\n"
+    (OpamPackage.to_string package)
+    (OpamPackage.to_string revdep);
+  (* FIXME: We need to pin the target package when trying to install and test
+     the new packages *)
+  let name = OpamPackage.name revdep in
+  let version = OpamPackage.version revdep in
   let version_contstaint = (`Eq, version) in
   with_locked_switch () @@ fun st ->
-  OpamClient.install st [ (name, Some version_contstaint) ]
+  let _ = OpamClient.install st [ (name, Some version_contstaint) ] in
+  ()
+
+let install_and_test_packages_with_opam target revdeps_list =
+  Printf.printf "Do you want test %d revdeps? (y/n): "
+    (List.length revdeps_list);
+  (match read_line () with "y" | "Y" -> () | _ -> failwith "Quitting!");
+
+  OpamConsole.msg "Installing reverse dependencies with pinned %s\n"
+    (OpamPackage.to_string target);
+
+  List.iter (install_and_test_package_with_opam target) revdeps_list;
+  ()
 
 let install_and_test_packages_with_dune opam_repository target packages =
   OpamConsole.msg
