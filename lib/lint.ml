@@ -26,6 +26,7 @@ type error =
   | OpamLint of (int * [`Warning | `Error] * string)
   | FailedToDownload of string
   | NameCollision of string
+  | WeakChecksum of string
 
 type host_os = Macos | Other [@@deriving to_yojson]
 
@@ -323,6 +324,51 @@ module Check = struct
       errors
       opam.OpamFile.OPAM.build
 
+  let check_checksums ~errors ~pkg opam =
+    let err ~ctx ~filename msg =
+      let err = Fmt.str "opam field %s contains %s for %s"
+          ctx msg filename
+      in
+      (pkg, WeakChecksum err)
+    in
+    let check_one_url ~ctx url =
+      let filename = OpamUrl.to_string (OpamFile.URL.url url) in
+      let checksums = OpamFile.URL.checksum url in
+      match checksums with
+      | [] -> [ err ~ctx ~filename "no checksum" ]
+      | _ ->
+        if List.for_all (fun hash ->
+            match OpamHash.kind hash with
+            | `MD5 -> true
+            | _ -> false)
+            checksums
+        then
+          [ err ~ctx ~filename "only MD5 as checksum" ]
+        else
+          []
+    in
+    let check_extra_file (basename, hash) =
+      match OpamHash.kind hash with
+      | `MD5 ->
+        let filename = OpamFilename.Base.to_string basename in
+        [ err ~ctx:"extra-files" ~filename "only MD5 as checksum" ]
+      | _ -> []
+    in
+    let extra_src_errs =
+      List.concat
+        (List.map (fun (_, url) -> check_one_url ~ctx:"extra-sources" url)
+           (OpamFile.OPAM.extra_sources opam))
+    and url_errs =
+      Option.value ~default:[]
+        (Option.map (check_one_url ~ctx:"url")
+           (OpamFile.OPAM.url opam))
+    and extra_file_errs =
+      Option.value ~default:[]
+        (Option.map (fun efs -> List.concat (List.map check_extra_file efs))
+           (OpamFile.OPAM.extra_files opam))
+    in
+    url_errs @ extra_file_errs @ extra_src_errs @ errors
+
   let opam_lint ~check_extra_files ~errors ~pkg opam =
     Lwt_preemptive.detach begin fun () ->
       OpamFileTools.lint ~check_extra_files ~check_upstream:true opam |>
@@ -341,6 +387,7 @@ module Check = struct
           let errors = check_name_field ~errors ~pkg opam in
           let errors = check_version_field ~errors ~pkg opam in
           let errors = check_dune_subst ~errors ~pkg opam in
+          let errors = check_checksums ~errors ~pkg opam in
           check_dune_constraints ~host_os ~errors ~pkg opam >>= fun errors ->
           check_name_collisions ~cwd ~errors ~pkg >>= fun errors ->
           (* Check directory structure correctness *)
@@ -434,6 +481,8 @@ module Lint = struct
           Fmt.str "Error in %s: Failed to download the archive. Details: %s" pkg msg
       | NameCollision other_pkg ->
           Fmt.str "Warning in %s: Possible name collision with package '%s'" pkg other_pkg
+      | WeakChecksum msg ->
+          Fmt.str "Error in %s: Weak checksum algorithm(s) provided. Please use SHA-256 or SHA-512. Details: %s" pkg msg
     )
 
   let run { master } job { Key.src; packages } { Value.host_os } =
