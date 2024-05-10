@@ -132,14 +132,16 @@ let install_and_test_package_with_opam package revdep =
   ()
 
 let install_and_test_packages_with_opam target revdeps_list =
-  Printf.printf "Do you want test %d revdeps? (y/n): "
-    (List.length revdeps_list);
-  (match read_line () with "y" | "Y" -> () | _ -> failwith "Quitting!");
+  (match
+     OpamConsole.confirm "Do you want test %d revdeps?"
+       (List.length revdeps_list)
+   with
+  | true ->
+      OpamConsole.msg "Installing reverse dependencies with pinned %s\n"
+        (OpamPackage.to_string target);
 
-  OpamConsole.msg "Installing reverse dependencies with pinned %s\n"
-    (OpamPackage.to_string target);
-
-  List.iter (install_and_test_package_with_opam target) revdeps_list;
+      List.iter (install_and_test_package_with_opam target) revdeps_list
+  | _ -> print_endline "Quitting!");
   ()
 
 let install_and_test_packages_with_dune opam_repository target packages =
