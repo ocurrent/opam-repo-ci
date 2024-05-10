@@ -127,8 +127,9 @@ let install_and_test_package_with_opam package revdep =
   let version = OpamPackage.version revdep in
   let version_contstaint = (`Eq, version) in
   with_locked_switch () @@ fun st ->
+  OpamCoreConfig.update ~verbose_level:1 ();
+  OpamStateConfig.update ?build_test:(Some true) ();
   let _ = OpamClient.install st [ (name, Some version_contstaint) ] in
-  (* FIXME: This doesn't run the tests of the revdeps package *)
   ()
 
 let install_and_test_packages_with_opam target revdeps_list =
