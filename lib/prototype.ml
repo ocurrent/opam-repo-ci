@@ -128,6 +128,7 @@ let install_and_test_package_with_opam package revdep =
   let version_contstaint = (`Eq, version) in
   with_locked_switch () @@ fun st ->
   let _ = OpamClient.install st [ (name, Some version_contstaint) ] in
+  (* FIXME: This doesn't run the tests of the revdeps package *)
   ()
 
 let install_and_test_packages_with_opam target revdeps_list =
@@ -156,5 +157,6 @@ let install_and_test_packages_with_dune opam_repository target packages =
   let dirs =
     H.create_dummy_projects parent opam_repository target selected_packages
   in
+  (* FIXME: This doesn't run the tests of the revdeps package *)
   List.iter H.generate_lock_and_build dirs;
   ()
