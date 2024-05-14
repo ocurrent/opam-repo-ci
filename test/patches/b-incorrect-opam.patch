@@ -57,7 +57,7 @@ new file mode 100644
 index 0000000..5ec1dc4
 --- /dev/null
 +++ b/packages/b/b.0.0.3/opam
-@@ -0,0 +1,14 @@
+@@ -0,0 +1,15 @@
 +opam-version: "2.0"
 +synopsis: "Synopsis"
 +description: "Description"
@@ -72,5 +72,6 @@ index 0000000..5ec1dc4
 +depends: [
 +  "a-1" {< "0.0.2"}
 +]
++pin-depends: [ "foo.~dev" "git+https://github.com/bar/foo" ]
 -- 
 2.43.0
