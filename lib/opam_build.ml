@@ -168,9 +168,9 @@ let revdeps ?(local=false) ~for_docker ~opam_version ~base ~variant ~pkg () =
     setup_repository ~local ~variant ~for_docker ~opam_version ()
     @ [
       run "echo '@@@OUTPUT' && \
-           opam list -s --color=never --depends-on %s --coinstallable-with %s --installable --all-versions --depopts && \
-           opam list -s --color=never --depends-on %s --coinstallable-with %s --installable --all-versions --recursive && \
-           opam list -s --color=never --depends-on %s --coinstallable-with %s --installable --all-versions --with-test --depopts && \
+           opam list -s --color=never --depends-on %s --coinstallable-with %s --all-versions --depopts && \
+           opam list -s --color=never --depends-on %s --coinstallable-with %s --all-versions --recursive && \
+           opam list -s --color=never --depends-on %s --coinstallable-with %s --all-versions --with-test --depopts && \
            echo '@@@OUTPUT'"
         pkg pkg
         pkg pkg
