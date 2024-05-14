@@ -1,7 +1,7 @@
 open Cmdliner
 open Prototype
 
-let show_revdeps pkg local_repo_dir =
+let show_revdeps pkg local_repo_dir no_transitive_revdeps =
   let package = OpamPackage.of_string pkg in
   (* Set Local Opam Reposistory URL to default repo *)
   (match local_repo_dir with
@@ -11,7 +11,7 @@ let show_revdeps pkg local_repo_dir =
   | _ -> ());
 
   (* Get revdeps for the package *)
-  let revdeps = list_revdeps package in
+  let revdeps = list_revdeps package no_transitive_revdeps in
   OpamConsole.msg "Number of reverse dependencies: %d\n"
     (OpamPackage.Set.cardinal revdeps);
 
@@ -22,7 +22,7 @@ let show_revdeps pkg local_repo_dir =
 
   ()
 
-let test_revdeps pkg local_repo_dir use_dune =
+let test_revdeps pkg local_repo_dir use_dune no_transitive_revdeps =
   let package = OpamPackage.of_string pkg in
   (* Set Local Opam Reposistory URL to default repo *)
   (match local_repo_dir with
@@ -32,7 +32,7 @@ let test_revdeps pkg local_repo_dir use_dune =
   | _ -> ());
 
   (* Get revdeps for the package *)
-  let revdeps = list_revdeps package in
+  let revdeps = list_revdeps package no_transitive_revdeps in
   OpamConsole.msg "Number of reverse dependencies: %d\n"
     (OpamPackage.Set.cardinal revdeps);
 
@@ -87,6 +87,15 @@ let local_opam_repo_term =
   in
   Arg.value (Arg.opt opam_repo_dir None info)
 
+let no_transitive_revdeps =
+  let info =
+    Arg.info [ "no-transitive" ]
+      ~doc:
+        "Don't test transitive reverse dependencies - only test the direct \
+         reverse dependencies."
+  in
+  Arg.value (Arg.flag info)
+
 let use_dune_term =
   let info =
     Arg.info [ "d"; "use-dune" ]
@@ -100,7 +109,11 @@ let pkg_term =
 
 let list_cmd =
   let doc = "List the revdeps for a package" in
-  let term = Term.(const show_revdeps $ pkg_term $ local_opam_repo_term) in
+  let term =
+    Term.(
+      const show_revdeps $ pkg_term $ local_opam_repo_term
+      $ no_transitive_revdeps)
+  in
   let info =
     Cmd.info "list" ~doc ~sdocs:"COMMON OPTIONS" ~exits:Cmd.Exit.defaults
   in
@@ -109,7 +122,9 @@ let list_cmd =
 let test_cmd =
   let doc = "Test the revdeps for a package" in
   let term =
-    Term.(const test_revdeps $ pkg_term $ local_opam_repo_term $ use_dune_term)
+    Term.(
+      const test_revdeps $ pkg_term $ local_opam_repo_term $ use_dune_term
+      $ no_transitive_revdeps)
   in
   let info =
     Cmd.info "test" ~doc ~sdocs:"COMMON OPTIONS" ~exits:Cmd.Exit.defaults

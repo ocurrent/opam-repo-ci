@@ -65,8 +65,6 @@ let transitive_revdeps st package_set =
   (* [with-only] dependencies are also not included in [reverse_dependencies]. *)
   try
     (* Computes the transitive closure of the reverse dependencies *)
-    (* TODO: When running the rev-deps tests locally, we allow running tests
-       just for the "direct" reverse dependencies! *)
     OpamSwitchState.reverse_dependencies ~depopts ~build:true ~post:false
       ~installed:false ~unavailable:false st package_set
   with Not_found ->
@@ -101,11 +99,14 @@ let non_transitive_revdeps st package_set =
   OpamPackage.Set.filter packages_depending_on_target_packages
     all_known_packages
 
-let list_revdeps package =
+let list_revdeps package no_transitive_revdeps =
   OpamConsole.msg "Listing revdeps for %s\n" (OpamPackage.to_string package);
   let package_set = OpamPackage.Set.singleton package in
   with_locked_switch () (fun st ->
-      let transitive = transitive_revdeps st package_set in
+      let transitive =
+        if no_transitive_revdeps then OpamPackage.Set.empty
+        else transitive_revdeps st package_set
+      in
       let non_transitive = non_transitive_revdeps st package_set in
       OpamPackage.Set.union transitive non_transitive
       |> filter_coinstallable st package_set)
