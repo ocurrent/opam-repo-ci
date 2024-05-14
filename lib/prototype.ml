@@ -121,15 +121,15 @@ let install_and_test_package_with_opam package revdep =
   OpamConsole.msg "Installing and testing: package - %s; revdep - %s\n"
     (OpamPackage.to_string package)
     (OpamPackage.to_string revdep);
-  (* FIXME: We need to pin the target package when trying to install and test
-     the new packages *)
-  let name = OpamPackage.name revdep in
-  let version = OpamPackage.version revdep in
-  let version_contstaint = (`Eq, version) in
+  let nvs =
+    [ package; revdep ]
+    |> List.map (fun pkg ->
+           (OpamPackage.name pkg, Some (`Eq, OpamPackage.version pkg)))
+  in
   with_locked_switch () @@ fun st ->
   OpamCoreConfig.update ~verbose_level:1 ();
   OpamStateConfig.update ?build_test:(Some true) ();
-  let _ = OpamClient.install st [ (name, Some version_contstaint) ] in
+  let _ = OpamClient.install st nvs in
   ()
 
 let install_and_test_packages_with_opam target revdeps_list =
