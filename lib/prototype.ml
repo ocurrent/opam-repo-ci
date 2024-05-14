@@ -65,6 +65,8 @@ let transitive_revdeps st package_set =
   (* [with-only] dependencies are also not included in [reverse_dependencies]. *)
   try
     (* Computes the transitive closure of the reverse dependencies *)
+    (* TODO: When running the rev-deps tests locally, we allow running tests
+       just for the "direct" reverse dependencies! *)
     OpamSwitchState.reverse_dependencies ~depopts ~build:true ~post:false
       ~installed:false ~unavailable:false st package_set
   with Not_found ->
