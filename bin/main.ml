@@ -92,7 +92,7 @@ let use_dune_term =
     Arg.info [ "d"; "use-dune" ]
       ~doc:"Use dune to build, install and test the reverse dependencies."
   in
-  Arg.value (Arg.opt Arg.bool false info)
+  Arg.value (Arg.flag info)
 
 let pkg_term =
   let info = Arg.info [] ~doc:"Package name + version" in
