@@ -160,6 +160,5 @@ let install_and_test_packages_with_dune opam_repository target packages =
   let dirs =
     H.create_dummy_projects parent opam_repository target selected_packages
   in
-  (* FIXME: This doesn't run the tests of the revdeps package *)
   List.iter H.generate_lock_and_build dirs;
   ()
