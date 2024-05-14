@@ -38,22 +38,22 @@ let add_default_matching_log_rules () =
         report = {|[SKIP] Package not available|};
         score = 100;
       };
-      { (* Opam 2.0's install when the package or one of its dependencies isn't available on the current switch/plateform *)
+      { (* Opam 2.0's install when the package or one of its dependencies isn't available on the current switch/platform *)
         pattern = {|[\n]\[ERROR\] No solution for .+: The following dependencies couldn't be met:[\n]|};
         report = {|[SKIP] Package not available|};
         score = 100;
       };
-      { (* Opam 2.0's reinstall when the package or one of its dependencies isn't available on the current switch/plateform *)
+      { (* Opam 2.0's reinstall when the package or one of its dependencies isn't available on the current switch/platform *)
         pattern = {|[\n]\[ERROR\] No solution for .+: Your request can't be satisfied:[\n]|};
         report = {|[SKIP] Package not available|};
         score = 100;
       };
-      { (* Opam 2.1's install when the package or one of its dependencies isn't available on the current switch/plateform *)
+      { (* Opam 2.1's install when the package or one of its dependencies isn't available on the current switch/platform *)
         pattern = {|[\n]\[ERROR\] Package conflict![\n]|};
         report = {|[SKIP] Package not available|};
         score = 100;
       };
-      { (* Opam 2.1's reinstall when the package or one of its dependencies isn't available on the current switch/plateform *)
+      { (* Opam 2.1's reinstall when the package or one of its dependencies isn't available on the current switch/platform *)
         pattern = {|[\n]No solution found, exiting[\n]|};
         report = {|[SKIP] Package not available|};
         score = 100;
