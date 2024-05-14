@@ -129,8 +129,21 @@ let install_and_test_package_with_opam package revdep =
   with_locked_switch () @@ fun st ->
   OpamCoreConfig.update ~verbose_level:1 ();
   OpamStateConfig.update ?build_test:(Some true) ();
-  let _ = OpamClient.install st nvs in
-  ()
+
+  try
+    (* Install the packages *)
+    let _ = OpamClient.install st nvs in
+    ()
+  with e ->
+    (* NOTE: The CI is identifying packages to SKIP, error types, etc. based on
+       the log output. See
+       https://github.com/ocurrent/opam-repo-ci/blob/8746f52b479569c0a55904361c9d64b54628b971/service/main.ml#L34.
+       But, we may be able to do better, since we are not a shell script? *)
+    (* FIXME: Capture the output of the failed command and display all failures
+       at the end *)
+    OpamConsole.msg "Failed to install %s\n" (OpamPackage.to_string revdep);
+    OpamConsole.msg "Error: %s\n" (Printexc.to_string e);
+    ()
 
 let install_and_test_packages_with_opam target revdeps_list =
   (match
