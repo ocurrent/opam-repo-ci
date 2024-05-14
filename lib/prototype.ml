@@ -135,6 +135,7 @@ let install_and_test_package_with_opam package revdep =
 
   try
     (* Install the packages *)
+    (* TODO: Remove prompt for each install; use --yes *)
     let _ = OpamClient.install st nvs in
     ()
   with e ->
@@ -142,7 +143,7 @@ let install_and_test_package_with_opam package revdep =
        the log output. See
        https://github.com/ocurrent/opam-repo-ci/blob/8746f52b479569c0a55904361c9d64b54628b971/service/main.ml#L34.
        But, we may be able to do better, since we are not a shell script? *)
-    (* FIXME: Capture the output of the failed command and display all failures
+    (* TODO: Capture the output of the failed command and display all failures
        at the end *)
     OpamConsole.msg "Failed to install %s\n" (OpamPackage.to_string revdep);
     OpamConsole.msg "Error: %s\n" (Printexc.to_string e);
