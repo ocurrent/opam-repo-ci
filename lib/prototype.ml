@@ -143,7 +143,7 @@ let install_and_test_package_with_opam package revdep =
            (OpamPackage.name pkg, Some (`Eq, OpamPackage.version pkg)))
   in
   with_locked_switch () @@ fun st ->
-  OpamCoreConfig.update ~verbose_level:1 ();
+  OpamCoreConfig.update ~verbose_level:0 ();
   OpamStateConfig.update ?build_test:(Some true) ();
 
   try
