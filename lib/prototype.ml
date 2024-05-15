@@ -154,6 +154,11 @@ let install_and_test_package_with_opam package revdep =
 
     (* Install the packages *)
     let _ = OpamClient.install st nvs in
+
+    (* Clean-up switch for next test: We remove only the revdep, but not the
+       target package being tested. *)
+    let _ = OpamClient.remove st ~autoremove:true ~force:true (List.tl nvs) in
+
     ()
   with e ->
     (* NOTE: The CI is identifying packages to SKIP, error types, etc. based on
