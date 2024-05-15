@@ -147,8 +147,10 @@ let install_and_test_package_with_opam package revdep =
   OpamStateConfig.update ?build_test:(Some true) ();
 
   try
+    (* Don't prompt for install / remove *)
+    OpamCoreConfig.update ~confirm_level:`unsafe_yes ();
+
     (* Install the packages *)
-    (* TODO: Remove prompt for each install; use --yes *)
     let _ = OpamClient.install st nvs in
     ()
   with e ->
