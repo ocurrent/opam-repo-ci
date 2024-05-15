@@ -17,7 +17,7 @@ let create_local_switch_maybe repo_path =
     let init_config = OpamInitDefaults.init_config ~sandboxing:true () in
     let shell = OpamStd.Sys.guess_shell_compat () in
     let repo = make_repo repo_path in
-    let gt, rt, _default_compiler =
+    let gt, rt, _ =
       OpamClient.init ~init_config ~repo ~bypass_checks:true ~interactive:false
         ~update_config:false shell
     in
@@ -25,15 +25,17 @@ let create_local_switch_maybe repo_path =
     let update_config = true in
     let switch = OpamSwitch.of_string "default" in
     (* FIXME: OCaml version should be a CLI arg? *)
-    let name = OpamPackage.Name.of_string "ocaml-base-compiler" in
-    let version_constraint =
-      OpamFormula.Atom (`Eq, OpamPackage.Version.of_string "5.1.1")
-    in
-    let invariant = OpamFormula.Atom (name, version_constraint) in
-    (* FIXME: Install OCaml compiler in the switch *)
-    let _created, _switch_state =
+    let compiler_pkg = OpamPackage.of_string "ocaml-base-compiler.5.1.1" in
+    let compiler_name = OpamPackage.name compiler_pkg in
+    let compiler_version = (`Eq, OpamPackage.version compiler_pkg) in
+    let version_constraint = OpamFormula.Atom compiler_version in
+    let invariant = OpamFormula.Atom (compiler_name, version_constraint) in
+    let _created, _st =
       OpamSwitchCommand.create gt ~rt ~update_config ~invariant switch
-        (fun st -> (true, st))
+        (fun st ->
+          let compiler = (compiler_name, Some compiler_version) in
+          OpamCoreConfig.update ~confirm_level:`unsafe_yes ();
+          (true, OpamClient.install st [ compiler ]))
     in
     ()
   in
