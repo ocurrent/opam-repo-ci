@@ -2,11 +2,11 @@ open Cmdliner
 open Prototype
 
 let show_revdeps pkg local_repo_dir no_transitive_revdeps =
-  let package = OpamPackage.of_string pkg in
   (* Create local opam root and switch *)
-  (match local_repo_dir with Some d -> create_local_switch_maybe d | _ -> ());
+  create_local_switch_maybe local_repo_dir;
 
   (* Get revdeps for the package *)
+  let package = OpamPackage.of_string pkg in
   let revdeps = list_revdeps package no_transitive_revdeps in
   OpamConsole.msg "Number of reverse dependencies: %d\n"
     (OpamPackage.Set.cardinal revdeps);
@@ -20,13 +20,10 @@ let show_revdeps pkg local_repo_dir no_transitive_revdeps =
 
 let test_revdeps pkg local_repo_dir use_dune no_transitive_revdeps =
   (* Create local opam root and switch *)
-  (match local_repo_dir with
-  | Some d -> create_local_switch_maybe d
-  | _ -> failwith "Opam local repository URL must be specified!");
-
-  let package = OpamPackage.of_string pkg in
+  create_local_switch_maybe local_repo_dir;
 
   (* Get revdeps for the package *)
+  let package = OpamPackage.of_string pkg in
   let revdeps = list_revdeps package no_transitive_revdeps in
   OpamConsole.msg "Number of reverse dependencies: %d\n"
     (OpamPackage.Set.cardinal revdeps);
@@ -45,7 +42,7 @@ let test_revdeps pkg local_repo_dir use_dune no_transitive_revdeps =
       install_and_test_packages_with_dune d package
         (OpamPackage.Set.to_list latest_versions)
   | true, None ->
-      OpamConsole.msg "Opam local repository URL must be specified!\n"
+      OpamConsole.msg "Opam local repository path must be specified!\n"
   | false, _ ->
       install_and_test_packages_with_opam package
         (OpamPackage.Set.to_list latest_versions));
