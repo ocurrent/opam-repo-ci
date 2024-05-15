@@ -3,12 +3,8 @@ open Prototype
 
 let show_revdeps pkg local_repo_dir no_transitive_revdeps =
   let package = OpamPackage.of_string pkg in
-  (* Set Local Opam Reposistory URL to default repo *)
-  (match local_repo_dir with
-  | Some d ->
-      OpamConsole.msg "Setting default repository URL to %s\n" d;
-      set_default_repository d
-  | _ -> ());
+  (* Create local opam root and switch *)
+  (match local_repo_dir with Some d -> create_local_switch_maybe d | _ -> ());
 
   (* Get revdeps for the package *)
   let revdeps = list_revdeps package no_transitive_revdeps in
@@ -23,13 +19,12 @@ let show_revdeps pkg local_repo_dir no_transitive_revdeps =
   ()
 
 let test_revdeps pkg local_repo_dir use_dune no_transitive_revdeps =
-  let package = OpamPackage.of_string pkg in
-  (* Set Local Opam Reposistory URL to default repo *)
+  (* Create local opam root and switch *)
   (match local_repo_dir with
-  | Some d ->
-      OpamConsole.msg "Setting default repository URL to %s\n" d;
-      set_default_repository d
-  | _ -> ());
+  | Some d -> create_local_switch_maybe d
+  | _ -> failwith "Opam local repository URL must be specified!");
+
+  let package = OpamPackage.of_string pkg in
 
   (* Get revdeps for the package *)
   let revdeps = list_revdeps package no_transitive_revdeps in

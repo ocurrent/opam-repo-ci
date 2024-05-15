@@ -1,44 +1,54 @@
 module H = Dune_helpers
 
-let set_default_repository path =
-  OpamClientConfig.opam_init ();
-  OpamGlobalState.with_ `Lock_write @@ fun gt ->
-  OpamRepositoryState.with_ `Lock_write gt @@ fun rt ->
+let make_repo path =
   let repo_name = OpamRepositoryName.of_string "default" in
   let repo_url = OpamUrl.parse path in
-  let repo =
-    try
-      let r = OpamRepositoryName.Map.find repo_name rt.repositories in
-      { r with repo_url }
-    with Not_found -> { repo_name; repo_url; repo_trust = None }
+  { OpamTypes.repo_name; repo_url; repo_trust = None }
+
+let local_opam_root () =
+  let switch_dir = ".opam-revdeps" in
+  OpamFilename.Dir.of_string switch_dir
+
+let create_local_switch_maybe repo_path =
+  let root_dir = local_opam_root () in
+  let create_switch_dir () =
+    OpamClientConfig.opam_init ~root_dir ();
+    (* opam init*)
+    let init_config = OpamInitDefaults.init_config ~sandboxing:true () in
+    let shell = OpamStd.Sys.guess_shell_compat () in
+    let repo = make_repo repo_path in
+    let gt, rt, _default_compiler =
+      OpamClient.init ~init_config ~repo ~bypass_checks:true ~interactive:false
+        ~update_config:false shell
+    in
+    (* opam switch create *)
+    let update_config = true in
+    let switch = OpamSwitch.of_string "default" in
+    (* FIXME: OCaml version should be a CLI arg? *)
+    let name = OpamPackage.Name.of_string "ocaml-base-compiler" in
+    let version_constraint =
+      OpamFormula.Atom (`Eq, OpamPackage.Version.of_string "5.1.1")
+    in
+    let invariant = OpamFormula.Atom (name, version_constraint) in
+    (* FIXME: Install OCaml compiler in the switch *)
+    let _created, _switch_state =
+      OpamSwitchCommand.create gt ~rt ~update_config ~invariant switch
+        (fun st -> (true, st))
+    in
+    ()
   in
-  OpamFilename.cleandir (OpamRepositoryPath.root rt.repos_global.root repo_name);
-  OpamFilename.remove (OpamRepositoryPath.tar rt.repos_global.root repo_name);
-  OpamRepositoryState.remove_from_repos_tmp rt repo_name;
-  let repositories =
-    OpamRepositoryName.Map.add repo_name repo rt.repositories
-  in
-  let repo_opams =
-    OpamRepositoryName.Map.filter
-      (fun name _ ->
-        OpamRepositoryName.Map.find_opt name rt.repositories
-        = OpamRepositoryName.Map.find_opt name repositories)
-      rt.repo_opams
-  in
-  let rt = { rt with repositories; repo_opams } in
-  OpamRepositoryState.Cache.remove ();
-  OpamRepositoryState.write_config rt;
-  let open OpamProcess.Job.Op in
-  let repo_root = OpamRepositoryState.get_repo_root rt repo in
-  let _ =
-    OpamProcess.Job.with_text "Updating repository..."
-    @@ OpamRepository.update repo repo_root
-    @@+ fun _ -> Done ()
-  in
-  ()
+  (* FIXME: reinit if already exists? *)
+  if not (OpamFilename.exists_dir root_dir) then (
+    OpamConsole.msg
+      "Creating local opam switch in %s with default repository URL %s\n"
+      (OpamFilename.Dir.to_string root_dir)
+      repo_path;
+    create_switch_dir ())
+  else ()
 
 let with_locked_switch () =
-  OpamClientConfig.opam_init ();
+  let root_dir = local_opam_root () in
+  OpamClientConfig.opam_init ~root_dir ();
   OpamGlobalState.with_ `Lock_write @@ fun gt ->
   OpamRepositoryState.with_ `Lock_write gt @@ fun _rt ->
   OpamSwitchState.with_ `Lock_write gt
