@@ -6,3 +6,4 @@ tmp/
 
 _opam/
 _build/
+/.opam-revdeps/
