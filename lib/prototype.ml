@@ -58,6 +58,13 @@ let with_locked_switch () =
   OpamRepositoryState.with_ `Lock_write gt @@ fun _rt ->
   OpamSwitchState.with_ `Lock_write gt
 
+let with_unlocked_switch () =
+  let root_dir = local_opam_root () in
+  OpamClientConfig.opam_init ~root_dir ();
+  OpamGlobalState.with_ `Lock_none @@ fun gt ->
+  OpamRepositoryState.with_ `Lock_none gt @@ fun _rt ->
+  OpamSwitchState.with_ `Lock_none gt
+
 let filter_coinstallable st original_package packages =
   let universe =
     OpamSwitchState.universe st
@@ -117,7 +124,7 @@ let non_transitive_revdeps st package_set =
 let list_revdeps package no_transitive_revdeps =
   OpamConsole.msg "Listing revdeps for %s\n" (OpamPackage.to_string package);
   let package_set = OpamPackage.Set.singleton package in
-  with_locked_switch () (fun st ->
+  with_unlocked_switch () (fun st ->
       let transitive =
         if no_transitive_revdeps then OpamPackage.Set.empty
         else transitive_revdeps st package_set
