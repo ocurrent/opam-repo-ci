@@ -12,6 +12,18 @@ let ( // ) = Filename.concat
 let ( >>/= ) x f = x >>= fun x -> f (Result.get_ok x)
 let exec ~cwd ~job cmd = Current.Process.exec ~cwd ~cancellable:true ~job ("", cmd)
 
+(** If either a restricted prefix or conflict class exists,
+    then the corresponding other must also exist. *)
+type prefix_conflict_class_mismatch =
+  | WrongPrefix of {
+      conflict_class: string;
+      required_prefix: string;
+    }
+  | WrongConflictClass of {
+      prefix: string;
+      required_conflict_class: string;
+    }
+
 type error =
   | UnnecessaryField of string
   | UnmatchedName of OpamPackage.Name.t
@@ -29,6 +41,8 @@ type error =
   | WeakChecksum of string
   | PinDepends
   | ExtraFiles
+  | RestrictedPrefix of string
+  | PrefixConflictClassMismatch of prefix_conflict_class_mismatch
 
 type host_os = Macos | Other [@@deriving to_yojson]
 
@@ -370,6 +384,75 @@ module Check = struct
     | None | Some [] -> errors
     | Some _ -> (pkg, ExtraFiles) :: errors
 
+  module Prefix = struct
+    (* For context, see https://github.com/ocurrent/opam-repo-ci/pull/316#issuecomment-2160069803 *)
+    let prefix_conflict_class_map = [
+      ("mysys2-", "msys2-env");
+      ("arch-", "ocaml-arch");
+      ("ocaml-env-mingw", "ocaml-env-mingw");
+      ("ocaml-env-msvc", "ocaml-env-msvc");
+      ("host-arch-", "ocaml-host-arch");
+      ("host-system-", "ocaml-host-system");
+      ("system-", "ocaml-system");
+    ]
+
+    let conflict_class_prefix_map = List.map (fun (a, b) -> (b, a)) prefix_conflict_class_map
+
+    let prefixes = List.map fst prefix_conflict_class_map
+
+    let check_name_restricted_prefix ~errors ~pkg =
+      let name = OpamPackage.name_to_string pkg in
+      List.fold_left
+        (fun errors prefix ->
+          if String.starts_with ~prefix name then
+            (pkg, RestrictedPrefix prefix) :: errors
+          else
+            errors)
+        errors
+        prefixes
+
+    let check_prefix_without_conflict_class ~errors ~pkg name conflict_classes =
+      let prefix = List.find_opt
+        (fun prefix -> String.starts_with ~prefix name)
+        prefixes
+      in
+      match prefix with
+      | None -> errors
+      | Some prefix ->
+        match List.assoc_opt prefix prefix_conflict_class_map with
+        | None ->
+          Logs.err
+            (fun m -> m "BUG: prefix '%s' not found in conflict class map" prefix);
+          errors
+        | Some required_conflict_class ->
+          if List.mem required_conflict_class conflict_classes then
+            errors
+          else
+            (pkg, PrefixConflictClassMismatch
+              (WrongConflictClass { prefix; required_conflict_class })) :: errors
+
+    let check_conflict_class_without_prefix ~errors ~pkg name conflict_classes =
+      List.fold_left
+        (fun errors conflict_class ->
+          match List.assoc_opt conflict_class conflict_class_prefix_map with
+          | None -> errors
+          | Some prefix ->
+            if String.starts_with ~prefix name then
+              errors
+            else
+              (pkg, PrefixConflictClassMismatch
+                (WrongPrefix { conflict_class; required_prefix=prefix })) :: errors
+        )
+        errors
+        conflict_classes
+
+    let check_prefix_conflict_class_mismatch ~errors ~pkg opam =
+      let conflict_classes = List.map OpamPackage.Name.to_string @@ OpamFile.OPAM.conflict_class opam in
+      let name = OpamPackage.name_to_string pkg in
+      let errors = check_prefix_without_conflict_class ~errors ~pkg name conflict_classes in
+      check_conflict_class_without_prefix ~errors ~pkg name conflict_classes
+  end
+
   let opam_lint ~check_extra_files ~errors ~pkg opam =
     OpamFileTools.lint ~check_extra_files ~check_upstream:true opam |>
     List.fold_left (fun errors x -> (pkg, OpamLint x) :: errors) errors
@@ -390,6 +473,7 @@ module Check = struct
           let errors = check_checksums ~errors ~pkg opam in
           let errors = check_no_pin_depends ~errors ~pkg opam in
           let errors = check_no_extra_files ~errors ~pkg opam in
+          let errors = Prefix.check_prefix_conflict_class_mismatch ~errors ~pkg opam in
           check_dune_constraints ~host_os ~errors ~pkg opam >>= fun errors ->
           (* Check directory structure correctness *)
           scan_dir ~cwd errors pkg >>= fun (errors, check_extra_files) ->
@@ -398,7 +482,8 @@ module Check = struct
           function
           | false -> errors
           | true ->
-              check_name_collisions ~errors ~pkg existing_packages
+            let errors = check_name_collisions ~errors ~pkg existing_packages in
+            Prefix.check_name_restricted_prefix ~errors ~pkg
     ) [] packages
 end
 
@@ -435,6 +520,16 @@ module Lint = struct
   module Outcome = Check
 
   let id = "opam-ci-lint"
+
+  let msg_of_prefix_conflict_class_mismatch ~pkg = function
+    | WrongPrefix { conflict_class; required_prefix } ->
+      Fmt.str
+        "Error in %s: package with conflict class '%s' requires name prefix '%s'"
+        pkg conflict_class required_prefix
+    | WrongConflictClass { prefix; required_conflict_class} ->
+      Fmt.str
+        "Error in %s: package with prefix '%s' requires conflict class '%s'"
+        pkg prefix required_conflict_class
 
   let msg_of_error (package, err) =
     let pkg = OpamPackage.to_string package in
@@ -491,6 +586,10 @@ module Lint = struct
       Fmt.str "Error in %s: pin-depends present. This is not allowed in the opam-repository." pkg
     | ExtraFiles ->
       Fmt.str "Error in %s: extra-files present. This is not allowed in the opam-repository. Please use extra-source instead." pkg
+    | RestrictedPrefix prefix ->
+      Fmt.str "Warning in %s: package name has restricted prefix '%s'" pkg prefix
+    | PrefixConflictClassMismatch mismatch ->
+      msg_of_prefix_conflict_class_mismatch ~pkg mismatch
 
   let run { master } job { Key.src; packages } { Value.host_os } =
     Current.Job.start job ~pool ~level:Current.Level.Harmless >>= fun () ->
