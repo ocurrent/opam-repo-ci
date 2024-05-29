@@ -71,6 +71,9 @@ module Check = struct
       (fun () -> aux [])
       (fun () -> Lwt_unix.closedir dir)
 
+  let get_packages ~cwd =
+    get_files @@ Fpath.to_string cwd // "packages"
+
   let scan_dir ~cwd errors pkg =
     let dir = Fpath.to_string cwd // path_from_pkg pkg in
     get_files dir >>= fun files ->
@@ -258,41 +261,27 @@ module Check = struct
     in
     dash_underscore p0 p1 || levenstein_distance p0 p1
 
-  (* If a previous version of the package exists,
-     i.e. this is not a brand-new package *)
-  let prev_version_exists repo_path pkg pkg_name packages =
-    let f other_pkg_name =
-      let pkg_str = OpamPackage.to_string pkg in
-      if String.equal pkg_name other_pkg_name then
-        let package_path = repo_path // other_pkg_name in
-        get_files package_path >|= fun vs ->
-        List.exists (fun v -> not @@ String.equal v pkg_str) vs
-      else
-        Lwt.return_false
-    in
-    Lwt.all @@ List.map f packages >|=
-    List.fold_left (fun a b -> a || b) false
+  let is_newly_published_package ~cwd ~job package master =
+    let package_name = OpamPackage.Name.to_string package.OpamPackage.name in
+    (* [git cat-file -e branch:path] will exit with zero status if the object at
+       [path] exists on [branch] *)
+    exec ~cwd ~job [|"git"; "cat-file "; "-e"; master^":packages/"^package_name|]
+    >|= function
+    | Error _ -> true (* The package directory does not exist on master *)
+    | Ok _ -> false (* The package directory does exist on master *)
 
-  let check_name_collisions ~cwd ~errors ~pkg =
+  let check_name_collisions ~errors ~pkg packages =
     let pkg_name = pkg.OpamPackage.name |> OpamPackage.Name.to_string in
     let pkg_name_lower = String.lowercase_ascii pkg_name in
-    let repository_path = Fpath.to_string cwd // "packages" in
-    get_files repository_path >>= fun packages ->
-    (* If the package already exists then don't check name collisions *)
-    (* TODO: Releasing multiple versions of the same package makes it
-       be considered as 'already existing' - fix this *)
-    prev_version_exists repository_path pkg pkg_name packages >|= fun b ->
-    if b then errors
-    else
-      let other_pkgs = List.filter (fun s -> not @@ String.equal s pkg_name) packages in
-      List.fold_left
-        (fun errors other_pkg ->
-          let other_pkg_lower = String.lowercase_ascii other_pkg in
-          if package_name_collision pkg_name_lower other_pkg_lower then
-            (pkg, NameCollision other_pkg) :: errors
-          else
-            errors)
-        errors other_pkgs
+    let other_pkgs = List.filter (fun s -> not @@ String.equal s pkg_name) packages in
+    List.fold_left
+      (fun errors other_pkg ->
+        let other_pkg_lower = String.lowercase_ascii other_pkg in
+        if package_name_collision pkg_name_lower other_pkg_lower then
+          (pkg, NameCollision other_pkg) :: errors
+        else
+          errors)
+      errors other_pkgs
 
   let check_name_field ~errors ~pkg opam =
     match OpamFile.OPAM.name_opt opam with
@@ -383,12 +372,12 @@ module Check = struct
 
   let opam_lint ~check_extra_files ~errors ~pkg opam =
     OpamFileTools.lint ~check_extra_files ~check_upstream:true opam |>
-    List.fold_left (fun errors x -> (pkg, OpamLint x) :: errors) errors |>
-    Lwt.return
+    List.fold_left (fun errors x -> (pkg, OpamLint x) :: errors) errors
 
   let of_dir ~host_os ~master ~job ~packages cwd =
     let master = Current_git.Commit.hash master in
     exec ~cwd ~job [|"git"; "merge"; "-q"; "--"; master|] >>/= fun () ->
+    get_packages ~cwd >>= fun existing_packages ->
     Lwt_list.fold_left_s (fun errors (pkg, kind) ->
       match kind with
       | Analyse.Analysis.Deleted ->
@@ -402,11 +391,14 @@ module Check = struct
           let errors = check_no_pin_depends ~errors ~pkg opam in
           let errors = check_no_extra_files ~errors ~pkg opam in
           check_dune_constraints ~host_os ~errors ~pkg opam >>= fun errors ->
-          check_name_collisions ~cwd ~errors ~pkg >>= fun errors ->
           (* Check directory structure correctness *)
           scan_dir ~cwd errors pkg >>= fun (errors, check_extra_files) ->
-          opam_lint ~check_extra_files ~errors ~pkg opam >>= fun errors ->
-          Lwt.return errors
+          let errors = opam_lint ~check_extra_files ~errors ~pkg opam in
+          is_newly_published_package ~cwd ~job pkg master >|=
+          function
+          | false -> errors
+          | true ->
+              check_name_collisions ~errors ~pkg existing_packages
     ) [] packages
 end
 
