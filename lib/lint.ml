@@ -28,6 +28,7 @@ type error =
   | NameCollision of string
   | WeakChecksum of string
   | PinDepends
+  | ExtraFiles
 
 type host_os = Macos | Other [@@deriving to_yojson]
 
@@ -375,6 +376,11 @@ module Check = struct
     | [] -> errors
     | _ -> (pkg, PinDepends) :: errors
 
+  let check_no_extra_files ~errors ~pkg opam =
+    match OpamFile.OPAM.extra_files opam with
+    | None | Some [] -> errors
+    | Some _ -> (pkg, ExtraFiles) :: errors
+
   let opam_lint ~check_extra_files ~errors ~pkg opam =
     OpamFileTools.lint ~check_extra_files ~check_upstream:true opam |>
     List.fold_left (fun errors x -> (pkg, OpamLint x) :: errors) errors |>
@@ -394,6 +400,7 @@ module Check = struct
           let errors = check_dune_subst ~errors ~pkg opam in
           let errors = check_checksums ~errors ~pkg opam in
           let errors = check_no_pin_depends ~errors ~pkg opam in
+          let errors = check_no_extra_files ~errors ~pkg opam in
           check_dune_constraints ~host_os ~errors ~pkg opam >>= fun errors ->
           check_name_collisions ~cwd ~errors ~pkg >>= fun errors ->
           (* Check directory structure correctness *)
@@ -491,6 +498,8 @@ module Lint = struct
         Fmt.str "Error in %s: Weak checksum algorithm(s) provided. Please use SHA-256 or SHA-512. Details: %s" pkg msg
       | PinDepends ->
         Fmt.str "Error in %s: pin-depends present. This is not allowed in the opam-repository." pkg
+      | ExtraFiles ->
+        Fmt.str "Error in %s: extra-files present. This is not allowed in the opam-repository. Please use extra-source instead." pkg
     )
 
   let run { master } job { Key.src; packages } { Value.host_os } =
