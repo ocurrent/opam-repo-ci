@@ -54,8 +54,9 @@ let non_transitive_revdeps st package_set =
   OpamPackage.Set.filter packages_depending_on_target_packages
     all_known_packages
 
-let list_revdeps package no_transitive_revdeps =
-  OpamConsole.msg "Listing revdeps for %s\n" (OpamPackage.to_string package);
+let list_revdeps pkg no_transitive_revdeps =
+  OpamConsole.msg "Listing revdeps for %s\n" pkg;
+  let package = OpamPackage.of_string pkg in
   let package_set = OpamPackage.Set.singleton package in
   Env.with_unlocked_switch () (fun st ->
       let transitive =

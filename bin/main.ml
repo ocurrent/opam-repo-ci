@@ -6,8 +6,7 @@ let show_revdeps pkg local_repo_dir no_transitive_revdeps =
   Env.create_local_switch_maybe local_repo_dir;
 
   (* Get revdeps for the package *)
-  let package = OpamPackage.of_string pkg in
-  let revdeps = Revdeps.list_revdeps package no_transitive_revdeps in
+  let revdeps = Revdeps.list_revdeps pkg no_transitive_revdeps in
   OpamConsole.msg "Number of reverse dependencies: %d\n"
     (OpamPackage.Set.cardinal revdeps);
 
@@ -23,8 +22,7 @@ let test_revdeps pkg local_repo_dir use_dune no_transitive_revdeps =
   Env.create_local_switch_maybe local_repo_dir;
 
   (* Get revdeps for the package *)
-  let package = OpamPackage.of_string pkg in
-  let revdeps = Revdeps.list_revdeps package no_transitive_revdeps in
+  let revdeps = Revdeps.list_revdeps pkg no_transitive_revdeps in
   OpamConsole.msg "Number of reverse dependencies: %d\n"
     (OpamPackage.Set.cardinal revdeps);
 
@@ -36,6 +34,8 @@ let test_revdeps pkg local_repo_dir use_dune no_transitive_revdeps =
     latest_versions;
   OpamConsole.msg "Number of reverse dependencies (latest versions): %d\n"
     (OpamPackage.Set.cardinal latest_versions);
+
+  let package = OpamPackage.of_string pkg in
 
   (match (use_dune, local_repo_dir) with
   | true, Some d ->
