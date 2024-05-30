@@ -82,3 +82,4 @@ let find_latest_versions packages =
       let latest_version = max_version packages_set name in
       Set.add latest_version acc)
     versions_map Set.empty
+  |> OpamPackage.Set.to_list

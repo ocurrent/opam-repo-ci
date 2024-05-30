@@ -25,23 +25,20 @@ let test_revdeps pkg local_repo_dir use_dune no_transitive_revdeps =
   (* Install and test the first reverse dependency *)
   let latest_versions = Revdeps.find_latest_versions revdeps in
 
-  OpamPackage.Set.iter
+  let package = OpamPackage.of_string pkg in
+
+  List.iter
     (fun pkg -> OpamConsole.msg "%s\n" (OpamPackage.to_string pkg))
     latest_versions;
   OpamConsole.msg "Number of reverse dependencies (latest versions): %d\n"
-    (OpamPackage.Set.cardinal latest_versions);
-
-  let package = OpamPackage.of_string pkg in
+    (List.length latest_versions);
 
   (match (use_dune, local_repo_dir) with
   | true, Some d ->
-      install_and_test_packages_with_dune d package
-        (OpamPackage.Set.to_list latest_versions)
+      install_and_test_packages_with_dune d package latest_versions
   | true, None ->
       OpamConsole.msg "Opam local repository path must be specified!\n"
-  | false, _ ->
-      install_and_test_packages_with_opam package
-        (OpamPackage.Set.to_list latest_versions));
+  | false, _ -> install_and_test_packages_with_opam package latest_versions);
 
   ()
 
