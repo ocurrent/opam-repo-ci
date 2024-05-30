@@ -27,7 +27,7 @@ depends: [
   "current_docker"
   "current_web"
   "current_rpc"
-  "obuilder-spec"
+  "obuilder-spec" {>= "0.6.0"}
   "memtrace" {>= "0.1.1"}
   "capnp-rpc-lwt" {>= "0.8.0"}
   "capnp-rpc-unix" {>= "0.8.0"}
@@ -57,6 +57,10 @@ depends: [
   ## ocluster
   "ocluster-api"
   "current_ocluster"
+
+  ## ocaml-dockerfile
+  "dockerfile"
+  "dockerfile-opam"
 ]
 pin-depends: [
   ["current.0.6.6~dev"        "git+https://github.com/ocurrent/ocurrent.git#e43b6c5c896a4cc5ca5c1d0cfbf10a6401fbcd47"]
@@ -68,6 +72,9 @@ pin-depends: [
 
   ["ocluster-api.0.3.0~dev"      "git+https://github.com/ocurrent/ocluster.git#912ecfd38f003c6f537abca7e5313973b15ba615"]
   ["current_ocluster.0.3.0~dev"  "git+https://github.com/ocurrent/ocluster.git#912ecfd38f003c6f537abca7e5313973b15ba615"]
+
+  ["dockerfile.8.2.1~dev"       "git+https://github.com/ocurrent/ocaml-dockerfile.git#85891cad42189a03960b48792293e8fb3a18552c"]
+  ["dockerfile-opam.8.2.1~dev"  "git+https://github.com/ocurrent/ocaml-dockerfile.git#85891cad42189a03960b48792293e8fb3a18552c"]
 ]
 conflicts: [
   "ocaml-migrate-parsetree" {= "1.7.1"}
