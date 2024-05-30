@@ -38,7 +38,9 @@ let install_and_test_package_with_opam package revdep =
     OpamConsole.msg "Error: %s\n" (Printexc.to_string e);
     ()
 
-let install_and_test_packages_with_opam target revdeps_list =
+let install_and_test_packages_with_opam target_pkg revdeps_list =
+  let target = OpamPackage.of_string target_pkg in
+
   (match
      OpamConsole.confirm "Do you want test %d revdeps?"
        (List.length revdeps_list)
@@ -51,7 +53,9 @@ let install_and_test_packages_with_opam target revdeps_list =
   | _ -> print_endline "Quitting!");
   ()
 
-let install_and_test_packages_with_dune opam_repository target packages =
+let install_and_test_packages_with_dune opam_repository target_pkg packages =
+  let target = OpamPackage.of_string target_pkg in
+
   OpamConsole.msg
     "Installing latest version of reverse dependencies with pinned %s\n"
     (OpamPackage.to_string target);
