@@ -25,10 +25,10 @@ let test_revdeps pkg local_repo_dir use_dune no_transitive_revdeps =
   Revdeps.Display.packages latest_versions;
 
   (match (use_dune, local_repo_dir) with
-  | true, Some d -> install_and_test_packages_with_dune d pkg latest_versions
+  | true, Some d -> Test.test_packages_with_dune d pkg latest_versions
   | true, None ->
       OpamConsole.msg "Opam local repository path must be specified!\n"
-  | false, _ -> install_and_test_packages_with_opam pkg latest_versions);
+  | false, _ -> Test.test_packages_with_opam pkg latest_versions);
 
   ()
 
