@@ -53,6 +53,8 @@ depends: [
   "current_github"
   "current_rpc"
   "current_web"
+  "ocluster-api"
+  "current_ocluster"
 ]
 pin-depends: [
   ["current.~dev"        "git+https://github.com/ocurrent/ocurrent.git#e43b6c5c896a4cc5ca5c1d0cfbf10a6401fbcd47"]
@@ -62,6 +64,9 @@ pin-depends: [
   ["current_rpc.~dev"    "git+https://github.com/ocurrent/ocurrent.git#e43b6c5c896a4cc5ca5c1d0cfbf10a6401fbcd47"]
   ["current_rpc.~dev"    "git+https://github.com/ocurrent/ocurrent.git#e43b6c5c896a4cc5ca5c1d0cfbf10a6401fbcd47"]
   ["current_web.~dev"    "git+https://github.com/ocurrent/ocurrent.git#e43b6c5c896a4cc5ca5c1d0cfbf10a6401fbcd47"]
+
+  ["ocluster-api.~dev"      "git+https://github.com/ocurrent/ocluster.git#912ecfd38f003c6f537abca7e5313973b15ba615"]
+  ["current_ocluster.~dev"  "git+https://github.com/ocurrent/ocluster.git#912ecfd38f003c6f537abca7e5313973b15ba615"]
 ]
 conflicts: [
   "ocaml-migrate-parsetree" {= "1.7.1"}
