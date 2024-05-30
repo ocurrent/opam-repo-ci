@@ -37,17 +37,20 @@ depends: [
   "sexplib" {>= "v0.16.0"}
 
   # pin-depends
+  ## ocurrent
   "current"
   "current_docker"
   "current_github"
+
+  ## ocluster
   "current_ocluster"
 ]
 pin-depends: [
-  ["current.~dev"        "git+https://github.com/ocurrent/ocurrent.git#e43b6c5c896a4cc5ca5c1d0cfbf10a6401fbcd47"]
-  ["current_docker.~dev" "git+https://github.com/ocurrent/ocurrent.git#e43b6c5c896a4cc5ca5c1d0cfbf10a6401fbcd47"]
-  ["current_github.~dev" "git+https://github.com/ocurrent/ocurrent.git#e43b6c5c896a4cc5ca5c1d0cfbf10a6401fbcd47"]
+  ["current.0.6.6~dev"        "git+https://github.com/ocurrent/ocurrent.git#e43b6c5c896a4cc5ca5c1d0cfbf10a6401fbcd47"]
+  ["current_docker.0.6.6~dev" "git+https://github.com/ocurrent/ocurrent.git#e43b6c5c896a4cc5ca5c1d0cfbf10a6401fbcd47"]
+  ["current_github.0.6.6~dev" "git+https://github.com/ocurrent/ocurrent.git#e43b6c5c896a4cc5ca5c1d0cfbf10a6401fbcd47"]
 
-  ["current_ocluster.~dev"   "git+https://github.com/ocurrent/ocluster.git#912ecfd38f003c6f537abca7e5313973b15ba615"]
+  ["current_ocluster.0.3.0~dev"   "git+https://github.com/ocurrent/ocluster.git#912ecfd38f003c6f537abca7e5313973b15ba615"]
 ]
 conflicts: [
   "ocaml-migrate-parsetree" {= "1.7.1"}
