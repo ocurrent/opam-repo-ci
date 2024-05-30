@@ -35,7 +35,6 @@ depends: [
   "opam-state" {>= "2.2.0~beta1"}
   "ppx_deriving" {>= "5.2.1"}
   "sexplib" {>= "v0.16.0"}
-  "obuilder-spec" {>= "0.6.0"}
 
   # pin-depends
   ## ocurrent
@@ -49,6 +48,10 @@ depends: [
   ## ocaml-dockerfile
   "dockerfile"
   "dockerfile-opam"
+
+  "ocaml-version"
+
+  "obuilder-spec"
 ]
 pin-depends: [
   ["current.0.6.6~dev"        "git+https://github.com/ocurrent/ocurrent.git#e43b6c5c896a4cc5ca5c1d0cfbf10a6401fbcd47"]
@@ -59,6 +62,10 @@ pin-depends: [
 
   ["dockerfile.8.2.1~dev"       "git+https://github.com/ocurrent/ocaml-dockerfile.git#85891cad42189a03960b48792293e8fb3a18552c"]
   ["dockerfile-opam.8.2.1~dev"  "git+https://github.com/ocurrent/ocaml-dockerfile.git#85891cad42189a03960b48792293e8fb3a18552c"]
+
+  ["ocaml-version.3.6.7~dev"  "git+https://github.com/ocurrent/ocaml-version.git#b80aad5425c7dd6f1e6f8925f5719c72f8b8f7fa"]
+
+  ["obuilder-spec.0.6.0~dev" "git+https://github.com/ocurrent/obuilder.git#c0eb046f52ca0c5fd9b560d4bdc0cb11c852d4f7"]
 ]
 conflicts: [
   "ocaml-migrate-parsetree" {= "1.7.1"}

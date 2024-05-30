@@ -1,3 +1,0 @@
-(dirs :standard \ var)
-
-(vendored_dirs ocaml-version opam)
