@@ -54,7 +54,7 @@ let create_local_switch_maybe repo_path =
 let with_locked_switch () =
   let root_dir = local_opam_root () in
   OpamClientConfig.opam_init ~root_dir ();
-  OpamGlobalState.with_ `Lock_write @@ fun gt ->
+  OpamGlobalState.with_ `Lock_none @@ fun gt ->
   OpamSwitchState.with_ `Lock_write gt
 
 let with_unlocked_switch () =
