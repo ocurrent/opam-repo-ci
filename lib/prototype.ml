@@ -55,14 +55,12 @@ let with_locked_switch () =
   let root_dir = local_opam_root () in
   OpamClientConfig.opam_init ~root_dir ();
   OpamGlobalState.with_ `Lock_write @@ fun gt ->
-  OpamRepositoryState.with_ `Lock_write gt @@ fun _rt ->
   OpamSwitchState.with_ `Lock_write gt
 
 let with_unlocked_switch () =
   let root_dir = local_opam_root () in
   OpamClientConfig.opam_init ~root_dir ();
   OpamGlobalState.with_ `Lock_none @@ fun gt ->
-  OpamRepositoryState.with_ `Lock_none gt @@ fun _rt ->
   OpamSwitchState.with_ `Lock_none gt
 
 let filter_coinstallable st original_package packages =
