@@ -3,7 +3,7 @@ open Prototype
 
 let show_revdeps pkg local_repo_dir no_transitive_revdeps =
   (* Create local opam root and switch *)
-  create_local_switch_maybe local_repo_dir;
+  Env.create_local_switch_maybe local_repo_dir;
 
   (* Get revdeps for the package *)
   let package = OpamPackage.of_string pkg in
@@ -20,7 +20,7 @@ let show_revdeps pkg local_repo_dir no_transitive_revdeps =
 
 let test_revdeps pkg local_repo_dir use_dune no_transitive_revdeps =
   (* Create local opam root and switch *)
-  create_local_switch_maybe local_repo_dir;
+  Env.create_local_switch_maybe local_repo_dir;
 
   (* Get revdeps for the package *)
   let package = OpamPackage.of_string pkg in
