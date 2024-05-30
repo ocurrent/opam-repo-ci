@@ -64,14 +64,9 @@ let list_revdeps pkg no_transitive_revdeps =
         else transitive_revdeps st package_set
       in
       let non_transitive = non_transitive_revdeps st package_set in
-      let revdeps =
-        OpamPackage.Set.union transitive non_transitive
-        |> filter_coinstallable st package_set
-        |> OpamPackage.Set.to_list
-      in
-      OpamConsole.msg "Number of reverse dependencies: %d\n"
-        (List.length revdeps);
-      revdeps)
+      OpamPackage.Set.union transitive non_transitive
+      |> filter_coinstallable st package_set
+      |> OpamPackage.Set.to_list)
 
 let find_latest_versions packages =
   let open OpamPackage in
@@ -83,3 +78,11 @@ let find_latest_versions packages =
       Set.add latest_version acc)
     versions_map Set.empty
   |> OpamPackage.Set.to_list
+
+module Display = struct
+  let packages packages =
+    packages
+    |> List.iter (fun p -> OpamConsole.msg "%s\n" (OpamPackage.to_string p));
+    OpamConsole.msg "Number of reverse dependencies: %d\n"
+      (List.length packages)
+end

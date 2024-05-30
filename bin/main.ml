@@ -8,10 +8,7 @@ let show_revdeps pkg local_repo_dir no_transitive_revdeps =
   (* Get revdeps for the package *)
   let revdeps = Revdeps.list_revdeps pkg no_transitive_revdeps in
 
-  (* Display on console *)
-  List.iter
-    (fun pkg -> OpamConsole.msg "%s\n" (OpamPackage.to_string pkg))
-    revdeps;
+  Revdeps.Display.packages revdeps;
 
   ()
 
@@ -25,11 +22,7 @@ let test_revdeps pkg local_repo_dir use_dune no_transitive_revdeps =
   (* Install and test the first reverse dependency *)
   let latest_versions = Revdeps.find_latest_versions revdeps in
 
-  List.iter
-    (fun pkg -> OpamConsole.msg "%s\n" (OpamPackage.to_string pkg))
-    latest_versions;
-  OpamConsole.msg "Number of reverse dependencies (latest versions): %d\n"
-    (List.length latest_versions);
+  Revdeps.Display.packages latest_versions;
 
   (match (use_dune, local_repo_dir) with
   | true, Some d -> install_and_test_packages_with_dune d pkg latest_versions
