@@ -44,6 +44,24 @@ depends: [
   "alcotest" {>= "1.0.0" & with-test}
   "alcotest-lwt" {>= "1.0.1" & with-test}
   "odoc" {with-doc}
+
+  # pin depends
+  "current"
+  "current_rpc"
+  "current_docker"
+  "current_git"
+  "current_github"
+  "current_rpc"
+  "current_web"
+]
+pin-depends: [
+  ["current.~dev"        "git+https://github.com/ocurrent/ocurrent.git#e43b6c5c896a4cc5ca5c1d0cfbf10a6401fbcd47"]
+  ["current_docker.~dev" "git+https://github.com/ocurrent/ocurrent.git#e43b6c5c896a4cc5ca5c1d0cfbf10a6401fbcd47"]
+  ["current_git.~dev"    "git+https://github.com/ocurrent/ocurrent.git#e43b6c5c896a4cc5ca5c1d0cfbf10a6401fbcd47"]
+  ["current_github.~dev" "git+https://github.com/ocurrent/ocurrent.git#e43b6c5c896a4cc5ca5c1d0cfbf10a6401fbcd47"]
+  ["current_rpc.~dev"    "git+https://github.com/ocurrent/ocurrent.git#e43b6c5c896a4cc5ca5c1d0cfbf10a6401fbcd47"]
+  ["current_rpc.~dev"    "git+https://github.com/ocurrent/ocurrent.git#e43b6c5c896a4cc5ca5c1d0cfbf10a6401fbcd47"]
+  ["current_web.~dev"    "git+https://github.com/ocurrent/ocurrent.git#e43b6c5c896a4cc5ca5c1d0cfbf10a6401fbcd47"]
 ]
 conflicts: [
   "ocaml-migrate-parsetree" {= "1.7.1"}

@@ -35,6 +35,16 @@ depends: [
   "opam-state" {>= "2.2.0~beta1"}
   "ppx_deriving" {>= "5.2.1"}
   "sexplib" {>= "v0.16.0"}
+
+  # pin-depends
+  "current"
+  "current_docker"
+  "current_github"
+]
+pin-depends: [
+  ["current.~dev"        "git+https://github.com/ocurrent/ocurrent.git#e43b6c5c896a4cc5ca5c1d0cfbf10a6401fbcd47"]
+  ["current_docker.~dev" "git+https://github.com/ocurrent/ocurrent.git#e43b6c5c896a4cc5ca5c1d0cfbf10a6401fbcd47"]
+  ["current_github.~dev" "git+https://github.com/ocurrent/ocurrent.git#e43b6c5c896a4cc5ca5c1d0cfbf10a6401fbcd47"]
 ]
 conflicts: [
   "ocaml-migrate-parsetree" {= "1.7.1"}

@@ -17,6 +17,12 @@ depends: [
   "capnp-rpc-lwt"
   "dockerfile"
   "odoc" {with-doc}
+
+  # pin depends
+  "current_rpc"
+]
+pin-depends: [
+  ["current_rpc.~dev" "git+https://github.com/ocurrent/ocurrent.git#e43b6c5c896a4cc5ca5c1d0cfbf10a6401fbcd47"]
 ]
 conflicts: [
   "conduit-lwt-unix" {< "4.0.1"}
