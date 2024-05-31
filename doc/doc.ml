@@ -45,7 +45,7 @@ let compare_platform p p' =
   | _ ->
   cmp (V.ocaml_version_to_string p.variant) (V.ocaml_version_to_string p'.variant)
 
-let platforms () =
+let platforms =
   let arch = `X86_64 in
   let build ~opam_version ~lower_bounds ~revdeps _ variant =
     { variant; opam_version; lower_bounds; revdeps; }
@@ -66,7 +66,7 @@ let main outfile =
   Printf.fprintf oc "## Platforms Matrix\n\n";
   Printf.fprintf oc "|  OS | Arch | OCaml version |Opam version | Test lower-bounds | Test reverse dependencies |\n";
   Printf.fprintf oc "| --- | --- | --- | --- | --- | --- |\n";
-  platforms ()
+  platforms
   |> List.map output_platform
   |> List.iter (Printf.fprintf oc "%s\n");
   close_out oc
