@@ -62,6 +62,19 @@ let compilers ?(minimal=false) ~arch ~build () =
     build ~opam_version ~lower_bounds:true ~revdeps v variant
   ) versions
 
+let is_supported_linux_distro distro =
+  if Distro.compare distro master_distro = 0 then
+    false
+  else
+    match distro with
+    | `CentOS `V7
+    | `OracleLinux _ -> false (* Takes a lot of fiddling to support and not used widely enough. *)
+    | _ ->
+    match Distro.os_family_of_distro distro with
+    | `Linux -> true
+    | `Cygwin
+    | `Windows -> false (* TODO: Unlock these when Windows is ready *)
+
 let linux_distributions ~arch ~build =
   let build ~distro ~arch ~compiler =
     let variant = Variant.v ~arch ~distro ~compiler in
@@ -70,15 +83,12 @@ let linux_distributions ~arch ~build =
   in
   List.fold_left (fun acc comp ->
     let comp = Ocaml_version.to_string comp in
-    List.fold_left (fun acc distro ->
-      match distro with
-      | `CentOS `V7 | `OracleLinux _ (* TODO: Too annoying to support. Remove when it has been removed in ocaml-dockerfile *)
-      | _ when Distro.compare distro master_distro = 0 (* TODO: Add Distro.equal *)
-            || Distro.os_family_of_distro distro <> `Linux -> (* TODO: Unlock this when Windows is ready *)
-          acc
-      | _ ->
+    List.fold_left (fun acc' distro ->
+        if is_supported_linux_distro distro then
           let distro = Distro.tag_of_distro distro in
-          build ~arch ~distro ~compiler:(comp, None) :: acc
+          build ~arch ~distro ~compiler:(comp, None) :: acc'
+        else
+          acc'
     ) acc (Distro.active_distros arch)
   ) [] default_compilers
 
