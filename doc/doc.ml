@@ -60,7 +60,11 @@ let platforms () =
 
 let main outfile =
   let oc = open_out outfile in
-  Printf.fprintf oc "## Tested platforms\n\n";
+  Printf.fprintf oc "# Platforms Tested on the Opam Repository CI\n\n";
+  Printf.fprintf oc "## Operating Systems \n\n";
+  Printf.fprintf oc "## Architectures \n\n";
+  Printf.fprintf oc "## OCaml Versions \n\n";
+  Printf.fprintf oc "## Platforms Matrix\n\n";
   Printf.fprintf oc "|  OS | Arch | OCaml version |Opam version | Test lower-bounds | Test reverse dependencies |\n";
   Printf.fprintf oc "| --- | --- | --- | --- | --- | --- |\n";
   platforms ()
