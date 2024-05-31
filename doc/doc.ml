@@ -48,15 +48,14 @@ let compare_platform p p' =
 let platforms () =
   let arch = `X86_64 in
   let build ~opam_version ~lower_bounds ~revdeps _ variant =
-    [ { variant; opam_version; lower_bounds; revdeps; } ]
+    { variant; opam_version; lower_bounds; revdeps; }
   in
+  List.sort_uniq compare_platform @@
   (Build.compilers ~arch ~build ()) @
   (Build.linux_distributions ~arch ~build) @
   (Build.macos ~build) @
   (Build.freebsd ~build) @
   (Build.extras ~build)
-  |> List.concat
-  |> List.sort_uniq compare_platform
 
 let main outfile =
   let oc = open_out outfile in
