@@ -25,7 +25,29 @@ module OpamPackage = struct
   let of_yojson x = Result.map OpamPackage.of_string ([%derive.of_yojson:string] x)
 end
 
-module Analysis = struct
+module Make (M : sig
+  type t
+
+  val log : t -> ('a, Format.formatter, unit, unit) format4 -> 'a
+
+  val exec :
+    t ->
+    ?cwd:Fpath.t ->
+    ?stdin:string ->
+    ?pp_cmd:(Format.formatter -> Lwt_process.command -> unit) ->
+    ?pp_error_command:(Format.formatter -> unit) ->
+    Lwt_process.command ->
+    unit Current.or_error Lwt.t
+
+  val check_output :
+    t ->
+    ?cwd:Fpath.t ->
+    ?stdin:string ->
+    ?pp_cmd:(Format.formatter -> Lwt_process.command -> unit) ->
+    ?pp_error_command:(Format.formatter -> unit) ->
+    Lwt_process.command ->
+    string Current.or_error Lwt.t
+end) = struct
   type kind =
     | New
     | Deleted
@@ -135,9 +157,9 @@ module Analysis = struct
     | e -> Lwt.fail e
     end
 
-  let find_changed_packages ~job ~master dir =
+  let find_changed_packages t ~master dir =
     let cmd = "", [| "git"; "diff"; "--name-only"; master |] in
-    Current.Process.check_output ~cwd:dir ~cancellable:true ~job cmd >>!= fun output ->
+    M.check_output t ~cwd:dir cmd >>!= fun output ->
     output
     |> String.split_on_char '\n'
     |> Lwt_list.fold_left_s (fun pkgs path ->
@@ -149,7 +171,7 @@ module Analysis = struct
             Lwt.return (add_pkg ~path ~name ~package SignificantlyChanged pkgs)
         | ["packages"; name; package; "opam"] ->
             let cmd = "", [| "git"; "show"; master^":"^path |] in
-            Current.Process.check_output ~cwd:dir ~cancellable:true ~job cmd >>= begin function
+            M.check_output t ~cwd:dir cmd >>= begin function
             | Error _ -> (* new release *)
                 Lwt.return (add_pkg ~path ~name ~package New pkgs)
             | Ok old_content ->
@@ -226,21 +248,41 @@ module Analysis = struct
         let has_tests = has_tests content in
         (pkg, {kind; has_tests})
 
-  let of_dir ~job ~master dir =
+  let of_dir t ~master dir =
     let master = Current_git.Commit.hash master in
     let cmd = "", [| "git"; "merge"; "-q"; "--"; master |] in
-    Current.Process.exec ~cwd:dir ~cancellable:true ~job cmd >>= function
+    M.exec t ~cwd:dir cmd >>= function
     | Error (`Msg msg) ->
-      Current.Job.log job "Merge failed: %s" msg;
+      M.log t "Merge failed: %s" msg;
       Lwt_result.fail (`Msg "Cannot merge to master - please rebase!")
     | Ok () ->
-      find_changed_packages ~job ~master dir >>!= fun packages ->
+      find_changed_packages t ~master dir >>!= fun packages ->
       let packages = OpamPackage.Map.bindings packages in
       Lwt_list.map_s (map_has_tests ~dir) packages >>= fun packages ->
       let r = { packages } in
-      Current.Job.log job "@[<v2>Results:@,%a@]" Yojson.Safe.(pretty_print ~std:true) (to_yojson r);
+      M.log t "@[<v2>Results:@,%a@]" Yojson.Safe.(pretty_print ~std:true) (to_yojson r);
       Lwt.return (Ok r)
 end
+
+module Analysis = Make (struct
+  type t = Current.Job.t
+
+  let log = Current.Job.log
+
+  let exec t = Current.Process.exec ~cancellable:true ~job:t
+
+  let check_output t = Current.Process.check_output ~cancellable:true ~job:t
+end)
+
+(* module Local_analysis = Make (struct
+  type t = unit
+
+  let log () = Printf.printf
+
+  let exec () _ = Ok ()
+
+  let check_output () _ = Ok ""
+end) *)
 
 module Examine = struct
   type t = No_context
@@ -275,7 +317,7 @@ module Examine = struct
     Current.Job.start job ~pool ~level:Current.Level.Harmless >>= fun () ->
     Current_git.with_checkout ~job src @@ fun dir ->
     Lwt.catch
-      (fun () -> Analysis.of_dir ~master ~job dir)
+      (fun () -> Analysis.of_dir job ~master dir)
       (function
         | Failure msg -> Lwt_result.fail (`Msg msg)
         | ex -> Lwt.fail ex
