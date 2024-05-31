@@ -19,29 +19,49 @@ let yesno_of_bool b = if b then "Yes" else "No"
 let output_platform { variant; opam_version; lower_bounds; revdeps } =
   Format.asprintf
     "| %s | %s | %s | %s | %s | %s |"
-    (Variant.ocaml_version_to_string variant)
     (Variant.distribution variant)
     (Ocaml_version.string_of_arch @@ Variant.arch variant)
+    (Variant.ocaml_version_to_string variant)
     (opam_version_to_string opam_version)
     (yesno_of_bool lower_bounds)
     (yesno_of_bool revdeps)
+
+let compare_platform p p' =
+  let module V = Variant in
+  let cmp = String.compare in
+  match
+    cmp
+      (V.distribution p.variant)
+      (V.distribution p'.variant)
+  with
+  | os when os <> 0 -> os
+  | _ ->
+  match
+    cmp
+      (Ocaml_version.string_of_arch (V.arch p.variant))
+      (Ocaml_version.string_of_arch (V.arch p'.variant))
+  with
+  | arch when arch <> 0 -> arch
+  | _ ->
+  cmp (V.ocaml_version_to_string p.variant) (V.ocaml_version_to_string p'.variant)
 
 let platforms () =
   let arch = `X86_64 in
   let build ~opam_version ~lower_bounds ~revdeps _ variant =
     [ { variant; opam_version; lower_bounds; revdeps; } ]
   in
-  List.concat @@
-    (Build.compilers ~arch ~build ()) @
-    (Build.linux_distributions ~arch ~build) @
-    (Build.macos ~build) @
-    (Build.freebsd ~build) @
-    (Build.extras ~build)
+  (Build.compilers ~arch ~build ()) @
+  (Build.linux_distributions ~arch ~build) @
+  (Build.macos ~build) @
+  (Build.freebsd ~build) @
+  (Build.extras ~build)
+  |> List.concat
+  |> List.sort_uniq compare_platform
 
 let main outfile =
   let oc = open_out outfile in
   Printf.fprintf oc "## Tested platforms\n\n";
-  Printf.fprintf oc "| OCaml version | OS | Arch | Opam version | Test lower-bounds | Test reverse dependencies |\n";
+  Printf.fprintf oc "|  OS | Arch | OCaml version |Opam version | Test lower-bounds | Test reverse dependencies |\n";
   Printf.fprintf oc "| --- | --- | --- | --- | --- | --- |\n";
   platforms ()
   |> List.map output_platform
