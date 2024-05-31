@@ -25,6 +25,19 @@ module OpamPackage = struct
   let of_yojson x = Result.map OpamPackage.of_string ([%derive.of_yojson:string] x)
 end
 
+type kind =
+  | New
+  | Deleted
+  | Unavailable
+  | SignificantlyChanged
+  | InsignificantlyChanged
+[@@deriving eq, yojson]
+
+type data = {
+  kind : kind;
+  has_tests : bool;
+} [@@deriving eq, yojson]
+
 module Make (M : sig
   type t
 
@@ -32,34 +45,16 @@ module Make (M : sig
 
   val exec :
     t ->
-    ?cwd:Fpath.t ->
-    ?stdin:string ->
-    ?pp_cmd:(Format.formatter -> Lwt_process.command -> unit) ->
-    ?pp_error_command:(Format.formatter -> unit) ->
+    cwd:Fpath.t ->
     Lwt_process.command ->
     unit Current.or_error Lwt.t
 
   val check_output :
     t ->
-    ?cwd:Fpath.t ->
-    ?stdin:string ->
-    ?pp_cmd:(Format.formatter -> Lwt_process.command -> unit) ->
-    ?pp_error_command:(Format.formatter -> unit) ->
+    cwd:Fpath.t ->
     Lwt_process.command ->
     string Current.or_error Lwt.t
 end) = struct
-  type kind =
-    | New
-    | Deleted
-    | Unavailable
-    | SignificantlyChanged
-    | InsignificantlyChanged
-  [@@deriving eq, yojson]
-
-  type data = {
-    kind : kind;
-    has_tests : bool;
-  } [@@deriving eq, yojson]
 
   type t = {
     packages : (OpamPackage.t * data) list;
@@ -269,20 +264,26 @@ module Analysis = Make (struct
 
   let log = Current.Job.log
 
-  let exec t = Current.Process.exec ~cancellable:true ~job:t
+  let exec t ~cwd cmd = Current.Process.exec ~cwd ~cancellable:true ~job:t cmd
 
-  let check_output t = Current.Process.check_output ~cancellable:true ~job:t
+  let check_output t ~cwd cmd = Current.Process.check_output ~cwd ~cancellable:true ~job:t cmd
 end)
 
-(* module Local_analysis = Make (struct
+module Local_analysis = Make (struct
   type t = unit
 
-  let log () = Printf.printf
+  let log () = Format.printf
 
-  let exec () _ = Ok ()
+  let exec () ~cwd cmd =
+    Lwt_process.exec ~cwd:(Fpath.to_string cwd) cmd >|= function
+    | Unix.WEXITED 0 -> Ok ()
+    | WEXITED n -> Error (`Msg (Printf.sprintf "Exited with nonzero exit code %d" n))
+    | WSIGNALED n -> Error (`Msg (Printf.sprintf "Killed by signal %d" n))
+    | WSTOPPED n -> Error (`Msg (Printf.sprintf "Stopped by signal %d" n))
 
-  let check_output () _ = Ok ""
-end) *)
+  let check_output () ~cwd cmd =
+    Lwt_process.pread ~cwd:(Fpath.to_string cwd) cmd >|= Result.ok
+end)
 
 module Examine = struct
   type t = No_context

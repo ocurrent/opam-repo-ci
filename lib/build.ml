@@ -37,11 +37,11 @@ let revdep_spec ~variant ~opam_version ~revdep pkg =
   Spec.opam ~variant ~lower_bounds:false ~with_tests:true ~revdep ~opam_version pkg
 
 let get_significant_available_pkg = function
-  | pkg, {Analyse.Analysis.kind = New; has_tests} ->
+  | pkg, {Analyse.kind = New; has_tests} ->
       Some {Package_opt.pkg; urgent = None; has_tests}
-  | pkg, {Analyse.Analysis.kind = SignificantlyChanged; has_tests} ->
+  | pkg, {Analyse.kind = SignificantlyChanged; has_tests} ->
       Some {Package_opt.pkg; urgent = Some (fun (`High | `Low) -> false); has_tests}
-  | _, {Analyse.Analysis.kind = Deleted | Unavailable | InsignificantlyChanged; _} ->
+  | _, {Analyse.kind = Deleted | Unavailable | InsignificantlyChanged; _} ->
       None
 
 (** The stable releases of OCaml since 4.02 plus the latest

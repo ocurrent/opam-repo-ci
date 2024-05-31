@@ -391,9 +391,9 @@ module Check = struct
     exec ~cwd ~job [|"git"; "merge"; "-q"; "--"; master|] >>/= fun () ->
     Lwt_list.fold_left_s (fun errors (pkg, kind) ->
       match kind with
-      | Analyse.Analysis.Deleted ->
+      | Analyse.Deleted ->
           Lwt.return errors (* TODO *)
-      | Analyse.Analysis.(New | Unavailable | SignificantlyChanged | InsignificantlyChanged) ->
+      | Analyse.(New | Unavailable | SignificantlyChanged | InsignificantlyChanged) ->
           get_opam ~cwd pkg >>= fun opam ->
           let errors = check_name_field ~errors ~pkg opam in
           let errors = check_version_field ~errors ~pkg opam in
@@ -418,7 +418,7 @@ module Lint = struct
   module Key = struct
     type t = {
       src : Current_git.Commit.t;
-      packages : (OpamPackage.t * Analyse.Analysis.kind) list
+      packages : (OpamPackage.t * Analyse.kind) list
     }
 
     let digest {src; packages} =
@@ -427,7 +427,7 @@ module Lint = struct
         "packages", `List (List.map (fun (pkg, kind) ->
           `Assoc [
             "pkg", `String (OpamPackage.to_string pkg);
-            "kind", Analyse.Analysis.kind_to_yojson kind;
+            "kind", Analyse.kind_to_yojson kind;
           ]) packages);
       ])
   end
@@ -525,7 +525,7 @@ module Lint_cache = Current_cache.Generic(Lint)
 
 let get_packages_kind =
   Current.map (fun packages ->
-    List.map (fun (pkg, {Analyse.Analysis.kind; has_tests = _}) ->
+    List.map (fun (pkg, {Analyse.kind; has_tests = _}) ->
       (pkg, kind))
       packages)
 
