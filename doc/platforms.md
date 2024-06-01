@@ -1,4 +1,68 @@
-## Tested platforms
+# Platforms Tested on the Opam Repository CI
+
+## Operating Systems
+
+- alpine-3.19
+- archlinux
+- debian-10
+- debian-11
+- debian-12
+- debian-testing
+- debian-unstable
+- fedora-38
+- fedora-39
+- fedora-40
+- freebsd
+- macos-homebrew
+- opensuse-15.5
+- opensuse-tumbleweed
+- oraclelinux-8
+- oraclelinux-9
+- ubuntu-20.04
+- ubuntu-22.04
+- ubuntu-23.04
+- ubuntu-23.10
+
+## Architectures
+
+- amd64
+- arm32v7
+- arm64
+- i386
+- ppc64le
+- riscv64
+- s390x
+
+## OCaml Versions
+
+- 4.02
+- 4.03
+- 4.04
+- 4.05
+- 4.06
+- 4.07
+- 4.08
+- 4.09
+- 4.10
+- 4.11
+- 4.12
+- 4.13
+- 4.14
+- 4.14-afl
+- 4.14-flambda
+- 4.14-flambda-fp
+- 4.14-fp
+- 4.14-nnp
+- 4.14-nnpchecker
+- 4.14-no-flat-float-array
+- 5.0
+- 5.1
+- 5.2
+- 5.2-afl
+- 5.2-flambda
+- 5.2-no-flat-float-array
+
+## Platforms Matrix
 
 |  OS | Arch | OCaml version |Opam version | Test lower-bounds | Test reverse dependencies |
 | --- | --- | --- | --- | --- | --- |

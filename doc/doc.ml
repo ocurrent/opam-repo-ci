@@ -57,12 +57,34 @@ let platforms =
   (Build.freebsd ~build) @
   (Build.extras ~build)
 
+let operating_systems =
+  platforms
+  |> List.map (fun p -> Variant.distribution p.variant)
+  |> List.sort_uniq String.compare
+
+let architectures =
+  platforms
+  |> List.map (fun p -> Ocaml_version.string_of_arch (Variant.arch p.variant))
+  |> List.sort_uniq String.compare
+
+let ocaml_versions =
+  platforms
+  |> List.map (fun p -> Variant.ocaml_version_to_string p.variant)
+  |> List.sort_uniq String.compare
+
+let print_items oc items =
+    List.iter (Printf.fprintf oc "- %s\n") items;
+    Printf.fprintf oc "\n"
+
 let main outfile =
   let oc = open_out outfile in
   Printf.fprintf oc "# Platforms Tested on the Opam Repository CI\n\n";
-  Printf.fprintf oc "## Operating Systems \n\n";
-  Printf.fprintf oc "## Architectures \n\n";
-  Printf.fprintf oc "## OCaml Versions \n\n";
+  Printf.fprintf oc "## Operating Systems\n\n";
+  print_items oc operating_systems;
+  Printf.fprintf oc "## Architectures\n\n";
+  print_items oc architectures;
+  Printf.fprintf oc "## OCaml Versions\n\n";
+  print_items oc ocaml_versions;
   Printf.fprintf oc "## Platforms Matrix\n\n";
   Printf.fprintf oc "|  OS | Arch | OCaml version |Opam version | Test lower-bounds | Test reverse dependencies |\n";
   Printf.fprintf oc "| --- | --- | --- | --- | --- | --- |\n";
