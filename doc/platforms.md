@@ -16,12 +16,11 @@
 - macos-homebrew
 - opensuse-15.5
 - opensuse-tumbleweed
-- oraclelinux-8
-- oraclelinux-9
 - ubuntu-20.04
 - ubuntu-22.04
 - ubuntu-23.04
 - ubuntu-23.10
+- ubuntu-24.04
 
 ## Architectures
 
@@ -130,17 +129,15 @@
 | opensuse-15.5 | amd64 | 5.2 | dev | No | No |
 | opensuse-tumbleweed | amd64 | 4.14 | dev | No | No |
 | opensuse-tumbleweed | amd64 | 5.2 | dev | No | No |
-| oraclelinux-8 | amd64 | 4.14 | dev | No | No |
-| oraclelinux-8 | amd64 | 5.2 | dev | No | No |
-| oraclelinux-9 | amd64 | 4.14 | dev | No | No |
-| oraclelinux-9 | amd64 | 5.2 | dev | No | No |
 | ubuntu-20.04 | amd64 | 4.14 | dev | No | No |
 | ubuntu-20.04 | amd64 | 5.2 | dev | No | No |
 | ubuntu-22.04 | amd64 | 4.14 | dev | No | No |
 | ubuntu-22.04 | amd64 | 5.2 | dev | No | No |
-| ubuntu-22.04 | riscv64 | 4.14 | dev | No | No |
-| ubuntu-22.04 | riscv64 | 5.2 | dev | No | No |
 | ubuntu-23.04 | amd64 | 4.14 | dev | No | No |
 | ubuntu-23.04 | amd64 | 5.2 | dev | No | No |
 | ubuntu-23.10 | amd64 | 4.14 | dev | No | No |
 | ubuntu-23.10 | amd64 | 5.2 | dev | No | No |
+| ubuntu-24.04 | amd64 | 4.14 | dev | No | No |
+| ubuntu-24.04 | amd64 | 5.2 | dev | No | No |
+| ubuntu-24.04 | riscv64 | 4.14 | dev | No | No |
+| ubuntu-24.04 | riscv64 | 5.2 | dev | No | No |
