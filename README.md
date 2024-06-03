@@ -1,4 +1,4 @@
-# opam-ci
+# opam-repo-ci
 
 Status: **experimental**
 
@@ -15,24 +15,17 @@ dune exec -- opam-repo-ci-local \
   --capnp-address tcp:127.0.0.1:5001
 ```
 
+If you would just like to lint your submission locally, you can add the `--lint-only` flag to the command above.
+
 Here `REPO-PATH` is the relative or absolute path to your copy of `opam-repository`, and `BRANCH-NAME` is the name of the branch containing the changes you want to make, relative to the master branch.
 
-Browse to http://localhost:8080 to see the web UI.
-You can either set the confirm threshold (at the bottom of the web page) to allow all builds to start,
-or just click on a yellow box and then on the `Start now` button to start one step manually.
+Browse to http://localhost:8080 to see the web UI. You can either set the confirm threshold (at the bottom of the web page) to allow all builds to start, or just click on a yellow box and then on the `Start now` button to start one step manually.
 
-The analysis step will detect which packages have been changed.
-Then, for each supported platform it will try to install the package.
-If that succeeds, it will run the package's tests, and in parallel it will find other packages that
-depend on this one and test them too.
+The analysis step will detect which packages have been changed. Then, for each supported platform it will try to install the package. If that succeeds, it will run the package's tests, and in parallel it will find other packages that depend on this one and test them too.
 
 ### Web UI
 
-The public web front-end is a separate process.
-It needs a `.cap` capability file to connect to the engine.
-If you have the file for the real service, you can use that.
-If you're testing the engine locally (as shown above), you can use the `./capnp-secrets/opam-repo-ci-admin.cap`
-that it writes out.
+The public web front-end is a separate process. It needs a `.cap` capability file to connect to the engine. If you have the file for the real service, you can use that. If you're testing the engine locally (as shown above), you can use the `./capnp-secrets/opam-repo-ci-admin.cap` that it writes out.
 
 ```
 dune exec -- opam-repo-ci-web --backend ./capnp-secrets/opam-repo-ci-admin.cap
