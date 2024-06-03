@@ -1,0 +1,13 @@
+(executable
+ (name doc)
+ (libraries opam_repo_ci))
+
+(rule
+  (target platforms-new.md)
+  (action (run ./doc.exe -o %{target})))
+
+(rule
+ (alias doc)
+ (mode promote)
+ (action
+  (diff ./platforms.md ./platforms-new.md)))
