@@ -1,6 +1,15 @@
 open Cmdliner
 open Prototype
 
+let lint pkg local_repo_dir =
+  match local_repo_dir with
+  | Some d ->
+      print_endline @@ Printf.sprintf "Linting %s in %s ..." pkg d;
+      Lint.run_lint pkg d
+  | None ->
+      (* TODO Add error handling *)
+      print_endline "No opam repository directory specified."
+
 let show_revdeps pkg local_repo_dir no_transitive_revdeps =
   (* Create local opam root and switch *)
   Env.create_local_switch_maybe local_repo_dir;
@@ -82,6 +91,14 @@ let pkg_term =
   let info = Arg.info [] ~doc:"Package name + version" in
   Arg.required (Arg.pos 0 (Arg.some Arg.string) None info)
 
+let lint_cmd =
+  let doc = "Lint the opam repository directory" in
+  let term = Term.(const lint $ pkg_term $ local_opam_repo_term) in
+  let info =
+    Cmd.info "lint" ~doc ~sdocs:"COMMON OPTIONS" ~exits:Cmd.Exit.defaults
+  in
+  Cmd.v info term
+
 let list_cmd =
   let doc = "List the revdeps for a package" in
   let term =
@@ -111,6 +128,6 @@ let cmd =
   let exits = Cmd.Exit.defaults in
   let term = Term.(ret (const (fun _ -> `Help (`Pager, None)) $ const ())) in
   let info = Cmd.info "opam-revdeps" ~doc ~sdocs:"COMMON OPTIONS" ~exits in
-  Cmd.group ~default:term info [ list_cmd; test_cmd ]
+  Cmd.group ~default:term info [ lint_cmd; list_cmd; test_cmd ]
 
 let () = exit (Cmd.eval cmd)
