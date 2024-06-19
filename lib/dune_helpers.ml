@@ -14,7 +14,7 @@ let chdir dir ~f =
   Sys.chdir old_dir
 
 let generate_dune_project packages =
-  let open Sexplib0 in
+  let open Sexplib in
   let pkg_sexps =
     List.map
       (fun pkg ->
@@ -41,7 +41,7 @@ let generate_dune_project packages =
   expressions |> List.map Sexp.to_string |> String.concat "\n"
 
 let generate_dune_workspace opam_repository =
-  let open Sexplib0 in
+  let open Sexplib in
   let expressions =
     Sexp.
       [

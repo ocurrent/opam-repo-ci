@@ -22,7 +22,7 @@
  (depends
   ocaml
   dune
-  sexplib0
+  sexplib
   (opam-client
    (>= 2.2)))
  (tags
