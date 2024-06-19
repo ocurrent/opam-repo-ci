@@ -1,4 +1,5 @@
 module H = Dune_helpers
+module D = Dir_helpers
 
 let test_package_with_opam package revdep =
   OpamConsole.msg "Installing and testing: package - %s; revdep - %s\n"
@@ -57,7 +58,7 @@ let test_packages_with_dune opam_repository target_pkg packages =
   OpamConsole.msg
     "Installing latest version of reverse dependencies with pinned %s\n"
     (OpamPackage.to_string target);
-  let parent = H.create_temp_dir "revdeps_" in
+  let parent = D.create_temp_dir "revdeps_" in
   (* FIXME: there can be 1000s of revdeps?! *)
   let selected_packages = H.take 3 packages in
   (* Prompt before creating the projects *)
