@@ -11,6 +11,7 @@ build: debian-12-ocaml-4.02/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -45,6 +46,7 @@ build: debian-12-ocaml-4.02/amd64 opam-dev lower-bounds
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -98,6 +100,7 @@ build: debian-12-ocaml-4.03/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -132,6 +135,7 @@ build: debian-12-ocaml-4.03/amd64 opam-dev lower-bounds
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -185,6 +189,7 @@ build: debian-12-ocaml-4.04/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -219,6 +224,7 @@ build: debian-12-ocaml-4.04/amd64 opam-dev lower-bounds
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -272,6 +278,7 @@ build: debian-12-ocaml-4.05/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -306,6 +313,7 @@ build: debian-12-ocaml-4.05/amd64 opam-dev lower-bounds
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -359,6 +367,7 @@ build: debian-12-ocaml-4.06/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -393,6 +402,7 @@ build: debian-12-ocaml-4.06/amd64 opam-dev lower-bounds
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -446,6 +456,7 @@ build: debian-12-ocaml-4.07/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -480,6 +491,7 @@ build: debian-12-ocaml-4.07/amd64 opam-dev lower-bounds
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -533,6 +545,7 @@ build: debian-12-ocaml-4.08/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -567,6 +580,7 @@ build: debian-12-ocaml-4.08/amd64 opam-dev lower-bounds
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -620,6 +634,7 @@ build: debian-12-ocaml-4.09/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -654,6 +669,7 @@ build: debian-12-ocaml-4.09/amd64 opam-dev lower-bounds
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -707,6 +723,7 @@ build: debian-12-ocaml-4.10/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -741,6 +758,7 @@ build: debian-12-ocaml-4.10/amd64 opam-dev lower-bounds
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -794,6 +812,7 @@ build: debian-12-ocaml-4.11/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -828,6 +847,7 @@ build: debian-12-ocaml-4.11/amd64 opam-dev lower-bounds
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -881,6 +901,7 @@ build: debian-12-ocaml-4.12/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -915,6 +936,7 @@ build: debian-12-ocaml-4.12/amd64 opam-dev lower-bounds
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -968,6 +990,7 @@ build: debian-12-ocaml-4.13/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -1002,6 +1025,7 @@ build: debian-12-ocaml-4.13/amd64 opam-dev lower-bounds
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -1055,6 +1079,7 @@ build: debian-12-ocaml-4.14/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -1089,6 +1114,7 @@ build: debian-12-ocaml-4.14/amd64 opam-dev lower-bounds
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -1142,6 +1168,7 @@ list-revdeps: debian-12-ocaml-4.14/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -1161,6 +1188,7 @@ build: debian-12-ocaml-4.14/amd64 opam-dev with-tests
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -1211,6 +1239,7 @@ build: debian-12-ocaml-5.0/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -1245,6 +1274,7 @@ build: debian-12-ocaml-5.0/amd64 opam-dev lower-bounds
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -1298,6 +1328,7 @@ build: debian-12-ocaml-5.1/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -1332,6 +1363,7 @@ build: debian-12-ocaml-5.1/amd64 opam-dev lower-bounds
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -1385,6 +1417,7 @@ build: debian-12-ocaml-5.2/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -1419,6 +1452,7 @@ build: debian-12-ocaml-5.2/amd64 opam-dev lower-bounds
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -1472,6 +1506,7 @@ list-revdeps: debian-12-ocaml-5.2/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -1491,6 +1526,7 @@ build: debian-12-ocaml-5.2/amd64 opam-dev with-tests
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -1541,6 +1577,7 @@ build: ubuntu-24.04-ocaml-5.2/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -1575,6 +1612,7 @@ build: ubuntu-23.10-ocaml-5.2/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -1609,6 +1647,7 @@ build: ubuntu-23.04-ocaml-5.2/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -1643,6 +1682,7 @@ build: ubuntu-22.04-ocaml-5.2/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -1677,6 +1717,7 @@ build: ubuntu-20.04-ocaml-5.2/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -1711,6 +1752,7 @@ build: opensuse-tumbleweed-ocaml-5.2/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -1745,6 +1787,7 @@ build: opensuse-15.5-ocaml-5.2/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -1779,6 +1822,7 @@ build: fedora-40-ocaml-5.2/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -1813,6 +1857,7 @@ build: fedora-39-ocaml-5.2/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -1847,6 +1892,7 @@ build: fedora-38-ocaml-5.2/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -1881,6 +1927,7 @@ build: debian-unstable-ocaml-5.2/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -1915,6 +1962,7 @@ build: debian-testing-ocaml-5.2/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -1949,6 +1997,7 @@ build: debian-10-ocaml-5.2/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -1983,6 +2032,7 @@ build: debian-11-ocaml-5.2/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -2017,6 +2067,7 @@ build: archlinux-ocaml-5.2/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -2051,6 +2102,7 @@ build: alpine-3.19-ocaml-5.2/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -2085,6 +2137,7 @@ build: ubuntu-24.04-ocaml-4.14/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -2119,6 +2172,7 @@ build: ubuntu-23.10-ocaml-4.14/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -2153,6 +2207,7 @@ build: ubuntu-23.04-ocaml-4.14/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -2187,6 +2242,7 @@ build: ubuntu-22.04-ocaml-4.14/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -2221,6 +2277,7 @@ build: ubuntu-20.04-ocaml-4.14/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -2255,6 +2312,7 @@ build: opensuse-tumbleweed-ocaml-4.14/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -2289,6 +2347,7 @@ build: opensuse-15.5-ocaml-4.14/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -2323,6 +2382,7 @@ build: fedora-40-ocaml-4.14/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -2357,6 +2417,7 @@ build: fedora-39-ocaml-4.14/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -2391,6 +2452,7 @@ build: fedora-38-ocaml-4.14/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -2425,6 +2487,7 @@ build: debian-unstable-ocaml-4.14/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -2459,6 +2522,7 @@ build: debian-testing-ocaml-4.14/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -2493,6 +2557,7 @@ build: debian-10-ocaml-4.14/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -2527,6 +2592,7 @@ build: debian-11-ocaml-4.14/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -2561,6 +2627,7 @@ build: archlinux-ocaml-4.14/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -2595,6 +2662,7 @@ build: alpine-3.19-ocaml-4.14/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -2628,6 +2696,7 @@ build: macos-homebrew-ocaml-5.2/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url -k local --strict default opam-repository/
@@ -2661,6 +2730,7 @@ build: macos-homebrew-ocaml-5.2/arm64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url -k local --strict default opam-repository/
@@ -2694,6 +2764,7 @@ build: macos-homebrew-ocaml-4.14/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url -k local --strict default opam-repository/
@@ -2727,6 +2798,7 @@ build: macos-homebrew-ocaml-4.14/arm64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url -k local --strict default opam-repository/
@@ -2761,6 +2833,7 @@ build: freebsd-ocaml-5.2/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -2795,6 +2868,7 @@ build: freebsd-ocaml-4.14/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -2829,6 +2903,7 @@ build: debian-12-ocaml-5.2/amd64 opam-2.0
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -2863,6 +2938,7 @@ build: debian-12-ocaml-5.2/amd64 opam-2.1
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -2897,6 +2973,7 @@ build: debian-12-ocaml-5.2-afl/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -2931,6 +3008,7 @@ build: debian-12-ocaml-5.2-flambda/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -2965,6 +3043,7 @@ build: debian-12-ocaml-5.2-no-flat-float-array/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -3000,6 +3079,7 @@ build: debian-12-ocaml-5.2/i386 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -3034,6 +3114,7 @@ build: debian-12-ocaml-5.2/arm64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -3068,6 +3149,7 @@ build: debian-12-ocaml-5.2/ppc64le opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -3103,6 +3185,7 @@ build: debian-12-ocaml-5.2/arm32v7 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -3137,6 +3220,7 @@ build: debian-12-ocaml-5.2/s390x opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -3171,6 +3255,7 @@ build: ubuntu-24.04-ocaml-5.2/riscv64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -3205,6 +3290,7 @@ build: debian-12-ocaml-4.14/amd64 opam-2.0
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -3239,6 +3325,7 @@ build: debian-12-ocaml-4.14/amd64 opam-2.1
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -3273,6 +3360,7 @@ build: debian-12-ocaml-4.14-afl/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -3307,6 +3395,7 @@ build: debian-12-ocaml-4.14-flambda/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -3341,6 +3430,7 @@ build: debian-12-ocaml-4.14-fp/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -3375,6 +3465,7 @@ build: debian-12-ocaml-4.14-flambda-fp/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -3409,6 +3500,7 @@ build: debian-12-ocaml-4.14-no-flat-float-array/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -3443,6 +3535,7 @@ build: debian-12-ocaml-4.14-nnp/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -3477,6 +3570,7 @@ build: debian-12-ocaml-4.14-nnpchecker/amd64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -3512,6 +3606,7 @@ build: debian-12-ocaml-4.14/i386 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -3546,6 +3641,7 @@ build: debian-12-ocaml-4.14/arm64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -3580,6 +3676,7 @@ build: debian-12-ocaml-4.14/ppc64le opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -3615,6 +3712,7 @@ build: debian-12-ocaml-4.14/arm32v7 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -3649,6 +3747,7 @@ build: debian-12-ocaml-4.14/s390x opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
@@ -3683,6 +3782,7 @@ build: ubuntu-24.04-ocaml-4.14/riscv64 opam-dev
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
+    ENV OCAMLPARAM="warn-error=+8,_"
     RUN rm -rf opam-repository/
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
