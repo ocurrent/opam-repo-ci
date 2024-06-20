@@ -12,6 +12,18 @@ let ( // ) = Filename.concat
 let ( >>/= ) x f = x >>= fun x -> f (Result.get_ok x)
 let exec ~cwd ~job cmd = Current.Process.exec ~cwd ~cancellable:true ~job ("", cmd)
 
+(** If either a restricted prefix or conflict class exists,
+    then the corresponding other must also exist. *)
+type prefix_conflict_class_mismatch =
+  | WrongPrefix of {
+      conflict_class: string;
+      required_prefix: string;
+    }
+  | WrongConflictClass of {
+      prefix: string;
+      required_conflict_class: string;
+    }
+
 type error =
   | UnnecessaryField of string
   | UnmatchedName of OpamPackage.Name.t
@@ -29,6 +41,8 @@ type error =
   | WeakChecksum of string
   | PinDepends
   | ExtraFiles
+  | RestrictedPrefix of string
+  | PrefixConflictClassMismatch of prefix_conflict_class_mismatch
 
 type host_os = Macos | Other [@@deriving to_yojson]
 
@@ -70,6 +84,9 @@ module Check = struct
     Lwt.finalize
       (fun () -> aux [])
       (fun () -> Lwt_unix.closedir dir)
+
+  let get_packages ~cwd =
+    get_files @@ Fpath.to_string cwd // "packages"
 
   let scan_dir ~cwd errors pkg =
     let dir = Fpath.to_string cwd // path_from_pkg pkg in
@@ -258,41 +275,27 @@ module Check = struct
     in
     dash_underscore p0 p1 || levenstein_distance p0 p1
 
-  (* If a previous version of the package exists,
-     i.e. this is not a brand-new package *)
-  let prev_version_exists repo_path pkg pkg_name packages =
-    let f other_pkg_name =
-      let pkg_str = OpamPackage.to_string pkg in
-      if String.equal pkg_name other_pkg_name then
-        let package_path = repo_path // other_pkg_name in
-        get_files package_path >|= fun vs ->
-        List.exists (fun v -> not @@ String.equal v pkg_str) vs
-      else
-        Lwt.return_false
-    in
-    Lwt.all @@ List.map f packages >|=
-    List.fold_left (fun a b -> a || b) false
+  let is_newly_published_package ~cwd ~job package master =
+    let package_name = OpamPackage.Name.to_string package.OpamPackage.name in
+    (* [git cat-file -e branch:path] will exit with zero status if the object at
+       [path] exists on [branch] *)
+    exec ~cwd ~job [|"git"; "cat-file "; "-e"; master^":packages/"^package_name|]
+    >|= function
+    | Error _ -> true (* The package directory does not exist on master *)
+    | Ok _ -> false (* The package directory does exist on master *)
 
-  let check_name_collisions ~cwd ~errors ~pkg =
+  let check_name_collisions ~errors ~pkg packages =
     let pkg_name = pkg.OpamPackage.name |> OpamPackage.Name.to_string in
     let pkg_name_lower = String.lowercase_ascii pkg_name in
-    let repository_path = Fpath.to_string cwd // "packages" in
-    get_files repository_path >>= fun packages ->
-    (* If the package already exists then don't check name collisions *)
-    (* TODO: Releasing multiple versions of the same package makes it
-       be considered as 'already existing' - fix this *)
-    prev_version_exists repository_path pkg pkg_name packages >|= fun b ->
-    if b then errors
-    else
-      let other_pkgs = List.filter (fun s -> not @@ String.equal s pkg_name) packages in
-      List.fold_left
-        (fun errors other_pkg ->
-          let other_pkg_lower = String.lowercase_ascii other_pkg in
-          if package_name_collision pkg_name_lower other_pkg_lower then
-            (pkg, NameCollision other_pkg) :: errors
-          else
-            errors)
-        errors other_pkgs
+    let other_pkgs = List.filter (fun s -> not @@ String.equal s pkg_name) packages in
+    List.fold_left
+      (fun errors other_pkg ->
+        let other_pkg_lower = String.lowercase_ascii other_pkg in
+        if package_name_collision pkg_name_lower other_pkg_lower then
+          (pkg, NameCollision other_pkg) :: errors
+        else
+          errors)
+      errors other_pkgs
 
   let check_name_field ~errors ~pkg opam =
     match OpamFile.OPAM.name_opt opam with
@@ -381,14 +384,83 @@ module Check = struct
     | None | Some [] -> errors
     | Some _ -> (pkg, ExtraFiles) :: errors
 
+  module Prefix = struct
+    (* For context, see https://github.com/ocurrent/opam-repo-ci/pull/316#issuecomment-2160069803 *)
+    let prefix_conflict_class_map = [
+      ("mysys2-", "msys2-env");
+      ("arch-", "ocaml-arch");
+      ("ocaml-env-mingw", "ocaml-env-mingw");
+      ("ocaml-env-msvc", "ocaml-env-msvc");
+      ("host-arch-", "ocaml-host-arch");
+      ("host-system-", "ocaml-host-system");
+      ("system-", "ocaml-system");
+    ]
+
+    let conflict_class_prefix_map = List.map (fun (a, b) -> (b, a)) prefix_conflict_class_map
+
+    let prefixes = List.map fst prefix_conflict_class_map
+
+    let check_name_restricted_prefix ~errors ~pkg =
+      let name = OpamPackage.name_to_string pkg in
+      List.fold_left
+        (fun errors prefix ->
+          if String.starts_with ~prefix name then
+            (pkg, RestrictedPrefix prefix) :: errors
+          else
+            errors)
+        errors
+        prefixes
+
+    let check_prefix_without_conflict_class ~errors ~pkg name conflict_classes =
+      let prefix = List.find_opt
+        (fun prefix -> String.starts_with ~prefix name)
+        prefixes
+      in
+      match prefix with
+      | None -> errors
+      | Some prefix ->
+        match List.assoc_opt prefix prefix_conflict_class_map with
+        | None ->
+          Logs.err
+            (fun m -> m "BUG: prefix '%s' not found in conflict class map" prefix);
+          errors
+        | Some required_conflict_class ->
+          if List.mem required_conflict_class conflict_classes then
+            errors
+          else
+            (pkg, PrefixConflictClassMismatch
+              (WrongConflictClass { prefix; required_conflict_class })) :: errors
+
+    let check_conflict_class_without_prefix ~errors ~pkg name conflict_classes =
+      List.fold_left
+        (fun errors conflict_class ->
+          match List.assoc_opt conflict_class conflict_class_prefix_map with
+          | None -> errors
+          | Some prefix ->
+            if String.starts_with ~prefix name then
+              errors
+            else
+              (pkg, PrefixConflictClassMismatch
+                (WrongPrefix { conflict_class; required_prefix=prefix })) :: errors
+        )
+        errors
+        conflict_classes
+
+    let check_prefix_conflict_class_mismatch ~errors ~pkg opam =
+      let conflict_classes = List.map OpamPackage.Name.to_string @@ OpamFile.OPAM.conflict_class opam in
+      let name = OpamPackage.name_to_string pkg in
+      let errors = check_prefix_without_conflict_class ~errors ~pkg name conflict_classes in
+      check_conflict_class_without_prefix ~errors ~pkg name conflict_classes
+  end
+
   let opam_lint ~check_extra_files ~errors ~pkg opam =
     OpamFileTools.lint ~check_extra_files ~check_upstream:true opam |>
-    List.fold_left (fun errors x -> (pkg, OpamLint x) :: errors) errors |>
-    Lwt.return
+    List.fold_left (fun errors x -> (pkg, OpamLint x) :: errors) errors
 
   let of_dir ~host_os ~master ~job ~packages cwd =
     let master = Current_git.Commit.hash master in
     exec ~cwd ~job [|"git"; "merge"; "-q"; "--"; master|] >>/= fun () ->
+    get_packages ~cwd >>= fun existing_packages ->
     Lwt_list.fold_left_s (fun errors (pkg, kind) ->
       match kind with
       | Analyse.Analysis.Deleted ->
@@ -401,12 +473,17 @@ module Check = struct
           let errors = check_checksums ~errors ~pkg opam in
           let errors = check_no_pin_depends ~errors ~pkg opam in
           let errors = check_no_extra_files ~errors ~pkg opam in
+          let errors = Prefix.check_prefix_conflict_class_mismatch ~errors ~pkg opam in
           check_dune_constraints ~host_os ~errors ~pkg opam >>= fun errors ->
-          check_name_collisions ~cwd ~errors ~pkg >>= fun errors ->
           (* Check directory structure correctness *)
           scan_dir ~cwd errors pkg >>= fun (errors, check_extra_files) ->
-          opam_lint ~check_extra_files ~errors ~pkg opam >>= fun errors ->
-          Lwt.return errors
+          let errors = opam_lint ~check_extra_files ~errors ~pkg opam in
+          is_newly_published_package ~cwd ~job pkg master >|=
+          function
+          | false -> errors
+          | true ->
+            let errors = check_name_collisions ~errors ~pkg existing_packages in
+            Prefix.check_name_restricted_prefix ~errors ~pkg
     ) [] packages
 end
 
@@ -444,69 +521,81 @@ module Lint = struct
 
   let id = "opam-ci-lint"
 
-  let msg_of_errors =
-    List.map (fun (package, err) ->
-      let pkg = OpamPackage.to_string package in
-      match err with
-      | UnnecessaryField field ->
-          Fmt.str "Warning in %s: Unnecessary field '%s'. It is suggested to remove it." pkg field
-      | UnmatchedName value ->
-          Fmt.str "Error in %s: The field 'name' that doesn't match its context. \
-                   Field 'name' has value '%s' but was expected of value '%s'."
-            pkg
-            (OpamPackage.Name.to_string value)
-            (OpamPackage.Name.to_string (OpamPackage.name package))
-      | UnmatchedVersion value ->
-          Fmt.str "Error in %s: The field 'version' that doesn't match its context. \
-                   Field 'version' has value '%s' but was expected of value '%s'."
-            pkg
-            (OpamPackage.Version.to_string value)
-            (OpamPackage.Version.to_string (OpamPackage.version package))
-      | DubiousDuneSubst ->
-          Fmt.str "Warning in %s: Dubious use of 'dune subst'. \
-                   'dune subst' should always only be called with {dev} (i.e. [\"dune\" \"subst\"] {dev}) \
-                   If your opam file has been autogenerated by dune, you need to upgrade your dune-project \
-                   to at least (lang dune 2.7)."
-            pkg
-      | DuneProjectMissing ->
-          Fmt.str "Warning in %s: The package seems to use dune but the dune-project file is missing." pkg
-      | DuneConstraintMissing ->
-          Fmt.str "Warning in %s: The package has a dune-project file but no explicit dependency on dune was found." pkg
-      | DuneIsBuild ->
-          Fmt.str "Warning in %s: The package tagged dune as a build dependency. \
-                   Due to a bug in dune (https://github.com/ocaml/dune/issues/2147) this should never be the case. \
-                   Please remove the {build} tag from its filter."
-            pkg
-      | BadDuneConstraint (dep, ver) ->
-          Fmt.str "Error in %s: Your dune-project file indicates that this package requires at least dune %s \
-                   but your opam file only requires dune >= %s. Please check which requirement is the right one, and fix the other."
-            pkg ver dep
-      | UnexpectedFile file ->
-          Fmt.str "Error in %s: Unexpected file in %s/files/%s" pkg (Check.path_from_pkg package) file
-      | ForbiddenPerm file ->
-          Fmt.str
-            "Error in %s: Forbidden permission for file %s/%s. All files should have permissions 644."
-            pkg (Check.path_from_pkg package) file
-      | OpamLint warn ->
-          let warn = OpamFileTools.warns_to_string [warn] in
-          Fmt.str "Error in %s: %s" pkg warn
-      | FailedToDownload msg ->
-          Fmt.str "Error in %s: Failed to download the archive. Details: %s" pkg msg
-      | NameCollision other_pkg ->
-          Fmt.str "Warning in %s: Possible name collision with package '%s'" pkg other_pkg
-      | WeakChecksum msg ->
-        Fmt.str "Error in %s: Weak checksum algorithm(s) provided. Please use SHA-256 or SHA-512. Details: %s" pkg msg
-      | PinDepends ->
-        Fmt.str "Error in %s: pin-depends present. This is not allowed in the opam-repository." pkg
-      | ExtraFiles ->
-        Fmt.str "Error in %s: extra-files present. This is not allowed in the opam-repository. Please use extra-source instead." pkg
-    )
+  let msg_of_prefix_conflict_class_mismatch ~pkg = function
+    | WrongPrefix { conflict_class; required_prefix } ->
+      Fmt.str
+        "Error in %s: package with conflict class '%s' requires name prefix '%s'"
+        pkg conflict_class required_prefix
+    | WrongConflictClass { prefix; required_conflict_class} ->
+      Fmt.str
+        "Error in %s: package with prefix '%s' requires conflict class '%s'"
+        pkg prefix required_conflict_class
+
+  let msg_of_error (package, err) =
+    let pkg = OpamPackage.to_string package in
+    match err with
+    | UnnecessaryField field ->
+        Fmt.str "Warning in %s: Unnecessary field '%s'. It is suggested to remove it." pkg field
+    | UnmatchedName value ->
+        Fmt.str "Error in %s: The field 'name' that doesn't match its context. \
+                  Field 'name' has value '%s' but was expected of value '%s'."
+          pkg
+          (OpamPackage.Name.to_string value)
+          (OpamPackage.Name.to_string (OpamPackage.name package))
+    | UnmatchedVersion value ->
+        Fmt.str "Error in %s: The field 'version' that doesn't match its context. \
+                  Field 'version' has value '%s' but was expected of value '%s'."
+          pkg
+          (OpamPackage.Version.to_string value)
+          (OpamPackage.Version.to_string (OpamPackage.version package))
+    | DubiousDuneSubst ->
+        Fmt.str "Warning in %s: Dubious use of 'dune subst'. \
+                  'dune subst' should always only be called with {dev} (i.e. [\"dune\" \"subst\"] {dev}) \
+                  If your opam file has been autogenerated by dune, you need to upgrade your dune-project \
+                  to at least (lang dune 2.7)."
+          pkg
+    | DuneProjectMissing ->
+        Fmt.str "Warning in %s: The package seems to use dune but the dune-project file is missing." pkg
+    | DuneConstraintMissing ->
+        Fmt.str "Warning in %s: The package has a dune-project file but no explicit dependency on dune was found." pkg
+    | DuneIsBuild ->
+        Fmt.str "Warning in %s: The package tagged dune as a build dependency. \
+                  Due to a bug in dune (https://github.com/ocaml/dune/issues/2147) this should never be the case. \
+                  Please remove the {build} tag from its filter."
+          pkg
+    | BadDuneConstraint (dep, ver) ->
+        Fmt.str "Error in %s: Your dune-project file indicates that this package requires at least dune %s \
+                  but your opam file only requires dune >= %s. Please check which requirement is the right one, and fix the other."
+          pkg ver dep
+    | UnexpectedFile file ->
+        Fmt.str "Error in %s: Unexpected file in %s/files/%s" pkg (Check.path_from_pkg package) file
+    | ForbiddenPerm file ->
+        Fmt.str
+          "Error in %s: Forbidden permission for file %s/%s. All files should have permissions 644."
+          pkg (Check.path_from_pkg package) file
+    | OpamLint warn ->
+        let warn = OpamFileTools.warns_to_string [warn] in
+        Fmt.str "Error in %s: %s" pkg warn
+    | FailedToDownload msg ->
+        Fmt.str "Error in %s: Failed to download the archive. Details: %s" pkg msg
+    | NameCollision other_pkg ->
+        Fmt.str "Warning in %s: Possible name collision with package '%s'" pkg other_pkg
+    | WeakChecksum msg ->
+      Fmt.str "Error in %s: Weak checksum algorithm(s) provided. Please use SHA-256 or SHA-512. Details: %s" pkg msg
+    | PinDepends ->
+      Fmt.str "Error in %s: pin-depends present. This is not allowed in the opam-repository." pkg
+    | ExtraFiles ->
+      Fmt.str "Error in %s: extra-files present. This is not allowed in the opam-repository. Please use extra-source instead." pkg
+    | RestrictedPrefix prefix ->
+      Fmt.str "Warning in %s: package name has restricted prefix '%s'" pkg prefix
+    | PrefixConflictClassMismatch mismatch ->
+      msg_of_prefix_conflict_class_mismatch ~pkg mismatch
 
   let run { master } job { Key.src; packages } { Value.host_os } =
     Current.Job.start job ~pool ~level:Current.Level.Harmless >>= fun () ->
     Current_git.with_checkout ~job src @@ fun dir ->
     Check.of_dir ~host_os ~master ~job ~packages dir >|= fun errors ->
-    let errors = msg_of_errors errors in
+    let errors = List.map msg_of_error errors in
     List.iter (Current.Job.log job "%s") errors;
     match errors with
     | [] -> Ok ()
