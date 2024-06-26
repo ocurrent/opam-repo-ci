@@ -1,3 +1,4 @@
 (library
  (name prototype)
+ (public_name revdeps_prototype)
  (libraries opam-client sexplib))
