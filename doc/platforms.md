@@ -2,24 +2,20 @@
 
 ## Operating Systems
 
-- alpine-3.19
+- alpine-3.20
 - archlinux
-- debian-10
 - debian-11
 - debian-12
 - debian-testing
 - debian-unstable
-- fedora-38
 - fedora-39
 - fedora-40
 - freebsd
 - macos-homebrew
-- opensuse-15.5
+- opensuse-15.6
 - opensuse-tumbleweed
 - ubuntu-20.04
 - ubuntu-22.04
-- ubuntu-23.04
-- ubuntu-23.10
 - ubuntu-24.04
 
 ## Architectures
@@ -65,12 +61,10 @@
 
 |  OS | Arch | OCaml version |Opam version | Test lower-bounds | Test reverse dependencies |
 | --- | --- | --- | --- | --- | --- |
-| alpine-3.19 | amd64 | 4.14 | dev | No | No |
-| alpine-3.19 | amd64 | 5.2 | dev | No | No |
+| alpine-3.20 | amd64 | 4.14 | dev | No | No |
+| alpine-3.20 | amd64 | 5.2 | dev | No | No |
 | archlinux | amd64 | 4.14 | dev | No | No |
 | archlinux | amd64 | 5.2 | dev | No | No |
-| debian-10 | amd64 | 4.14 | dev | No | No |
-| debian-10 | amd64 | 5.2 | dev | No | No |
 | debian-11 | amd64 | 4.14 | dev | No | No |
 | debian-11 | amd64 | 5.2 | dev | No | No |
 | debian-12 | amd64 | 4.02 | dev | Yes | No |
@@ -113,8 +107,6 @@
 | debian-testing | amd64 | 5.2 | dev | No | No |
 | debian-unstable | amd64 | 4.14 | dev | No | No |
 | debian-unstable | amd64 | 5.2 | dev | No | No |
-| fedora-38 | amd64 | 4.14 | dev | No | No |
-| fedora-38 | amd64 | 5.2 | dev | No | No |
 | fedora-39 | amd64 | 4.14 | dev | No | No |
 | fedora-39 | amd64 | 5.2 | dev | No | No |
 | fedora-40 | amd64 | 4.14 | dev | No | No |
@@ -125,18 +117,14 @@
 | macos-homebrew | amd64 | 5.2 | dev | No | No |
 | macos-homebrew | arm64 | 4.14 | dev | No | No |
 | macos-homebrew | arm64 | 5.2 | dev | No | No |
-| opensuse-15.5 | amd64 | 4.14 | dev | No | No |
-| opensuse-15.5 | amd64 | 5.2 | dev | No | No |
+| opensuse-15.6 | amd64 | 4.14 | dev | No | No |
+| opensuse-15.6 | amd64 | 5.2 | dev | No | No |
 | opensuse-tumbleweed | amd64 | 4.14 | dev | No | No |
 | opensuse-tumbleweed | amd64 | 5.2 | dev | No | No |
 | ubuntu-20.04 | amd64 | 4.14 | dev | No | No |
 | ubuntu-20.04 | amd64 | 5.2 | dev | No | No |
 | ubuntu-22.04 | amd64 | 4.14 | dev | No | No |
 | ubuntu-22.04 | amd64 | 5.2 | dev | No | No |
-| ubuntu-23.04 | amd64 | 4.14 | dev | No | No |
-| ubuntu-23.04 | amd64 | 5.2 | dev | No | No |
-| ubuntu-23.10 | amd64 | 4.14 | dev | No | No |
-| ubuntu-23.10 | amd64 | 5.2 | dev | No | No |
 | ubuntu-24.04 | amd64 | 4.14 | dev | No | No |
 | ubuntu-24.04 | amd64 | 5.2 | dev | No | No |
 | ubuntu-24.04 | riscv64 | 4.14 | dev | No | No |
