@@ -279,7 +279,7 @@ module Check = struct
     let package_name = OpamPackage.Name.to_string package.OpamPackage.name in
     (* [git cat-file -e branch:path] will exit with zero status if the object at
        [path] exists on [branch] *)
-    exec ~cwd ~job [|"git"; "cat-file"; "-e"; master^":packages/"^package_name|]
+    exec ~cwd ~job [|"git"; "cat-file "; "-e"; master^":packages/"^package_name|]
     >|= function
     | Error _ -> true (* The package directory does not exist on master *)
     | Ok _ -> false (* The package directory does exist on master *)
