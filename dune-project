@@ -24,7 +24,9 @@
   dune
   sexplib
   (opam-client
-   (>= 2.2)))
+   (>= 2.2))
+  (mula
+   (>= 0.1.2)))
  (tags
   (topics "to describe" your project)))
 

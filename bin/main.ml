@@ -1,11 +1,12 @@
 open Cmdliner
 open Prototype
 
-let lint pkg local_repo_dir =
+let lint pkg newly_published local_repo_dir =
   match local_repo_dir with
   | Some d ->
       print_endline @@ Printf.sprintf "Linting %s in %s ..." pkg d;
-      Lint.run_lint pkg d
+      (* TODO: Automatically detect newly published *)
+      Lint.run_lint pkg newly_published d
   | None ->
       (* TODO Add error handling *)
       print_endline "No opam repository directory specified."
@@ -91,9 +92,18 @@ let pkg_term =
   let info = Arg.info [] ~doc:"Package name + version" in
   Arg.required (Arg.pos 0 (Arg.some Arg.string) None info)
 
+let newly_published_term =
+  let info =
+    Arg.info [ "n"; "newly-published" ]
+      ~doc:"The package is a newly published package."
+  in
+  Arg.value (Arg.flag info)
+
 let lint_cmd =
   let doc = "Lint the opam repository directory" in
-  let term = Term.(const lint $ pkg_term $ local_opam_repo_term) in
+  let term =
+    Term.(const lint $ pkg_term $ newly_published_term $ local_opam_repo_term)
+  in
   let info =
     Cmd.info "lint" ~doc ~sdocs:"COMMON OPTIONS" ~exits:Cmd.Exit.defaults
   in
