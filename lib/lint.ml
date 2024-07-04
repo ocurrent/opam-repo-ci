@@ -568,7 +568,7 @@ module Lint = struct
                   but your opam file only requires dune >= %s. Please check which requirement is the right one, and fix the other."
           pkg ver dep
     | UnexpectedFile file ->
-        Fmt.str "Error in %s: Unexpected file in %s/files/%s" pkg (Check.path_from_pkg package) file
+        Fmt.str "Error in %s: Unexpected file in %s/%s" pkg (Check.path_from_pkg package) file
     | ForbiddenPerm file ->
         Fmt.str
           "Error in %s: Forbidden permission for file %s/%s. All files should have permissions 644."
