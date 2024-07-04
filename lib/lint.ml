@@ -91,32 +91,18 @@ module Check = struct
   let scan_dir ~cwd errors pkg =
     let dir = Fpath.to_string cwd // path_from_pkg pkg in
     get_files dir >>= fun files ->
-    let rec aux errors extra_files = function
-      | [] -> Lwt.return (errors, extra_files)
+    let rec aux errors  = function
+      | [] -> Lwt.return errors
       | "opam"::files ->
           is_perm_correct (dir // "opam") >|= begin function
           | true -> errors
           | false -> ((pkg, ForbiddenPerm (dir // "opam")) :: errors)
           end >>= fun errors ->
-          aux errors extra_files files
-      | "files"::files ->
-          get_files (dir // "files") >>= fun extra_files ->
-          Lwt_list.fold_left_s (fun errors file ->
-            is_perm_correct (dir // "files" // file) >|= function
-            | true -> errors
-            | false -> ((pkg, ForbiddenPerm ("files" // file)) :: errors)
-          ) errors extra_files >>= fun errors ->
-          let check_hash file hash = try OpamHash.check_file file hash with _ -> false in
-          let extra_files =
-            List.map (fun file ->
-              (OpamFilename.Base.of_string file, check_hash (dir // "files" // file))
-            ) extra_files
-          in
-          aux errors extra_files files
+          aux errors files
       | file::files ->
-          aux ((pkg, UnexpectedFile file) :: errors) extra_files files
+          aux ((pkg, UnexpectedFile file) :: errors) files
     in
-    aux errors [] files
+    aux errors files
 
   let get_dune_project_version ~pkg url =
     Lwt_io.with_temp_dir @@ fun dir ->
@@ -453,8 +439,8 @@ module Check = struct
       check_conflict_class_without_prefix ~errors ~pkg name conflict_classes
   end
 
-  let opam_lint ~check_extra_files ~errors ~pkg opam =
-    OpamFileTools.lint ~check_extra_files ~check_upstream:true opam |>
+  let opam_lint ~errors ~pkg opam =
+    OpamFileTools.lint ~check_upstream:true opam |>
     List.fold_left (fun errors x -> (pkg, OpamLint x) :: errors) errors
 
   let of_dir ~host_os ~master ~job ~packages cwd =
@@ -476,8 +462,8 @@ module Check = struct
           let errors = Prefix.check_prefix_conflict_class_mismatch ~errors ~pkg opam in
           check_dune_constraints ~host_os ~errors ~pkg opam >>= fun errors ->
           (* Check directory structure correctness *)
-          scan_dir ~cwd errors pkg >>= fun (errors, check_extra_files) ->
-          let errors = opam_lint ~check_extra_files ~errors ~pkg opam in
+          scan_dir ~cwd errors pkg >>= fun errors ->
+          let errors = opam_lint ~errors ~pkg opam in
           is_newly_published_package ~cwd ~job pkg master >|=
           function
           | false -> errors
