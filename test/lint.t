@@ -59,7 +59,7 @@ Delete OCurrent cache
   $ rm -rf var/
 
 Tests the package name collisions detection by adding initial
-packages [field] and [fieldfind] to master, and new packages
+packages [field], [field1] and [fieldfind] to master, and new packages
 [fielf], [fielffind], and [fielffinder] to the new branch to
 test various positive and negative cases
 
@@ -76,7 +76,8 @@ test various positive and negative cases
   * levenshtein-1 (master)
   * a-1
   $ opam-repo-ci-local --repo="." --branch=new-branch-2 --lint-only --no-web-server
-  Error "3 errors:
+  Error "4 errors:
   Warning in fieffind.0.0.1: Possible name collision with package 'fieffinder'
   Warning in fieffind.0.0.1: Possible name collision with package 'fieldfind'
-  Warning in fieffinder.0.0.1: Possible name collision with package 'fieffind'"
+  Warning in fieffinder.0.0.1: Possible name collision with package 'fieffind'
+  Warning in fielf.0.0.1: Possible name collision with package 'field1'"
