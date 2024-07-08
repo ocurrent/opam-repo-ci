@@ -17,12 +17,12 @@ type opam_build = {
   revdep : package option;
   with_tests : bool;
   lower_bounds : bool;
-  opam_version : [ `Dev | `V2_0 | `V2_1 ];
+  opam_version : [ `Dev | `V2_0 | `V2_1 | `V2_2 ];
 }
 
 (** Configuration for a [list_revdeps] job *)
 type list_revdeps = {
-  opam_version : [ `Dev | `V2_0 | `V2_1 ];
+  opam_version : [ `Dev | `V2_0 | `V2_1 | `V2_2 ];
 }
 
 (** Configuration for any job along with the package to build *)
@@ -37,7 +37,7 @@ val opam :
   ?revdep:package ->
   variant:Variant.t ->
   lower_bounds:bool ->
-  with_tests:bool -> opam_version:[ `Dev | `V2_0 | `V2_1 ] -> package -> t
+  with_tests:bool -> opam_version:[ `Dev | `V2_0 | `V2_1 | `V2_2 ] -> package -> t
 
 val pp_ty :
   Format.formatter ->

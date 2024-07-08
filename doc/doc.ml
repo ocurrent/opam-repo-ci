@@ -4,13 +4,14 @@ module Git = Current_git
 
 type platform = {
   variant : Variant.t;
-  opam_version : [ `Dev | `V2_0 | `V2_1];
+  opam_version : [ `Dev | `V2_0 | `V2_1 | `V2_2];
   lower_bounds : bool;
   revdeps : bool;
 }
 
 let opam_version_to_string = function
   | `Dev -> "dev"
+  | `V2_2 -> "2.2"
   | `V2_1 -> "2.1"
   | `V2_0 -> "2.0"
 

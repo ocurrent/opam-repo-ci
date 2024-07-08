@@ -38,6 +38,7 @@ let header title variant ?(lower_bounds=false) ?(with_tests=false) opam_version 
   let opam_version =
     match opam_version with
     | `Dev -> "opam-dev"
+    | `V2_2 -> "opam-2.2"
     | `V2_1 -> "opam-2.1"
     | `V2_0 -> "opam-2.0"
   in

@@ -155,6 +155,7 @@ let extras ~build =
     in
     build ~opam_version:`V2_0 ~arch:`X86_64 ~distro:master_distro ~compiler:(comp, None) "opam-2.0" ::
     build ~opam_version:`V2_1 ~arch:`X86_64 ~distro:master_distro ~compiler:(comp, None) "opam-2.1" ::
+    build ~opam_version:`V2_2 ~arch:`X86_64 ~distro:master_distro ~compiler:(comp, None) "opam-2.2" ::
     switches @ arches @ acc
   ) [] default_compilers_full
 

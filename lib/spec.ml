@@ -17,11 +17,11 @@ type opam_build = {
   revdep : package option;
   with_tests : bool;
   lower_bounds : bool;
-  opam_version : [`V2_0 | `V2_1 | `Dev];
+  opam_version : [`V2_0 | `V2_1 | `V2_2 | `Dev];
 } [@@deriving to_yojson]
 
 type list_revdeps = {
-  opam_version : [`V2_0 | `V2_1 | `Dev];
+  opam_version : [`V2_0 | `V2_1 | `V2_2 | `Dev];
 } [@@deriving to_yojson]
 
 type ty = [
@@ -45,6 +45,7 @@ let pp_pkg ?revdep f pkg =
 let opam_version_to_string = function
   | `V2_0 -> "2.0"
   | `V2_1 -> "2.1"
+  | `V2_2 -> "2.2"
   | `Dev -> "dev"
 
 let pp_ty f = function

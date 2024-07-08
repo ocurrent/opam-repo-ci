@@ -44,7 +44,7 @@ val freebsd :
 
 val extras :
   build:
-    (opam_version:[> `Dev | `V2_0 | `V2_1 ] ->
+    (opam_version:[> `Dev | `V2_0 | `V2_1 | `V2_2 ] ->
     lower_bounds:bool ->
     revdeps:bool ->
     string ->
