@@ -135,6 +135,38 @@ module Analysis = struct
     | e -> Lwt.fail e
     end
 
+  let parse_opam_file_content ~path content =
+    let filename = OpamFile.make (OpamFilename.raw path) in
+    try OpamFile.OPAM.read_from_string ~filename content with
+    | OpamPp.Bad_format (_, msg)
+    | OpamPp.Bad_version (_, msg) ->
+      Fmt.failwith "%S failed to be parsed: %s" path msg
+
+  let files_are_changed_significantly ~old_file ~new_file =
+    OpamFile.OPAM.effectively_equal old_file new_file &&
+    ci_extensions_equal old_file new_file &&
+    depexts_equal old_file new_file
+
+  let add_changed_pgk ~path ~name ~package ~old_content pkgs =
+    Lwt_preemptive.detach begin function
+      | Error () -> (* deleted package *)
+        add_pkg ~path ~name ~package Deleted pkgs
+      | Ok new_content -> (* modified package *)
+        let new_file = parse_opam_file_content ~path new_content in
+        let old_file =
+          try parse_opam_file_content ~path old_content
+          (* We don't want a CI failure due to errors in the previous package *)
+          with Failure _ -> OpamFile.OPAM.empty
+        in
+        if not (check_opam new_file) then
+          (* NOTE: We skip hard tests on unavailable packages (must pass linter but skip building them) *)
+          add_pkg ~path ~name ~package Unavailable pkgs
+        else if files_are_changed_significantly ~old_file ~new_file then
+          add_pkg ~path ~name ~package InsignificantlyChanged pkgs
+        else
+          add_pkg ~path ~name ~package SignificantlyChanged pkgs
+    end
+
   let find_changed_packages ~job ~master dir =
     let cmd = "", [| "git"; "diff"; "--name-only"; master |] in
     Current.Process.check_output ~cwd:dir ~cancellable:true ~job cmd >>!= fun output ->
@@ -150,38 +182,11 @@ module Analysis = struct
         | ["packages"; name; package; "opam"] ->
             let cmd = "", [| "git"; "show"; master^":"^path |] in
             Current.Process.check_output ~cwd:dir ~cancellable:true ~job cmd >>= begin function
-            | Error _ -> (* new release *)
+              | Error _ -> (* new release *)
                 Lwt.return (add_pkg ~path ~name ~package New pkgs)
-            | Ok old_content ->
+              | Ok old_content ->
                 (* NOTE: Lwt_preemptive is initialized in lint.ml to only 1 thread *)
-                get_opam ~cwd:dir path >>= Lwt_preemptive.detach begin function
-                | Error () -> (* deleted package *)
-                    add_pkg ~path ~name ~package Deleted pkgs
-                | Ok new_content -> (* modified package *)
-                    let filename = OpamFile.make (OpamFilename.raw path) in
-                    let old_file =
-                      try OpamFile.OPAM.read_from_string ~filename old_content
-                      with OpamPp.Bad_format _ | OpamPp.Bad_version _ -> OpamFile.OPAM.empty
-                    in
-                    let new_file =
-                      try OpamFile.OPAM.read_from_string ~filename new_content
-                      with
-                      | OpamPp.Bad_format (_, msg)
-                      | OpamPp.Bad_version (_, msg) ->
-                          Fmt.failwith "%S failed to be parsed: %s" path msg
-                    in
-                    if not (check_opam new_file) then
-                      (* NOTE: We skip hard tests on unavailable packages (must pass linter but skip building them) *)
-                      add_pkg ~path ~name ~package Unavailable pkgs
-                    else if OpamFile.OPAM.effectively_equal old_file new_file &&
-                            ci_extensions_equal old_file new_file &&
-                            depexts_equal old_file new_file
-                    then
-                      (* the changes are not significant so we ignore this package *)
-                      add_pkg ~path ~name ~package InsignificantlyChanged pkgs
-                    else
-                      add_pkg ~path ~name ~package SignificantlyChanged pkgs
-                end
+                get_opam ~cwd:dir path >>= add_changed_pgk ~path ~name ~package ~old_content pkgs
             end
         | _ ->
           Fmt.failwith "Unexpected path %S in output (expecting 'packages/name/pkg/...')" path
