@@ -229,10 +229,9 @@ module Analysis = struct
     get_opam ~cwd:dir path >|= function
     | Error () -> assert false
     | Ok content ->
-        let filename = OpamFile.make (OpamFilename.raw path) in
-        let content = OpamFile.OPAM.read_from_string ~filename content in
-        let has_tests = has_tests content in
-        (pkg, {kind; has_tests})
+      let content = parse_opam_file_content ~path content in
+      let has_tests = has_tests content in
+      (pkg, {kind; has_tests})
 
   let of_dir ~job ~master dir =
     let master = Current_git.Commit.hash master in
