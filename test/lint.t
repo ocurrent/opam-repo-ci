@@ -7,7 +7,7 @@ Tests linting of correctly formatted opam packages
   $ git commit -qm b-correct
   $ git log --graph --pretty=format:'%s%d'
   * b-correct (HEAD -> new-branch-1)
-  * a-1 (master)
+  * a-1 (tag: initial-state, master)
   $ opam-repo-ci-local --repo="." --branch=new-branch-1 --lint-only --no-web-server
   Ok ()
 
@@ -27,7 +27,7 @@ Tests the following:
   $ git commit -qm b-incorrect-opam
   $ git log --graph --pretty=format:'%s%d'
   * b-incorrect-opam (HEAD -> new-branch-1)
-  * a-1 (master)
+  * a-1 (tag: initial-state, master)
   $ opam-repo-ci-local --repo="." --branch=new-branch-1 --lint-only --no-web-server
   Error "6 errors:
   Error in b.0.0.1:            warning 25: Missing field 'authors'
@@ -50,7 +50,7 @@ of a package [a_1] that conflicts with the existing [a-1] package
   $ git commit -qm a_1-name-collision
   $ git log --graph --pretty=format:'%s%d'
   * a_1-name-collision (HEAD -> new-branch-1)
-  * a-1 (master)
+  * a-1 (tag: initial-state, master)
   $ opam-repo-ci-local --repo="." --branch=new-branch-1 --lint-only --no-web-server
   Error "Warning in a_1.0.0.1: Possible name collision with package 'a-1'"
 
@@ -74,7 +74,7 @@ test various positive and negative cases
   $ git log --graph --pretty=format:'%s%d'
   * levenshtein-2 (HEAD -> new-branch-2)
   * levenshtein-1 (master)
-  * a-1
+  * a-1 (tag: initial-state)
   $ opam-repo-ci-local --repo="." --branch=new-branch-2 --lint-only --no-web-server
   Error "4 errors:
   Warning in fieffind.0.0.1: Possible name collision with package 'fieffinder'
