@@ -176,18 +176,21 @@ module Analysis = struct
         match path with "" -> Lwt.return pkgs | path ->
         match String.split_on_char '/' path with
         | [_] | ".github"::_ ->
-            Lwt.return pkgs
+          Lwt.return pkgs
         | "packages" :: name :: package :: "files" :: _ ->
-            Lwt.return (add_pkg ~path ~name ~package SignificantlyChanged pkgs)
+          Lwt.return (add_pkg ~path ~name ~package SignificantlyChanged pkgs)
         | ["packages"; name; package; "opam"] ->
-            let cmd = "", [| "git"; "show"; master^":"^path |] in
-            Current.Process.check_output ~cwd:dir ~cancellable:true ~job cmd >>= begin function
-              | Error _ -> (* new release *)
-                Lwt.return (add_pkg ~path ~name ~package New pkgs)
-              | Ok old_content ->
-                (* NOTE: Lwt_preemptive is initialized in lint.ml to only 1 thread *)
-                get_opam ~cwd:dir path >>= add_changed_pgk ~path ~name ~package ~old_content pkgs
-            end
+          let open Lwt.Syntax in
+          let cmd = "", [| "git"; "show"; master^":"^path |] in
+          Current.Process.check_output ~cwd:dir ~cancellable:true ~job cmd >>= begin function
+            | Error _ ->
+              (* new release *)
+              Lwt.return (add_pkg ~path ~name ~package New pkgs)
+            | Ok old_content ->
+              (* NOTE: Lwt_preemptive is initialized in lint.ml to only 1 thread *)
+              get_opam ~cwd:dir path
+              >>= add_changed_pgk ~path ~name ~package ~old_content pkgs
+          end
         | _ ->
           Fmt.failwith "Unexpected path %S in output (expecting 'packages/name/pkg/...')" path
       ) OpamPackage.Map.empty
