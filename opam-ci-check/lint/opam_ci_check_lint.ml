@@ -164,7 +164,9 @@ module Checks = struct
       (pkg, WeakChecksum err)
     in
     let check_one_url ~ctx url =
-      let filename = OpamUrl.to_string (OpamFile.URL.url url) in
+      let filename =
+        Filename.basename @@ OpamUrl.to_string (OpamFile.URL.url url)
+      in
       let checksums = OpamFile.URL.checksum url in
       match checksums with
       | [] -> [ err ~ctx ~filename "no checksum" ]
@@ -487,7 +489,7 @@ let msg_of_error (package, (err : Checks.error)) =
          have permissions 644."
         pkg
         (path_from_pkg ~repo_dir:"" package)
-        file
+        (Filename.basename file)
   | OpamLint warn ->
       let warn = OpamFileTools.warns_to_string [ warn ] in
       Printf.sprintf "Error in %s: %s" pkg warn
