@@ -90,3 +90,25 @@ Test adding new packages
   {
     "packages": [ [ "a_1.0.0.1", { "kind": [ "New" ], "has_tests": false } ] ]
   }
+
+Clean up the build cache
+
+  $ rm -rf ./var
+
+Syntactically invalid opam files are handled correctly.
+See https://github.com/ocurrent/opam-repo-ci/issues/291
+
+  $ git checkout -q -b analyze-invalid-opam-file initial-state
+  $ sed 's/depends: \[\]/depends:\[ ocaml {>= 4.15} \]/' packages/a-1/a-1.0.0.1/opam > opam.new
+  $ mv opam.new packages/a-1/a-1.0.0.1/opam
+  $ git commit -q -m "Add invalid syntax in version constraint" packages/a-1/a-1.0.0.1/opam
+  $ git diff initial-state | tail -n 3
+   build: []
+  -depends: []
+  +depends:[ ocaml {>= 4.15} ]
+  $ opam-repo-ci-local --repo="." --branch=analyze-invalid-opam-file --analyse-only --no-web-server
+  Error ""packages/a-1/a-1.0.0.1/opam" failed to be parsed: '.' is not a valid token"
+
+Clean up the build cache
+
+  $ rm -rf ./var
