@@ -1,18 +1,29 @@
 # opam-repo-ci
 
-Status: **experimental**
-
 This is an [OCurrent][] pipeline that tests submissions to [opam-repository][].
 
-To test locally you will need a local copy of the [opam-repository][] Git repo. Run the `opam-repo-ci-local` command (you might need to increase the limit on the number of open files):
+To get set up running the service locally for the first time:
+
+- Obtain a local copy of the [opam-repository][] Git repo.
+- Create the directory `capnp-secrets` in the root of this project (or wherever
+  you intend to run the service from).
+- (Possibly) increase the limit on the number of open files, by setting
+  `ulimit`.
+
+``` sh
+mkdir capnp-secrets
+ulimit -n 102400
+```
+
+Then you can run the `opam-repo-ci-local` command via dune:
 
 ```
-ulimit -n 102400
 dune exec -- opam-repo-ci-local \
   --confirm harmless \
   --repo REPO-PATH \
   --branch BRANCH-NAME \
-  --capnp-address tcp:127.0.0.1:5001
+  --capnp-address tcp:127.0.0.1:5001 \
+  --verbosity info
 ```
 
 If you would just like to lint your submission locally, you can add the `--lint-only` flag to the command above.
