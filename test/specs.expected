@@ -7,7 +7,7 @@ build: debian-12-ocaml-4.02/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -41,7 +41,7 @@ build: debian-12-ocaml-4.02/amd64 opam-dev lower-bounds
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -94,7 +94,7 @@ build: debian-12-ocaml-4.03/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -128,7 +128,7 @@ build: debian-12-ocaml-4.03/amd64 opam-dev lower-bounds
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -181,7 +181,7 @@ build: debian-12-ocaml-4.04/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -215,7 +215,7 @@ build: debian-12-ocaml-4.04/amd64 opam-dev lower-bounds
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -268,7 +268,7 @@ build: debian-12-ocaml-4.05/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -302,7 +302,7 @@ build: debian-12-ocaml-4.05/amd64 opam-dev lower-bounds
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -355,7 +355,7 @@ build: debian-12-ocaml-4.06/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -389,7 +389,7 @@ build: debian-12-ocaml-4.06/amd64 opam-dev lower-bounds
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -442,7 +442,7 @@ build: debian-12-ocaml-4.07/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -476,7 +476,7 @@ build: debian-12-ocaml-4.07/amd64 opam-dev lower-bounds
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -529,7 +529,7 @@ build: debian-12-ocaml-4.08/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -563,7 +563,7 @@ build: debian-12-ocaml-4.08/amd64 opam-dev lower-bounds
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -616,7 +616,7 @@ build: debian-12-ocaml-4.09/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -650,7 +650,7 @@ build: debian-12-ocaml-4.09/amd64 opam-dev lower-bounds
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -703,7 +703,7 @@ build: debian-12-ocaml-4.10/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -737,7 +737,7 @@ build: debian-12-ocaml-4.10/amd64 opam-dev lower-bounds
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -790,7 +790,7 @@ build: debian-12-ocaml-4.11/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -824,7 +824,7 @@ build: debian-12-ocaml-4.11/amd64 opam-dev lower-bounds
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -877,7 +877,7 @@ build: debian-12-ocaml-4.12/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -911,7 +911,7 @@ build: debian-12-ocaml-4.12/amd64 opam-dev lower-bounds
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -964,7 +964,7 @@ build: debian-12-ocaml-4.13/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -998,7 +998,7 @@ build: debian-12-ocaml-4.13/amd64 opam-dev lower-bounds
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1051,7 +1051,7 @@ build: debian-12-ocaml-4.14/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1085,7 +1085,7 @@ build: debian-12-ocaml-4.14/amd64 opam-dev lower-bounds
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1138,7 +1138,7 @@ list-revdeps: debian-12-ocaml-4.14/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1157,7 +1157,7 @@ build: debian-12-ocaml-4.14/amd64 opam-dev with-tests
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1207,7 +1207,7 @@ build: debian-12-ocaml-5.0/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1241,7 +1241,7 @@ build: debian-12-ocaml-5.0/amd64 opam-dev lower-bounds
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1294,7 +1294,7 @@ build: debian-12-ocaml-5.1/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1328,7 +1328,7 @@ build: debian-12-ocaml-5.1/amd64 opam-dev lower-bounds
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1381,7 +1381,7 @@ build: debian-12-ocaml-5.2/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1415,7 +1415,7 @@ build: debian-12-ocaml-5.2/amd64 opam-dev lower-bounds
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1468,7 +1468,7 @@ list-revdeps: debian-12-ocaml-5.2/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1487,7 +1487,7 @@ build: debian-12-ocaml-5.2/amd64 opam-dev with-tests
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1537,7 +1537,7 @@ build: ubuntu-24.04-ocaml-5.2/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1571,7 +1571,7 @@ build: ubuntu-22.04-ocaml-5.2/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1605,7 +1605,7 @@ build: ubuntu-20.04-ocaml-5.2/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1639,7 +1639,7 @@ build: opensuse-tumbleweed-ocaml-5.2/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1673,7 +1673,7 @@ build: opensuse-15.6-ocaml-5.2/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1707,7 +1707,7 @@ build: fedora-40-ocaml-5.2/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1741,7 +1741,7 @@ build: fedora-39-ocaml-5.2/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1775,7 +1775,7 @@ build: debian-unstable-ocaml-5.2/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1809,7 +1809,7 @@ build: debian-testing-ocaml-5.2/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1843,7 +1843,7 @@ build: debian-11-ocaml-5.2/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1877,7 +1877,7 @@ build: archlinux-ocaml-5.2/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1911,7 +1911,7 @@ build: alpine-3.20-ocaml-5.2/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1945,7 +1945,7 @@ build: ubuntu-24.04-ocaml-4.14/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1979,7 +1979,7 @@ build: ubuntu-22.04-ocaml-4.14/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2013,7 +2013,7 @@ build: ubuntu-20.04-ocaml-4.14/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2047,7 +2047,7 @@ build: opensuse-tumbleweed-ocaml-4.14/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2081,7 +2081,7 @@ build: opensuse-15.6-ocaml-4.14/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2115,7 +2115,7 @@ build: fedora-40-ocaml-4.14/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2149,7 +2149,7 @@ build: fedora-39-ocaml-4.14/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2183,7 +2183,7 @@ build: debian-unstable-ocaml-4.14/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2217,7 +2217,7 @@ build: debian-testing-ocaml-4.14/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2251,7 +2251,7 @@ build: debian-11-ocaml-4.14/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2285,7 +2285,7 @@ build: archlinux-ocaml-4.14/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2319,7 +2319,7 @@ build: alpine-3.20-ocaml-4.14/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2352,7 +2352,7 @@ build: macos-homebrew-ocaml-5.2/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2385,7 +2385,7 @@ build: macos-homebrew-ocaml-5.2/arm64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2418,7 +2418,7 @@ build: macos-homebrew-ocaml-4.14/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2451,7 +2451,7 @@ build: macos-homebrew-ocaml-4.14/arm64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2485,7 +2485,7 @@ build: freebsd-ocaml-5.2/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2519,7 +2519,7 @@ build: freebsd-ocaml-4.14/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2553,7 +2553,7 @@ build: debian-12-ocaml-5.2/amd64 opam-2.0
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2587,7 +2587,7 @@ build: debian-12-ocaml-5.2/amd64 opam-2.1
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2621,7 +2621,7 @@ build: debian-12-ocaml-5.2-afl/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2655,7 +2655,7 @@ build: debian-12-ocaml-5.2-flambda/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2689,7 +2689,7 @@ build: debian-12-ocaml-5.2-no-flat-float-array/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2724,7 +2724,7 @@ build: debian-12-ocaml-5.2/i386 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2758,7 +2758,7 @@ build: debian-12-ocaml-5.2/arm64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2792,7 +2792,7 @@ build: debian-12-ocaml-5.2/ppc64le opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2827,7 +2827,7 @@ build: debian-12-ocaml-5.2/arm32v7 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2861,7 +2861,7 @@ build: debian-12-ocaml-5.2/s390x opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2895,7 +2895,7 @@ build: ubuntu-24.04-ocaml-5.2/riscv64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2929,7 +2929,7 @@ build: debian-12-ocaml-4.14/amd64 opam-2.0
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2963,7 +2963,7 @@ build: debian-12-ocaml-4.14/amd64 opam-2.1
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2997,7 +2997,7 @@ build: debian-12-ocaml-4.14-afl/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -3031,7 +3031,7 @@ build: debian-12-ocaml-4.14-flambda/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -3065,7 +3065,7 @@ build: debian-12-ocaml-4.14-fp/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -3099,7 +3099,7 @@ build: debian-12-ocaml-4.14-flambda-fp/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -3133,7 +3133,7 @@ build: debian-12-ocaml-4.14-no-flat-float-array/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -3167,7 +3167,7 @@ build: debian-12-ocaml-4.14-nnp/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -3201,7 +3201,7 @@ build: debian-12-ocaml-4.14-nnpchecker/amd64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -3236,7 +3236,7 @@ build: debian-12-ocaml-4.14/i386 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -3270,7 +3270,7 @@ build: debian-12-ocaml-4.14/arm64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -3304,7 +3304,7 @@ build: debian-12-ocaml-4.14/ppc64le opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -3339,7 +3339,7 @@ build: debian-12-ocaml-4.14/arm32v7 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -3373,7 +3373,7 @@ build: debian-12-ocaml-4.14/s390x opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -3407,7 +3407,7 @@ build: ubuntu-24.04-ocaml-4.14/riscv64 opam-dev
     RUN uname -rs && opam exec -- ocaml -version && opam --version
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMSOLVERTIMEOUT="1000"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
