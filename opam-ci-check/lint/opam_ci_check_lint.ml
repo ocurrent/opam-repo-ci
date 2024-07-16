@@ -38,6 +38,7 @@ module Checks = struct
     | ExtraFiles
     | RestrictedPrefix of string
     | PrefixConflictClassMismatch of prefix_conflict_class_mismatch
+    | ParseError
 
   module Prefix = struct
     (* For context, see https://github.com/ocurrent/opam-repo-ci/pull/316#issuecomment-2160069803 *)
@@ -395,6 +396,8 @@ module Checks = struct
     checks ~newly_published packages ~repo_dir
     |> List.map (fun f -> f ~pkg opam)
     |> List.concat
+
+  let parse_error pkg = (pkg, ParseError)
 end
 
 let msg_of_error (package, (err : Checks.error)) =
@@ -488,6 +491,8 @@ let msg_of_error (package, (err : Checks.error)) =
   | OpamLint warn ->
       let warn = OpamFileTools.warns_to_string [ warn ] in
       Printf.sprintf "Error in %s: %s" pkg warn
+  | ParseError ->
+      Printf.sprintf "Error in %s: Failed to parse the opam file" pkg
 
 let get_packages repo_dir = get_files (repo_dir // "packages")
 
@@ -497,10 +502,16 @@ let run_lint pkg newly_published repo_dir =
   (* NOTE: We use OpamFile.OPAM.read_from_channel instead of OpamFile.OPAM.file
      to prevent the name and version fields being automatically added *)
   In_channel.with_open_text opam_path (fun ic ->
-      let opam = OpamFile.OPAM.read_from_channel ic in
-      let packages = get_packages repo_dir in
+      let opam =
+        try Ok (OpamFile.OPAM.read_from_channel ic)
+        with OpamPp.Bad_format e | OpamPp.Bad_version e -> Error e
+      in
       let errors =
-        Checks.run_checks ~repo_dir ~pkg ~packages ~newly_published opam
+        match opam with
+        | Ok opam ->
+            let packages = get_packages repo_dir in
+            Checks.run_checks ~repo_dir ~pkg ~packages ~newly_published opam
+        | Error _ -> [ Checks.parse_error pkg ]
       in
       match errors with
       | [] -> print_endline "No errors"
