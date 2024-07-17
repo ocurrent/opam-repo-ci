@@ -148,7 +148,7 @@ module Analysis = struct
     ci_extensions_equal old_file new_file &&
     depexts_equal old_file new_file
 
-  let add_changed_pgk ~path ~name ~package ~old_content pkgs =
+  let add_changed_pkg ~path ~name ~package ~old_content pkgs =
     Lwt_preemptive.detach begin function
       | Error () ->
         (* deleted package *)
@@ -195,7 +195,7 @@ module Analysis = struct
               | Ok old_content ->
                 (* NOTE: Lwt_preemptive is initialized in lint.ml to only 1 thread *)
                 get_opam ~cwd:dir path
-                >>= add_changed_pgk ~path ~name ~package ~old_content pkgs
+                >>= add_changed_pkg ~path ~name ~package ~old_content pkgs
             end
           | _ ->
             Fmt.failwith "Unexpected path %S in output (expecting 'packages/name/pkg/...')" path
@@ -250,8 +250,8 @@ module Analysis = struct
     | Ok () ->
       let open Lwt_result.Syntax in
       let* changed_pkgs = find_changed_packages ~job ~master dir in
-      let pgk_bindings = OpamPackage.Map.bindings changed_pkgs in
-      let+ packages = Lwt_list.fold_right_s (add_package_data ~dir) pgk_bindings (Ok []) in
+      let pkg_bindings = OpamPackage.Map.bindings changed_pkgs in
+      let+ packages = Lwt_list.fold_right_s (add_package_data ~dir) pkg_bindings (Ok []) in
       let r = { packages } in
       Current.Job.log job "@[<v2>Results:@,%a@]" Yojson.Safe.(pretty_print ~std:true) (to_yojson r);
       r
