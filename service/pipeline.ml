@@ -115,7 +115,7 @@ let test_pr ~ocluster ~master head =
   let analysis = latest_analysis |> latch ~label:"analysis" (* ignore errors from a rerun *) in
   let lint =
     let packages = Current.map Analyse.Analysis.packages analysis in
-    Lint.check ~host_os:Conf.host_os ~master ~packages src
+    Lint.check ~master ~packages src
   in
   let builds =
     Node.root
@@ -168,7 +168,7 @@ let local_test_pr ?test_config repo pr_branch () =
   let analysis = analyse ?test_config ~master pr_branch in
   let lint =
     let packages = Current.map Analyse.Analysis.packages analysis in
-    Lint.check ?test_config ~host_os:Conf.host_os ~master ~packages pr_branch
+    Lint.check ?test_config ~master ~packages pr_branch
   in
   let builds =
     Node.root
