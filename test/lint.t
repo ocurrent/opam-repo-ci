@@ -29,13 +29,8 @@ Tests the following:
   * b-incorrect-opam (HEAD -> new-branch-1)
   * a-1 (tag: initial-state, master)
   $ opam-repo-ci-local --repo="." --branch=new-branch-1 --lint-only --no-web-server
-  Error "6 errors:
-  Error in b.0.0.1:            warning 25: Missing field 'authors'
-  Error in b.0.0.2:              error  3: File format error in 'unknown-field' at line 11, column 0: Invalid field unknown-field
-  Error in b.0.0.3: package with conflict class 'ocaml-host-arch' requires name prefix 'host-arch-'
-  Error in b.0.0.3: pin-depends present. This is not allowed in the opam-repository.
-  Error in system-b.0.0.1: package with prefix 'system-' requires conflict class 'ocaml-system'
-  Warning in system-b.0.0.1: package name has restricted prefix 'system-'"
+  Error "Command "opam-ci-check" "lint" "--opam-repository" "." "--newly-published" 
+  "b.0.0.1,b.0.0.2,b.0.0.3,system-b.0.0.1" exited with status 1"
 
 Reset commit and clear build cache
 
@@ -52,7 +47,8 @@ of a package [a_1] that conflicts with the existing [a-1] package
   * a_1-name-collision (HEAD -> new-branch-1)
   * a-1 (tag: initial-state, master)
   $ opam-repo-ci-local --repo="." --branch=new-branch-1 --lint-only --no-web-server
-  Error "Warning in a_1.0.0.1: Possible name collision with package 'a-1'"
+  Error "Command "opam-ci-check" "lint" "--opam-repository" "." "--newly-published" 
+  "a_1.0.0.1" exited with status 1"
 
 Delete OCurrent cache
 
@@ -76,8 +72,5 @@ test various positive and negative cases
   * levenshtein-1 (master)
   * a-1 (tag: initial-state)
   $ opam-repo-ci-local --repo="." --branch=new-branch-2 --lint-only --no-web-server
-  Error "4 errors:
-  Warning in fieffind.0.0.1: Possible name collision with package 'fieffinder'
-  Warning in fieffind.0.0.1: Possible name collision with package 'fieldfind'
-  Warning in fieffinder.0.0.1: Possible name collision with package 'fieffind'
-  Warning in fielf.0.0.1: Possible name collision with package 'field1'"
+  Error "Command "opam-ci-check" "lint" "--opam-repository" "." "--changed-packages" 
+  "field1.0.0.2" "--newly-published" "fieffind.0.0.1,fieffinder.0.0.1,fielf.0.0.1" exited with status 1"
