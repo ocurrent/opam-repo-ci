@@ -26,8 +26,9 @@ module OpamPackage = struct
 end
 
 module Analysis = struct
+  type change = Release [@@deriving eq, yojson]
   type kind =
-    | New
+    | New of change
     | Deleted
     | Unavailable
     | SignificantlyChanged
@@ -110,18 +111,18 @@ module Analysis = struct
   let add_pkg ~path ~name ~package kind pkgs =
     let update old_kind = match old_kind, kind with
       (* NOTE: Impossible combinations (opam file would have to be processed more than once) *)
-      | (New | Deleted | Unavailable), (New | Deleted | Unavailable) ->
+      | (New Release | Deleted | Unavailable), (New Release | Deleted | Unavailable) ->
           old_kind (* old_kind instead of assert false because OpamStd.Map.update works this way :( *)
       (* NOTE: stronger_kind >= weaker_kind *)
-      | New, (SignificantlyChanged | InsignificantlyChanged)
+      | New Release, (SignificantlyChanged | InsignificantlyChanged)
       | Deleted, (SignificantlyChanged | InsignificantlyChanged)
       | Unavailable, (SignificantlyChanged | InsignificantlyChanged)
       | SignificantlyChanged, (SignificantlyChanged | InsignificantlyChanged)
       | InsignificantlyChanged, InsignificantlyChanged ->
           old_kind
       (* NOTE: weaker_kind < stronger_kind *)
-      | SignificantlyChanged, (New | Deleted | Unavailable)
-      | InsignificantlyChanged, (New | Deleted | Unavailable | SignificantlyChanged) ->
+      | SignificantlyChanged, (New Release | Deleted | Unavailable)
+      | InsignificantlyChanged, (New Release | Deleted | Unavailable | SignificantlyChanged) ->
           kind
     in
     OpamPackage.Map.update (get_package_name ~path ~name ~package) update kind pkgs
@@ -191,7 +192,7 @@ module Analysis = struct
             Current.Process.check_output ~cwd:dir ~cancellable:true ~job cmd >>= begin function
               | Error _ ->
                 (* new release *)
-                Lwt_result.return (add_pkg ~path ~name ~package New pkgs)
+                Lwt_result.return (add_pkg ~path ~name ~package (New Release) pkgs)
               | Ok old_content ->
                 (* NOTE: Lwt_preemptive is initialized in lint.ml to only 1 thread *)
                 get_opam ~cwd:dir path

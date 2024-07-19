@@ -1,6 +1,7 @@
 module Analysis : sig
+  type change = Release [@@deriving yojson]
   type kind =
-    | New
+    | New of change
     | Deleted
     | Unavailable
     | SignificantlyChanged
