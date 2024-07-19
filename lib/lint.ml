@@ -261,15 +261,6 @@ module Check = struct
     in
     dash_underscore p0 p1 || levenstein_distance p0 p1
 
-  let is_newly_published_package ~cwd ~job package master =
-    let package_name = OpamPackage.Name.to_string package.OpamPackage.name in
-    (* [git cat-file -e branch:path] will exit with zero status if the object at
-       [path] exists on [branch] *)
-    exec ~cwd ~job [|"git"; "cat-file"; "-e"; master^":packages/"^package_name|]
-    >|= function
-    | Error _ -> true (* The package directory does not exist on master *)
-    | Ok _ -> false (* The package directory does exist on master *)
-
   let check_name_collisions ~errors ~pkg packages =
     let pkg_name = pkg.OpamPackage.name |> OpamPackage.Name.to_string in
     let pkg_name_lower = String.lowercase_ascii pkg_name in
@@ -451,7 +442,7 @@ module Check = struct
       match kind with
       | Analyse.Analysis.Deleted ->
           Lwt.return errors (* TODO *)
-      | Analyse.Analysis.(New Release | Unavailable | SignificantlyChanged | InsignificantlyChanged) ->
+      | Analyse.Analysis.(New _ | Unavailable | SignificantlyChanged | InsignificantlyChanged) ->
           get_opam ~cwd pkg >>= fun opam ->
           let errors = check_name_field ~errors ~pkg opam in
           let errors = check_version_field ~errors ~pkg opam in
@@ -464,12 +455,11 @@ module Check = struct
           (* Check directory structure correctness *)
           scan_dir ~cwd errors pkg >>= fun errors ->
           let errors = opam_lint ~errors ~pkg opam in
-          is_newly_published_package ~cwd ~job pkg master >|=
-          function
-          | false -> errors
-          | true ->
+          match kind with
+          | New Package ->
             let errors = check_name_collisions ~errors ~pkg existing_packages in
-            Prefix.check_name_restricted_prefix ~errors ~pkg
+            Lwt.return (Prefix.check_name_restricted_prefix ~errors ~pkg)
+          | _ -> Lwt.return errors
     ) [] packages
 end
 
