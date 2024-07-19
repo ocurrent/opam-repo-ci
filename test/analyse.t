@@ -11,9 +11,9 @@ Test adding new packages
   $ opam-repo-ci-local --repo="." --branch=new-branch-1 --analyse-only --no-web-server
   {
     "packages": [
-      [ "b.0.0.1", { "kind": [ "New" ], "has_tests": false } ],
-      [ "b.0.0.2", { "kind": [ "New" ], "has_tests": false } ],
-      [ "b.0.0.3", { "kind": [ "New" ], "has_tests": false } ]
+      [ "b.0.0.1", { "kind": [ "New", [ "Release" ] ], "has_tests": false } ],
+      [ "b.0.0.2", { "kind": [ "New", [ "Release" ] ], "has_tests": false } ],
+      [ "b.0.0.3", { "kind": [ "New", [ "Release" ] ], "has_tests": false } ]
     ]
   }
 
@@ -88,7 +88,9 @@ Test adding new packages
   * a-1 (tag: initial-state, new-branch-1, master)
   $ opam-repo-ci-local --repo="." --branch=new-branch-2 --analyse-only --no-web-server
   {
-    "packages": [ [ "a_1.0.0.1", { "kind": [ "New" ], "has_tests": false } ] ]
+    "packages": [
+      [ "a_1.0.0.1", { "kind": [ "New", [ "Release" ] ], "has_tests": false } ]
+    ]
   }
 
 Clean up the build cache
