@@ -11,9 +11,9 @@ Test adding new packages
   $ opam-repo-ci-local --repo="." --branch=new-branch-1 --analyse-only --no-web-server
   {
     "packages": [
-      [ "b.0.0.1", { "kind": [ "New", [ "Release" ] ], "has_tests": false } ],
-      [ "b.0.0.2", { "kind": [ "New", [ "Release" ] ], "has_tests": false } ],
-      [ "b.0.0.3", { "kind": [ "New", [ "Release" ] ], "has_tests": false } ]
+      [ "b.0.0.1", { "kind": [ "New", [ "Package" ] ], "has_tests": false } ],
+      [ "b.0.0.2", { "kind": [ "New", [ "Package" ] ], "has_tests": false } ],
+      [ "b.0.0.3", { "kind": [ "New", [ "Package" ] ], "has_tests": false } ]
     ]
   }
 
@@ -89,7 +89,7 @@ Test adding new packages
   $ opam-repo-ci-local --repo="." --branch=new-branch-2 --analyse-only --no-web-server
   {
     "packages": [
-      [ "a_1.0.0.1", { "kind": [ "New", [ "Release" ] ], "has_tests": false } ]
+      [ "a_1.0.0.1", { "kind": [ "New", [ "Package" ] ], "has_tests": false } ]
     ]
   }
 

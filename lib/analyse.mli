@@ -1,5 +1,5 @@
 module Analysis : sig
-  type change = Release [@@deriving yojson]
+  type change = | Package | Release [@@deriving yojson]
   type kind =
     | New of change
     | Deleted

@@ -37,7 +37,7 @@ let revdep_spec ~variant ~opam_version ~revdep pkg =
   Spec.opam ~variant ~lower_bounds:false ~with_tests:true ~revdep ~opam_version pkg
 
 let get_significant_available_pkg = function
-  | pkg, {Analyse.Analysis.kind = New Release; has_tests} ->
+  | pkg, {Analyse.Analysis.kind = New _; has_tests} ->
       Some {Package_opt.pkg; urgent = None; has_tests}
   | pkg, {Analyse.Analysis.kind = SignificantlyChanged; has_tests} ->
       Some {Package_opt.pkg; urgent = Some (fun (`High | `Low) -> false); has_tests}

@@ -26,7 +26,7 @@ module OpamPackage = struct
 end
 
 module Analysis = struct
-  type change = Release [@@deriving eq, yojson]
+  type change = | Package | Release [@@deriving eq, yojson]
   type kind =
     | New of change
     | Deleted
@@ -111,18 +111,21 @@ module Analysis = struct
   let add_pkg ~path ~name ~package kind pkgs =
     let update old_kind = match old_kind, kind with
       (* NOTE: Impossible combinations (opam file would have to be processed more than once) *)
-      | (New Release | Deleted | Unavailable), (New Release | Deleted | Unavailable) ->
+      | (New _), (Deleted | Unavailable)
+      | (Deleted | Unavailable), (New _ | Deleted | Unavailable) ->
           old_kind (* old_kind instead of assert false because OpamStd.Map.update works this way :( *)
       (* NOTE: stronger_kind >= weaker_kind *)
-      | New Release, (SignificantlyChanged | InsignificantlyChanged)
+      | New Release, (New Release | SignificantlyChanged | InsignificantlyChanged)
+      | New Package, (New _ | SignificantlyChanged | InsignificantlyChanged)
       | Deleted, (SignificantlyChanged | InsignificantlyChanged)
       | Unavailable, (SignificantlyChanged | InsignificantlyChanged)
       | SignificantlyChanged, (SignificantlyChanged | InsignificantlyChanged)
       | InsignificantlyChanged, InsignificantlyChanged ->
           old_kind
       (* NOTE: weaker_kind < stronger_kind *)
-      | SignificantlyChanged, (New Release | Deleted | Unavailable)
-      | InsignificantlyChanged, (New Release | Deleted | Unavailable | SignificantlyChanged) ->
+      | New Release, New Package
+      | SignificantlyChanged, (New _ | Deleted | Unavailable)
+      | InsignificantlyChanged, (New _ | Deleted | Unavailable | SignificantlyChanged) ->
           kind
     in
     OpamPackage.Map.update (get_package_name ~path ~name ~package) update kind pkgs
@@ -173,6 +176,15 @@ module Analysis = struct
             add_pkg ~path ~name ~package SignificantlyChanged pkgs
     end
 
+  let is_newly_published_package ~cwd ~job package_name master =
+    let cmd = ("", [|"git"; "cat-file"; "-e"; master^":packages/"^package_name|]) in
+    (* [git cat-file -e branch:path] will exit with zero status if the object at
+       [path] exists on [branch] *)
+    Current.Process.exec ~cwd ~cancellable:true ~job cmd
+    >|= function
+    | Error _ -> true (* The package directory does not exist on master *)
+    | Ok _ -> false (* The package directory does exist on master *)
+
   let find_changed_packages ~job ~master dir =
     let cmd = "", [| "git"; "diff"; "--name-only"; master |] in
     Current.Process.check_output ~cwd:dir ~cancellable:true ~job cmd >>!= fun output ->
@@ -191,8 +203,9 @@ module Analysis = struct
             let cmd = "", [| "git"; "show"; master^":"^path |] in
             Current.Process.check_output ~cwd:dir ~cancellable:true ~job cmd >>= begin function
               | Error _ ->
-                (* new release *)
-                Lwt_result.return (add_pkg ~path ~name ~package (New Release) pkgs)
+                is_newly_published_package ~cwd:dir ~job name master >>= (fun newly_published_package ->
+                  let change = if newly_published_package then Package else Release in
+                  Lwt_result.return (add_pkg ~path ~name ~package (New change) pkgs))
               | Ok old_content ->
                 (* NOTE: Lwt_preemptive is initialized in lint.ml to only 1 thread *)
                 get_opam ~cwd:dir path
