@@ -1,12 +1,11 @@
 open Cmdliner
 open Opam_ci_check
 
-let lint pkg newly_published local_repo_dir =
+let lint (changed_pkgs, new_pkgs) local_repo_dir =
   match local_repo_dir with
   | Some d ->
-      print_endline @@ Printf.sprintf "Linting %s in %s ..." pkg d;
-      (* TODO: Automatically detect newly published *)
-      Lint.run_lint pkg newly_published d;
+      print_endline @@ Printf.sprintf "Linting opam-repository at %s ..." d;
+      Lint.run_lint ~new_pkgs ~changed_pkgs d;
       `Ok ()
   | None -> `Error (true, "No opam repository directory specified.")
 
@@ -91,19 +90,34 @@ let pkg_term =
   let info = Arg.info [] ~doc:"Package name + version" in
   Arg.required (Arg.pos 0 (Arg.some Arg.string) None info)
 
-let newly_published_term =
+let changed_pkgs_term =
+  let info =
+    Arg.info
+      [ "c"; "changed-packages" ]
+      ~doc:"List of changed package name + version"
+  in
+  Arg.value (Arg.opt (Arg.list Arg.string) [] info)
+
+let newly_published_pkgs_term =
   let info =
     Arg.info [ "n"; "newly-published" ]
-      ~doc:"The package is a newly published package."
+      ~doc:"List of newly published package name + version"
   in
-  Arg.value (Arg.flag info)
+  Arg.value (Arg.opt (Arg.list Arg.string) [] info)
+
+let packages_term =
+  let create_term changed_pkgs newly_published_pkgs =
+    if changed_pkgs = [] && newly_published_pkgs = [] then
+      `Error
+        ( false,
+          "You must provide at least one changed or newly published package." )
+    else `Ok (changed_pkgs, newly_published_pkgs)
+  in
+  Term.(ret (const create_term $ changed_pkgs_term $ newly_published_pkgs_term))
 
 let lint_cmd =
   let doc = "Lint the opam repository directory" in
-  let term =
-    Term.(
-      ret (const lint $ pkg_term $ newly_published_term $ local_opam_repo_term))
-  in
+  let term = Term.(ret (const lint $ packages_term $ local_opam_repo_term)) in
   let info =
     Cmd.info "lint" ~doc ~sdocs:"COMMON OPTIONS" ~exits:Cmd.Exit.defaults
   in

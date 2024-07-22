@@ -499,7 +499,7 @@ let msg_of_error (package, (err : Checks.error)) =
 let get_packages repo_dir =
   get_files (repo_dir // "packages") |> List.sort String.compare
 
-let run_lint pkg newly_published repo_dir =
+let run_package_lint ~newly_published ~repo_dir pkg =
   let pkg = OpamPackage.of_string pkg in
   let opam_path = path_from_pkg ~repo_dir pkg // "opam" in
   (* NOTE: We use OpamFile.OPAM.read_from_channel instead of OpamFile.OPAM.file
@@ -509,15 +509,23 @@ let run_lint pkg newly_published repo_dir =
         try Ok (OpamFile.OPAM.read_from_channel ic)
         with OpamPp.Bad_format e | OpamPp.Bad_version e -> Error e
       in
-      let errors =
-        match opam with
-        | Ok opam ->
-            let packages = get_packages repo_dir in
-            Checks.run_checks ~repo_dir ~pkg ~packages ~newly_published opam
-        | Error _ -> [ Checks.parse_error pkg ]
-      in
-      match errors with
-      | [] -> print_endline "No errors"
-      | _ ->
-          errors |> List.iter (fun e -> e |> msg_of_error |> print_endline);
-          exit 1)
+      match opam with
+      | Ok opam ->
+          let packages = get_packages repo_dir in
+          Checks.run_checks ~repo_dir ~pkg ~packages ~newly_published opam
+      | Error _ -> [ Checks.parse_error pkg ])
+
+let run_lint ~new_pkgs ~changed_pkgs repo_dir =
+  let changed_errors =
+    List.map (run_package_lint ~newly_published:false ~repo_dir) changed_pkgs
+    |> List.concat
+  in
+  let new_pkg_errors =
+    List.map (run_package_lint ~newly_published:true ~repo_dir) new_pkgs
+    |> List.concat
+  in
+  match new_pkg_errors @ changed_errors with
+  | [] -> print_endline "No errors"
+  | errors ->
+      errors |> List.iter (fun e -> e |> msg_of_error |> print_endline);
+      exit 1
