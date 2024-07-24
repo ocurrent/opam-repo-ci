@@ -9,7 +9,7 @@ let cache ~variant =
                 Obuilder_spec.Cache.v "homebrew" ~target:"/Users/mac1000/Library/Caches/Homebrew" ]
 let network = ["host"]
 
-let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
+let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~revdep ~pkg =
   let pkg_s = OpamPackage.to_string pkg in
   let with_tests_opt = if with_tests then " --with-test" else "" in
   let cache = cache ~variant in
@@ -19,6 +19,12 @@ let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
        env "OPAMCRITERIA"        "+removed,+count[version-lag,solution]";
        env "OPAMFIXUPCRITERIA"   "+removed,+count[version-lag,solution]";
        env "OPAMUPGRADECRITERIA" "+removed,+count[version-lag,solution]";
+     ]
+   else
+     []
+  ) @
+  (if revdep || lower_bounds then
+     [
        env "OPAMEXTERNALSOLVER" "builtin-0install";
      ]
    else
@@ -143,19 +149,19 @@ let spec ?(local=false) ~for_docker ~opam_version ~base ~variant ~revdep ~lower_
   let opam_install = opam_install ~variant ~opam_version in
   let revdep = match revdep with
     | None -> []
-    | Some revdep -> opam_install ~pin:false ~lower_bounds:false ~with_tests:false ~pkg:revdep
+    | Some revdep -> opam_install ~pin:false ~lower_bounds:false ~with_tests:false ~revdep:true ~pkg:revdep
   and tests = match with_tests, revdep with
-    | true, None -> opam_install ~pin:false ~lower_bounds:false ~with_tests:true ~pkg
-    | true, Some revdep -> opam_install ~pin:false ~lower_bounds:false ~with_tests:true ~pkg:revdep
+    | true, None -> opam_install ~pin:false ~lower_bounds:false ~with_tests:true ~revdep:false ~pkg
+    | true, Some revdep -> opam_install ~pin:false ~lower_bounds:false ~with_tests:true ~revdep:true ~pkg:revdep
     | false, _ -> []
   and lower_bounds = match lower_bounds with
-    | true -> opam_install ~pin:false ~lower_bounds:true ~with_tests:false ~pkg
+    | true -> opam_install ~pin:false ~lower_bounds:true ~with_tests:false ~revdep:false ~pkg
     | false -> []
   in
   Obuilder_spec.stage ~from:base (
     set_personality ~variant
     @ setup_repository ~local ~variant ~for_docker ~opam_version ()
-    @ opam_install ~pin:true ~lower_bounds:false ~with_tests:false ~pkg
+    @ opam_install ~pin:true ~lower_bounds:false ~with_tests:false ~revdep:false ~pkg
     @ lower_bounds
     @ revdep
     @ tests
