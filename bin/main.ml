@@ -6,10 +6,9 @@ let lint pkg newly_published local_repo_dir =
   | Some d ->
       print_endline @@ Printf.sprintf "Linting %s in %s ..." pkg d;
       (* TODO: Automatically detect newly published *)
-      Lint.run_lint pkg newly_published d
-  | None ->
-      (* TODO Add error handling *)
-      print_endline "No opam repository directory specified."
+      Lint.run_lint pkg newly_published d;
+      `Ok ()
+  | None -> `Error (true, "No opam repository directory specified.")
 
 let show_revdeps pkg local_repo_dir no_transitive_revdeps =
   (* Create local opam root and switch *)
@@ -102,7 +101,8 @@ let newly_published_term =
 let lint_cmd =
   let doc = "Lint the opam repository directory" in
   let term =
-    Term.(const lint $ pkg_term $ newly_published_term $ local_opam_repo_term)
+    Term.(
+      ret (const lint $ pkg_term $ newly_published_term $ local_opam_repo_term))
   in
   let info =
     Cmd.info "lint" ~doc ~sdocs:"COMMON OPTIONS" ~exits:Cmd.Exit.defaults
