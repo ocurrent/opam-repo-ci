@@ -1,5 +1,5 @@
 open Cmdliner
-open Prototype
+open Opam_ci_check
 
 let lint pkg newly_published local_repo_dir =
   match local_repo_dir with
@@ -137,7 +137,7 @@ let cmd =
   let doc = "A tool to list revdeps and test the revdeps locally" in
   let exits = Cmd.Exit.defaults in
   let term = Term.(ret (const (fun _ -> `Help (`Pager, None)) $ const ())) in
-  let info = Cmd.info "opam-revdeps" ~doc ~sdocs:"COMMON OPTIONS" ~exits in
+  let info = Cmd.info "opam-ci-check" ~doc ~sdocs:"COMMON OPTIONS" ~exits in
   Cmd.group ~default:term info [ lint_cmd; list_cmd; test_cmd ]
 
 let () = exit (Cmd.eval cmd)

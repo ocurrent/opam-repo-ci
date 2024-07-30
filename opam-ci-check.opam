@@ -6,9 +6,9 @@ maintainer: ["Maintainer Name"]
 authors: ["Author Name"]
 license: "LICENSE"
 tags: ["topics" "to describe" "your" "project"]
-homepage: "https://github.com/username/reponame"
+homepage: "https://github.com/ocurrent/opam-ci-check"
 doc: "https://url/to/documentation"
-bug-reports: "https://github.com/username/reponame/issues"
+bug-reports: "https://github.com/ocurrent/opam-ci-check/issues"
 depends: [
   "ocaml" {>= "4.14.0"}
   "dune" {>= "3.15"}
@@ -31,4 +31,4 @@ build: [
     "@doc" {with-doc}
   ]
 ]
-dev-repo: "git+https://github.com/username/reponame.git"
+dev-repo: "git+https://github.com/ocurrent/opam-ci-check.git"

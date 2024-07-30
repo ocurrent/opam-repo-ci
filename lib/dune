@@ -1,4 +1,4 @@
 (library
- (name prototype)
- (public_name revdeps_prototype)
+ (name opam_ci_check)
+ (public_name opam-ci-check)
  (libraries opam-client sexplib mula))

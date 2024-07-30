@@ -1,11 +1,11 @@
 (lang dune 3.15)
 
-(name revdeps_prototype)
+(name opam-ci-check)
 
 (generate_opam_files true)
 
 (source
- (github username/reponame))
+ (github ocurrent/opam-ci-check))
 
 (authors "Author Name")
 
@@ -16,7 +16,7 @@
 (documentation https://url/to/documentation)
 
 (package
- (name revdeps_prototype)
+ (name opam-ci-check)
  (synopsis "A short synopsis")
  (description "A longer description")
  (depends

@@ -1,4 +1,4 @@
 (executable
- (public_name revdeps_prototype)
+ (public_name opam-ci-check)
  (name main)
- (libraries prototype cmdliner opam-client))
+ (libraries opam_ci_check cmdliner opam-client))
