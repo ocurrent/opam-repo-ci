@@ -64,7 +64,7 @@ index 0000000..5bab63e
 +build: []
 +url {
 +  src: "b.0.0.3.tgz"
-+  checksum: ["sha256=ae5ae4347a772bb00084c72217bd236d001138364a60ccba51eb224a50e61bb0"]
++  checksum: ["sha256=dbfe6f3bf3f62bcbf62fbf0e4eac1741dad592e613dbfe8b06fd359ab5702ee8"]
 +}
 +depends: [
 +  "a-1" {< "0.0.2"}
@@ -114,7 +114,7 @@ index 0000000..5bab63e
 +build: []
 +url {
 +  src: "b.0.0.4.tgz"
-+  checksum: ["sha256=ad934fc9613329d397f42090bd656497a663bd09a95032e331dc126615f58483"]
++  checksum: ["sha256=f1280067914e74e776bbdd0cf630c888305dda08e77811a47555c74c6a57a89b"]
 +}
 +depends: [
 +  "a-1" {< "0.0.2"}
@@ -139,7 +139,7 @@ index 0000000..5bab63e
 +build: []
 +url {
 +  src: "b.0.0.5.tgz"
-+  checksum: ["sha256=ae5ae4347a772bb00084c72217bd236d001138364a60ccba51eb224a50e61bb0"]
++  checksum: ["sha256=dbfe6f3bf3f62bcbf62fbf0e4eac1741dad592e613dbfe8b06fd359ab5702ee8"]
 +}
 +depends: [
 +  "a-1" {< "0.0.2"}

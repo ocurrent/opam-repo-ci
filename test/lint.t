@@ -22,14 +22,20 @@ Setup repo for incorrect b package tests
 
   $ git reset -q --hard HEAD~1
   $ git apply "patches/b-incorrect-opam.patch"
-  $ git add .
-  $ git commit -qm b-incorrect-opam
+  $ git add packages/
   $ echo "(lang dune 3.16)" > dune-project
-  $ tar --sort=name --mtime='2024-01-01' --dereference -czf b.0.0.3.tgz dune-project
+  $ sh "scripts/setup_sources.sh" b 0.0.3 dune-project
+  Created tarball b.0.0.3.tgz
+  Updated checksum for b.0.0.3.tgz in b.0.0.3's opam file
   $ echo "foo" > bar
-  $ tar --sort=name --mtime='2024-01-01' --dereference -czf b.0.0.4.tgz bar
+  $ sh "scripts/setup_sources.sh" b 0.0.4 bar
+  Created tarball b.0.0.4.tgz
+  Updated checksum for b.0.0.4.tgz in b.0.0.4's opam file
   $ echo "(lang dune 3.16)" > dune-project
-  $ tar --sort=name --mtime='2024-01-01' --dereference -czf b.0.0.5.tgz dune-project
+  $ sh "scripts/setup_sources.sh" b 0.0.5 dune-project
+  Created tarball b.0.0.5.tgz
+  Updated checksum for b.0.0.5.tgz in b.0.0.5's opam file
+  $ git commit -qm b-incorrect-opam
   $ git log --graph --pretty=format:'%s%d'
   * b-incorrect-opam (HEAD -> new-branch-1)
   * a-1 (master)
