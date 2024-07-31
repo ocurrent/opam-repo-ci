@@ -496,7 +496,8 @@ let msg_of_error (package, (err : Checks.error)) =
   | ParseError ->
       Printf.sprintf "Error in %s: Failed to parse the opam file" pkg
 
-let get_packages repo_dir = get_files (repo_dir // "packages")
+let get_packages repo_dir =
+  get_files (repo_dir // "packages") |> List.sort String.compare
 
 let run_lint pkg newly_published repo_dir =
   let pkg = OpamPackage.of_string pkg in
