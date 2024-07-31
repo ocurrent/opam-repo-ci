@@ -20,7 +20,8 @@
  (synopsis "A short synopsis")
  (description "A longer description")
  (depends
-  ocaml
+  (ocaml
+   (>= 4.14.0))
   dune
   sexplib
   (opam-client
