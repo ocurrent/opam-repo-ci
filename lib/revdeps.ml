@@ -66,7 +66,7 @@ let list_revdeps pkg no_transitive_revdeps =
       let non_transitive = non_transitive_revdeps st package_set in
       OpamPackage.Set.union transitive non_transitive
       |> filter_coinstallable st package_set
-      |> OpamPackage.Set.to_list)
+      |> OpamPackage.Set.to_list_map (fun x -> x))
 
 let find_latest_versions packages =
   let open OpamPackage in
@@ -77,7 +77,7 @@ let find_latest_versions packages =
       let latest_version = max_version packages_set name in
       Set.add latest_version acc)
     versions_map Set.empty
-  |> OpamPackage.Set.to_list
+  |> OpamPackage.Set.to_list_map (fun x -> x)
 
 module Display = struct
   let packages packages =
