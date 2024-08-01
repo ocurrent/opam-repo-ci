@@ -153,8 +153,10 @@ let extras ~build =
             Some (build ~opam_version ~arch ~distro:master_distro ~compiler:(comp, None) label)
       ) Ocaml_version.arches
     in
-    build ~opam_version:`V2_0 ~arch:`X86_64 ~distro:master_distro ~compiler:(comp, None) "opam-2.0" ::
-    build ~opam_version:`V2_1 ~arch:`X86_64 ~distro:master_distro ~compiler:(comp, None) "opam-2.1" ::
+    List.map (fun opam_version ->
+      let opam_string = "opam-" ^ Opam_version.to_string opam_version in
+      build ~opam_version ~arch:`X86_64 ~distro:master_distro ~compiler:(comp, None) opam_string)
+      [ `V2_0; `V2_1; `V2_2 ] @
     switches @ arches @ acc
   ) [] default_compilers_full
 

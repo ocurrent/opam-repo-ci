@@ -35,12 +35,7 @@ let specs =
     (Build.extras ~build)
 
 let header title variant ?(lower_bounds=false) ?(with_tests=false) opam_version =
-  let opam_version =
-    match opam_version with
-    | `Dev -> "opam-dev"
-    | `V2_1 -> "opam-2.1"
-    | `V2_0 -> "opam-2.0"
-  in
+  let opam_version = "opam-" ^ Opam_version.to_string opam_version in
   let lower_bounds = if lower_bounds then " lower-bounds" else "" in
   let with_tests = if with_tests then " with-tests" else "" in
   Format.asprintf "%s: %a %s%s%s"

@@ -43,14 +43,14 @@ let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~revdep ~
      (* TODO: Remove this hack when https://github.com/ocurrent/obuilder/issues/77 is fixed *)
      (* NOTE: This hack will fail for packages that have src: "git+https://..." *)
      run ~network "(%sopam reinstall --with-test %s) || true"
-       (match opam_version with `V2_1 | `Dev -> "" | `V2_0 -> fmt "opam depext%s %s && " with_tests_opt pkg_s) pkg_s
+       (match opam_version with `V2_1 | `V2_2 | `Dev -> "" | `V2_0 -> fmt "opam depext%s %s && " with_tests_opt pkg_s) pkg_s
    ] else []) @ [
     (* TODO: Replace by two calls to opam install + opam install -t using the OPAMDROPINSTALLEDPACKAGES feature *)
     (* NOTE: See above for the ~network:(if with_tests ...) hack *)
     (* NOTE: We cannot use the cache as concurrent access to the cache might overwrite it and the required archives might not be available anymore at this point *)
     let depext =
       match opam_version with
-      | `V2_1 | `Dev -> ""
+      | `V2_1 | `V2_2 | `Dev -> ""
       | `V2_0 -> fmt "opam depext%s %s && " with_tests_opt pkg_s
     in
     let verbose = if with_tests then " --verbose" else "" in
@@ -96,10 +96,7 @@ let setup_repository ?(local=false) ~variant ~for_docker ~opam_version () =
     | `Macos -> "ln"
     | `Freebsd | `Linux -> "sudo ln"
   in
-  let opam_version_str = match opam_version with
-    | `V2_0 -> "2.0"
-    | `V2_1 -> "2.1"
-    | `Dev -> "dev"
+  let opam_version_str = Opam_version.to_string opam_version
   in
   let opam_repo_args = match Variant.os variant with
     | `Macos -> " -k local" (* TODO: (copy ...) do not copy the content of .git or something like that and make the subsequent opam pin fail *)
@@ -135,7 +132,7 @@ let setup_repository ?(local=false) ~variant ~for_docker ~opam_version () =
     run "rm -rf opam-repository/";
     copy ["."] ~dst:"opam-repository/";
     run "opam repository set-url%s --strict default opam-repository/" opam_repo_args;
-    run ~network "opam %s || true" (match opam_version with `V2_1 | `Dev -> "update --depexts" | `V2_0 -> "depext -u");
+    run ~network "opam %s || true" (match opam_version with `V2_1 | `V2_2 | `Dev -> "update --depexts" | `V2_0 -> "depext -u");
   ] @
   if local then [ keep_installed ] else []
 

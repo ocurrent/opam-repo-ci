@@ -3,8 +3,9 @@
  (libraries opam_repo_ci))
 
 (rule
-  (target platforms-new.md)
-  (action (run ./doc.exe -o %{target})))
+ (target platforms-new.md)
+ (action
+  (run ./doc.exe -o %{target})))
 
 (rule
  (alias doc)

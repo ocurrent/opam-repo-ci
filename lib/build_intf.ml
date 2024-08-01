@@ -21,7 +21,7 @@ module type S = sig
       after the job specified by [after], making it a dependency. *)
   val list_revdeps :
     variant:Variant.t ->
-    opam_version:[`V2_0 | `V2_1 | `Dev] ->
+    opam_version:Opam_version.t ->
     pkgopt:Package_opt.t Current.t ->
     new_pkgs:OpamPackage.t list Current.t ->
     base:Spec.base Current.t ->
