@@ -10,7 +10,7 @@ Tests linting of correctly formatted opam packages
   $ git commit -qm b-correct
   $ git log --graph --pretty=format:'%s%d'
   * b-correct (HEAD -> new-branch-1)
-  * a-1 (master)
+  * a-1 (tag: initial-state, master)
   $ opam-ci-check lint -r . -c a-1.0.0.2
   Linting opam-repository at $TESTCASE_ROOT/. ...
   No errors
@@ -20,7 +20,7 @@ Tests linting of correctly formatted opam packages
 
 Setup repo for incorrect b package tests
 
-  $ git reset -q --hard HEAD~1
+  $ git reset -q --hard initial-state
   $ git apply "patches/b-incorrect-opam.patch"
   $ git add packages/
   $ echo "(lang dune 3.16)" > dune-project
@@ -38,7 +38,7 @@ Setup repo for incorrect b package tests
   $ git commit -qm b-incorrect-opam
   $ git log --graph --pretty=format:'%s%d'
   * b-incorrect-opam (HEAD -> new-branch-1)
-  * a-1 (master)
+  * a-1 (tag: initial-state, master)
 
 
 Test the following:
@@ -94,13 +94,13 @@ Test the following:
 
 Setup repo for name collision tests
 
-  $ git reset -q --hard HEAD~1
+  $ git reset -q --hard initial-state
   $ git apply "patches/a_1-name-collision.patch"
   $ git add .
   $ git commit -qm a_1-name-collision
   $ git log --graph --pretty=format:'%s%d'
   * a_1-name-collision (HEAD -> new-branch-1)
-  * a-1 (master)
+  * a-1 (tag: initial-state, master)
 
 Tests the package name collision detection by adding a version of a package
 [a_1] that conflicts with the existing [a-1] package
@@ -123,7 +123,7 @@ Setup repo for more name collision tests
   $ git log --graph --pretty=format:'%s%d'
   * levenshtein-2 (HEAD -> new-branch-2)
   * levenshtein-1 (master)
-  * a-1
+  * a-1 (tag: initial-state)
 
 Tests the package name collisions detection by adding initial packages [field],
 [field1] and [fieldfind] to master, and new packages [fielf], [fielffind], and
@@ -149,13 +149,13 @@ Tests the package name collisions detection by adding initial packages [field],
 
 Setup repo for unnecessary fields tests
 
-  $ git reset -q --hard HEAD~2
+  $ git reset -q --hard initial-state
   $ git apply "patches/a-1-unnecessary-fields.patch"
   $ git add .
   $ git commit -qm unnecessary-fields-a-1
   $ git log --graph --pretty=format:'%s%d'
   * unnecessary-fields-a-1 (HEAD -> new-branch-2)
-  * a-1
+  * a-1 (tag: initial-state)
 
 Test presence of unnecessary fields in a-1.0.0.2 package
 
@@ -167,13 +167,13 @@ Test presence of unnecessary fields in a-1.0.0.2 package
 
 Setup repo for unmatched name and version test
 
-  $ git reset -q --hard HEAD~1
+  $ git reset -q --hard initial-state
   $ git apply "patches/a-1-unmatched-name-version.patch"
   $ git add .
   $ git commit -qm unmatched-name-version-fields-a-1
   $ git log --graph --pretty=format:'%s%d'
   * unmatched-name-version-fields-a-1 (HEAD -> new-branch-2)
-  * a-1
+  * a-1 (tag: initial-state)
 
 Test presence of unnecessary fields in a-1.0.0.2 package
 
@@ -185,13 +185,13 @@ Test presence of unnecessary fields in a-1.0.0.2 package
 
 Setup repo for unexpected file
 
-  $ git reset -q --hard HEAD~1
+  $ git reset -q --hard initial-state
   $ git apply "patches/a-1-unexpected-file.patch"
   $ git add .
   $ git commit -qm unexpected-file-a-1
   $ git log --graph --pretty=format:'%s%d'
   * unexpected-file-a-1 (HEAD -> new-branch-2)
-  * a-1
+  * a-1 (tag: initial-state)
 
 Test presence of unexpected files in a-1.0.0.2 package
 
@@ -202,13 +202,13 @@ Test presence of unexpected files in a-1.0.0.2 package
 
 Setup repo for Forbidden perm file
 
-  $ git reset -q --hard HEAD~1
+  $ git reset -q --hard initial-state
   $ chmod 500 packages/a-1/a-1.0.0.2/opam
   $ git add .
   $ git commit -qm forbidden-perm-file-a-1
   $ git log --graph --pretty=format:'%s%d'
   * forbidden-perm-file-a-1 (HEAD -> new-branch-2)
-  * a-1
+  * a-1 (tag: initial-state)
 
 Test presence of unexpected files in a-1.0.0.2 package
 
