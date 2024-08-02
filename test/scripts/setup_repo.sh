@@ -8,3 +8,4 @@ git apply "patches/a-1.patch"
 touch repo
 git add .
 git commit -qm a-1
+git tag 'initial-state'
