@@ -24,6 +24,8 @@
    (>= 4.14.0))
   dune
   sexplib
+  (cmdliner
+   (>= 1.1.1))
   (opam-client
    (>= 2.2))
   (mula
