@@ -54,7 +54,9 @@ let non_transitive_revdeps st package_set =
   OpamPackage.Set.filter packages_depending_on_target_packages
     all_known_packages
 
-let list_revdeps pkg no_transitive_revdeps =
+let list_revdeps local_repo_dir pkg no_transitive_revdeps =
+  (* Create local opam root and switch *)
+  Env.create_local_switch_maybe local_repo_dir;
   OpamConsole.msg "Listing revdeps for %s\n" pkg;
   let package = OpamPackage.of_string pkg in
   let package_set = OpamPackage.Set.singleton package in

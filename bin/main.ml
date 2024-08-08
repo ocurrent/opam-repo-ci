@@ -10,22 +10,14 @@ let lint (changed_pkgs, new_pkgs) local_repo_dir =
   | None -> `Error (true, "No opam repository directory specified.")
 
 let show_revdeps pkg local_repo_dir no_transitive_revdeps =
-  (* Create local opam root and switch *)
-  Env.create_local_switch_maybe local_repo_dir;
-
   (* Get revdeps for the package *)
-  let revdeps = Revdeps.list_revdeps pkg no_transitive_revdeps in
-
+  let revdeps = Revdeps.list_revdeps local_repo_dir pkg no_transitive_revdeps in
   Revdeps.Display.packages revdeps;
-
   ()
 
 let test_revdeps pkg local_repo_dir use_dune no_transitive_revdeps =
-  (* Create local opam root and switch *)
-  Env.create_local_switch_maybe local_repo_dir;
-
   (* Get revdeps for the package *)
-  let revdeps = Revdeps.list_revdeps pkg no_transitive_revdeps in
+  let revdeps = Revdeps.list_revdeps local_repo_dir pkg no_transitive_revdeps in
 
   (* Install and test the first reverse dependency *)
   let latest_versions = Revdeps.find_latest_versions revdeps in
