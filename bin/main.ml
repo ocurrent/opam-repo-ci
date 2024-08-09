@@ -1,13 +1,25 @@
 open Cmdliner
 open Opam_ci_check
 
+let to_exit_code : (unit, string) result Term.t -> Cmd.Exit.code Term.t =
+  Term.map @@ function
+  | Ok () -> 0
+  | Error msg ->
+      Printf.eprintf "%s%!" msg;
+      1
+
 let lint (changed_pkgs, new_pkgs) local_repo_dir =
   match local_repo_dir with
-  | Some d ->
-      print_endline @@ Printf.sprintf "Linting opam-repository at %s ..." d;
-      Lint.check ~new_pkgs ~changed_pkgs d;
-      Ok ()
   | None -> Error "No opam repository directory specified."
+  | Some d -> (
+      print_endline @@ Printf.sprintf "Linting opam-repository at %s ..." d;
+      match Lint.check ~new_pkgs ~changed_pkgs d with
+      | None ->
+          print_endline "No errors";
+          Ok ()
+      | Some errors ->
+          errors |> List.map Lint.msg_of_error |> String.concat "\n"
+          |> Result.error)
 
 let show_revdeps pkg local_repo_dir no_transitive_revdeps =
   (* Get revdeps for the package *)
@@ -106,7 +118,9 @@ let packages_term =
 
 let lint_cmd =
   let doc = "Lint the opam repository directory" in
-  let term = Term.(const lint $ packages_term $ local_opam_repo_term) in
+  let term =
+    Term.(const lint $ packages_term $ local_opam_repo_term) |> to_exit_code
+  in
   let info =
     Cmd.info "lint" ~doc ~sdocs:"COMMON OPTIONS" ~exits:Cmd.Exit.defaults
   in
@@ -118,6 +132,7 @@ let list_cmd =
     Term.(
       const show_revdeps $ pkg_term $ local_opam_repo_term
       $ no_transitive_revdeps)
+    |> to_exit_code
   in
   let info =
     Cmd.info "list" ~doc ~sdocs:"COMMON OPTIONS" ~exits:Cmd.Exit.defaults
@@ -130,17 +145,18 @@ let test_cmd =
     Term.(
       const test_revdeps $ pkg_term $ local_opam_repo_term $ use_dune_term
       $ no_transitive_revdeps)
+    |> to_exit_code
   in
   let info =
     Cmd.info "test" ~doc ~sdocs:"COMMON OPTIONS" ~exits:Cmd.Exit.defaults
   in
   Cmd.v info term
 
-let cmd : (unit, string) result Cmd.t =
+let cmd : Cmd.Exit.code Cmd.t =
   let doc = "A tool to list revdeps and test the revdeps locally" in
   let exits = Cmd.Exit.defaults in
   (* let term = Term.(ret (const (fun _ -> `Help (`Pager, None)) $ const ())) in *)
   let info = Cmd.info "opam-ci-check" ~doc ~sdocs:"COMMON OPTIONS" ~exits in
   Cmd.group info [ lint_cmd; list_cmd; test_cmd ]
 
-let () = exit (Cmd.eval_result cmd)
+let () = exit (Cmd.eval' cmd)

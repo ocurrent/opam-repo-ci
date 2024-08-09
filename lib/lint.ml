@@ -525,7 +525,5 @@ let check ~new_pkgs ~changed_pkgs repo_dir =
     |> List.concat
   in
   match new_pkg_errors @ changed_errors with
-  | [] -> print_endline "No errors"
-  | errors ->
-      errors |> List.iter (fun e -> e |> msg_of_error |> print_endline);
-      exit 1
+  | [] -> None
+  | errors -> Some errors
