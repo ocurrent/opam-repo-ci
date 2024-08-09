@@ -23,13 +23,21 @@ let lint (changed_pkgs, new_pkgs) local_repo_dir =
 
 let show_revdeps pkg local_repo_dir no_transitive_revdeps =
   (* Get revdeps for the package *)
-  let revdeps = Revdeps.list_revdeps local_repo_dir pkg no_transitive_revdeps in
+  let revdeps =
+    Revdeps.list_revdeps ?opam_repo:local_repo_dir
+      ~transitive:(not no_transitive_revdeps)
+      pkg
+  in
   Revdeps.Display.packages revdeps;
   Ok ()
 
 let test_revdeps pkg local_repo_dir use_dune no_transitive_revdeps =
   (* Get revdeps for the package *)
-  let revdeps = Revdeps.list_revdeps local_repo_dir pkg no_transitive_revdeps in
+  let revdeps =
+    Revdeps.list_revdeps ?opam_repo:local_repo_dir
+      ~transitive:(not no_transitive_revdeps)
+      pkg
+  in
 
   (* Install and test the first reverse dependency *)
   let latest_versions = Revdeps.find_latest_versions revdeps in

@@ -54,19 +54,20 @@ let non_transitive_revdeps st package_set =
   OpamPackage.Set.filter packages_depending_on_target_packages
     all_known_packages
 
-let list_revdeps local_repo_dir pkg no_transitive_revdeps =
+let list_revdeps ?(opam_repo = "https://opam.ocaml.org") ?(transitive = true)
+    pkg =
   (* Create local opam root and switch *)
-  Env.create_local_switch_maybe local_repo_dir;
+  Env.create_local_switch_maybe (Some opam_repo);
   OpamConsole.msg "Listing revdeps for %s\n" pkg;
   let package = OpamPackage.of_string pkg in
   let package_set = OpamPackage.Set.singleton package in
   Env.with_unlocked_switch () (fun st ->
-      let transitive =
-        if no_transitive_revdeps then OpamPackage.Set.empty
-        else transitive_revdeps st package_set
+      let transitive_deps =
+        if transitive then transitive_revdeps st package_set
+        else OpamPackage.Set.empty
       in
       let non_transitive = non_transitive_revdeps st package_set in
-      OpamPackage.Set.union transitive non_transitive
+      OpamPackage.Set.union transitive_deps non_transitive
       |> filter_coinstallable st package_set
       |> OpamPackage.Set.to_list_map (fun x -> x))
 
