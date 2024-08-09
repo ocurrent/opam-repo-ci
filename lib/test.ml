@@ -50,7 +50,7 @@ let test_packages_with_opam target_pkg revdeps_list =
 
       List.iter (test_package_with_opam target) revdeps_list
   | _ -> print_endline "Quitting!");
-  ()
+  Ok ()
 
 let test_packages_with_dune opam_repository target_pkg packages =
   let target = OpamPackage.of_string target_pkg in
@@ -70,4 +70,4 @@ let test_packages_with_dune opam_repository target_pkg packages =
     H.create_dummy_projects parent opam_repository target selected_packages
   in
   List.iter H.generate_lock_and_build dirs;
-  ()
+  Ok ()

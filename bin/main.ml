@@ -6,14 +6,14 @@ let lint (changed_pkgs, new_pkgs) local_repo_dir =
   | Some d ->
       print_endline @@ Printf.sprintf "Linting opam-repository at %s ..." d;
       Lint.run_lint ~new_pkgs ~changed_pkgs d;
-      `Ok ()
-  | None -> `Error (true, "No opam repository directory specified.")
+      Ok ()
+  | None -> Error ("No opam repository directory specified.")
 
 let show_revdeps pkg local_repo_dir no_transitive_revdeps =
   (* Get revdeps for the package *)
   let revdeps = Revdeps.list_revdeps local_repo_dir pkg no_transitive_revdeps in
   Revdeps.Display.packages revdeps;
-  ()
+  Ok ()
 
 let test_revdeps pkg local_repo_dir use_dune no_transitive_revdeps =
   (* Get revdeps for the package *)
@@ -24,13 +24,10 @@ let test_revdeps pkg local_repo_dir use_dune no_transitive_revdeps =
 
   Revdeps.Display.packages latest_versions;
 
-  (match (use_dune, local_repo_dir) with
+  match (use_dune, local_repo_dir) with
   | true, Some d -> Test.test_packages_with_dune d pkg latest_versions
-  | true, None ->
-      OpamConsole.msg "Opam local repository path must be specified!\n"
-  | false, _ -> Test.test_packages_with_opam pkg latest_versions);
-
-  ()
+  | true, None -> Error "Opam local repository path must be specified!\n"
+  | false, _ -> Test.test_packages_with_opam pkg latest_versions
 
 let make_abs_path s =
   if Filename.is_relative s then Filename.concat (Sys.getcwd ()) s else s
@@ -109,7 +106,7 @@ let packages_term =
 
 let lint_cmd =
   let doc = "Lint the opam repository directory" in
-  let term = Term.(ret (const lint $ packages_term $ local_opam_repo_term)) in
+  let term = Term.(const lint $ packages_term $ local_opam_repo_term) in
   let info =
     Cmd.info "lint" ~doc ~sdocs:"COMMON OPTIONS" ~exits:Cmd.Exit.defaults
   in
@@ -139,11 +136,11 @@ let test_cmd =
   in
   Cmd.v info term
 
-let cmd =
+let cmd : (unit, string) result Cmd.t =
   let doc = "A tool to list revdeps and test the revdeps locally" in
   let exits = Cmd.Exit.defaults in
-  let term = Term.(ret (const (fun _ -> `Help (`Pager, None)) $ const ())) in
+  (* let term = Term.(ret (const (fun _ -> `Help (`Pager, None)) $ const ())) in *)
   let info = Cmd.info "opam-ci-check" ~doc ~sdocs:"COMMON OPTIONS" ~exits in
-  Cmd.group ~default:term info [ lint_cmd; list_cmd; test_cmd ]
+  Cmd.group info [ lint_cmd; list_cmd; test_cmd ]
 
-let () = exit (Cmd.eval cmd)
+let () = exit (Cmd.eval_result cmd)
