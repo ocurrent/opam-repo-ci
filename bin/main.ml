@@ -5,9 +5,9 @@ let lint (changed_pkgs, new_pkgs) local_repo_dir =
   match local_repo_dir with
   | Some d ->
       print_endline @@ Printf.sprintf "Linting opam-repository at %s ..." d;
-      Lint.run_lint ~new_pkgs ~changed_pkgs d;
+      Lint.check ~new_pkgs ~changed_pkgs d;
       Ok ()
-  | None -> Error ("No opam repository directory specified.")
+  | None -> Error "No opam repository directory specified."
 
 let show_revdeps pkg local_repo_dir no_transitive_revdeps =
   (* Get revdeps for the package *)
