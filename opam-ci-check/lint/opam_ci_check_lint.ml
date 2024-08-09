@@ -515,7 +515,7 @@ let run_package_lint ~newly_published ~repo_dir pkg =
           Checks.run_checks ~repo_dir ~pkg ~packages ~newly_published opam
       | Error _ -> [ Checks.parse_error pkg ])
 
-let run_lint ~new_pkgs ~changed_pkgs repo_dir =
+let check ~new_pkgs ~changed_pkgs repo_dir =
   let changed_errors =
     List.map (run_package_lint ~newly_published:false ~repo_dir) changed_pkgs
     |> List.concat
