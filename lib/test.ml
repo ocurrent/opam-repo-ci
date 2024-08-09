@@ -1,56 +1,52 @@
 module H = Dune_helpers
 module D = Dir_helpers
 
-let test_package_with_opam package revdep =
-  OpamConsole.msg "Installing and testing: package - %s; revdep - %s\n"
-    (OpamPackage.to_string package)
-    (OpamPackage.to_string revdep);
-  let nvs =
-    [ package; revdep ]
-    |> List.map (fun pkg ->
-           (OpamPackage.name pkg, Some (`Eq, OpamPackage.version pkg)))
-  in
-  Env.with_locked_switch () @@ fun st ->
-  OpamCoreConfig.update ~verbose_level:0 ();
-  OpamStateConfig.update ?build_test:(Some true) ();
+type error = OpamPackage.t * exn
 
-  try
-    (* Don't prompt for install / remove *)
-    OpamCoreConfig.update ~confirm_level:`unsafe_yes ();
+let error_to_string : error -> string =
+ fun (pkg, err) ->
+  Printf.sprintf "Failed to install %s\nError: %s\n"
+    (OpamPackage.to_string pkg)
+    (Printexc.to_string err)
 
-    (* Install the packages *)
-    let _ = OpamClient.install st nvs in
+let pkg_atom : OpamPackage.t -> OpamFormula.atom =
+ fun pkg -> (OpamPackage.name pkg, Some (`Eq, OpamPackage.version pkg))
 
-    (* Clean-up switch for next test: We remove only the revdep, but not the
-       target package being tested. *)
-    let _ = OpamClient.remove st ~autoremove:true ~force:true (List.tl nvs) in
-
-    ()
-  with e ->
-    (* NOTE: The CI is identifying packages to SKIP, error types, etc. based on
-       the log output. See
-       https://github.com/ocurrent/opam-repo-ci/blob/8746f52b479569c0a55904361c9d64b54628b971/service/main.ml#L34.
-       But, we may be able to do better, since we are not a shell script? *)
-    (* TODO: Capture the output of the failed command and display all failures
-       at the end *)
-    OpamConsole.msg "Failed to install %s\n" (OpamPackage.to_string revdep);
-    OpamConsole.msg "Error: %s\n" (Printexc.to_string e);
-    ()
+let test_package_with_opam_in_state st revdep =
+  OpamConsole.msg "Installing and testing %s\n" (OpamPackage.to_string revdep);
+  let revdep_atoms = [ pkg_atom revdep ] in
+  match OpamClient.install st revdep_atoms with
+  | st' ->
+      (* Clean-up switch for next test: We remove only the revdep, but not the
+         target package being tested. *)
+      ignore (OpamClient.remove st' ~autoremove:true ~force:true revdep_atoms);
+      None
+  | exception e ->
+      (* NOTE: The CI is identifying packages to SKIP, error types, etc. based on
+         the log output. See
+         https://github.com/ocurrent/opam-repo-ci/blob/8746f52b479569c0a55904361c9d64b54628b971/service/main.ml#L34.
+         But, we may be able to do better, since we are not a shell script? *)
+      Some (revdep, e)
 
 let test_packages_with_opam target_pkg revdeps_list =
   let target = OpamPackage.of_string target_pkg in
-
-  (match
-     OpamConsole.confirm "Do you want test %d revdeps?"
-       (List.length revdeps_list)
-   with
+  match
+    OpamConsole.confirm "Do you want test %d revdeps?"
+      (List.length revdeps_list)
+  with
   | true ->
+      OpamStateConfig.update ?build_test:(Some true) ();
+      OpamCoreConfig.update ~verbose_level:0 (* run commands quietly *)
+        ~confirm_level:`unsafe_yes (* Don't prompt for install / remove *) ();
       OpamConsole.msg "Installing reverse dependencies with pinned %s\n"
         (OpamPackage.to_string target);
-
-      List.iter (test_package_with_opam target) revdeps_list
-  | _ -> print_endline "Quitting!");
-  Ok ()
+      Env.with_locked_switch () @@ fun st ->
+      let st' = OpamClient.install st [ pkg_atom target ] in
+      revdeps_list |> List.to_seq
+      |> Seq.filter_map (test_package_with_opam_in_state st')
+  | _ ->
+      print_endline "Quitting!";
+      Seq.empty
 
 let test_packages_with_dune opam_repository target_pkg packages =
   let target = OpamPackage.of_string target_pkg in

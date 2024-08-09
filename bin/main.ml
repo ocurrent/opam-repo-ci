@@ -31,6 +31,9 @@ let show_revdeps pkg local_repo_dir no_transitive_revdeps =
   Revdeps.Display.packages revdeps;
   Ok ()
 
+let testing_revdeps_confirmed revdeps =
+  OpamConsole.confirm "Do you want test %d revdeps?" (List.length revdeps)
+
 let test_revdeps pkg local_repo_dir use_dune no_transitive_revdeps =
   (* Get revdeps for the package *)
   let revdeps =
@@ -43,11 +46,22 @@ let test_revdeps pkg local_repo_dir use_dune no_transitive_revdeps =
   let latest_versions = Revdeps.find_latest_versions revdeps in
 
   Revdeps.Display.packages latest_versions;
-
-  match (use_dune, local_repo_dir) with
-  | true, Some d -> Test.test_packages_with_dune d pkg latest_versions
-  | true, None -> Error "Opam local repository path must be specified!\n"
-  | false, _ -> Test.test_packages_with_opam pkg latest_versions
+  if not (testing_revdeps_confirmed latest_versions) then Ok ()
+  else
+    match (use_dune, local_repo_dir) with
+    | true, Some d -> Test.test_packages_with_dune d pkg latest_versions
+    | true, None -> Error "Opam local repository path must be specified!\n"
+    | false, _ ->
+        let num_failed_installs =
+          Test.test_packages_with_opam pkg latest_versions
+          |> Seq.map (fun e -> Printf.eprintf "%s\n" (Test.error_to_string e))
+          |> Seq.length
+        in
+        if num_failed_installs = 0 then Ok ()
+        else
+          Error
+            (Printf.sprintf "tests failed in %d reverse dependencies"
+               num_failed_installs)
 
 let make_abs_path s =
   if Filename.is_relative s then Filename.concat (Sys.getcwd ()) s else s
