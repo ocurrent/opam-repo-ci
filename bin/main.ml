@@ -14,10 +14,10 @@ let lint (changed_pkgs, new_pkgs) local_repo_dir =
   | Some d -> (
       print_endline @@ Printf.sprintf "Linting opam-repository at %s ..." d;
       match Lint.check ~new_pkgs ~changed_pkgs d with
-      | None ->
+      | [] ->
           print_endline "No errors";
           Ok ()
-      | Some errors ->
+      | errors ->
           errors |> List.map Lint.msg_of_error |> String.concat "\n"
           |> Result.error)
 

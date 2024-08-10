@@ -524,6 +524,4 @@ let check ~new_pkgs ~changed_pkgs repo_dir =
     List.map (run_package_lint ~newly_published:true ~repo_dir) new_pkgs
     |> List.concat
   in
-  match new_pkg_errors @ changed_errors with
-  | [] -> None
-  | errors -> Some errors
+  new_pkg_errors @ changed_errors
