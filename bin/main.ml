@@ -10,7 +10,7 @@ let to_exit_code : (unit, string) result Term.t -> Cmd.Exit.code Term.t =
 
 let lint (changed_pkgs, new_pkgs) local_repo_dir =
   match local_repo_dir with
-  | None -> Error "No opam repository directory specified."
+  | None -> failwith "TODO: default to using the opam repository"
   | Some d -> (
       print_endline @@ Printf.sprintf "Linting opam-repository at %s ..." d;
       match Lint.check ~new_pkgs ~changed_pkgs d with
