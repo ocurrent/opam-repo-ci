@@ -155,8 +155,8 @@ let test_cmd =
 let cmd : Cmd.Exit.code Cmd.t =
   let doc = "A tool to list revdeps and test the revdeps locally" in
   let exits = Cmd.Exit.defaults in
-  (* let term = Term.(ret (const (fun _ -> `Help (`Pager, None)) $ const ())) in *)
+  let default = Term.(ret (const (fun _ -> `Help (`Pager, None)) $ const ())) in
   let info = Cmd.info "opam-ci-check" ~doc ~sdocs:"COMMON OPTIONS" ~exits in
-  Cmd.group info [ lint_cmd; list_cmd; test_cmd ]
+  Cmd.group ~default info [ lint_cmd; list_cmd; test_cmd ]
 
 let () = exit (Cmd.eval' cmd)
