@@ -25,7 +25,7 @@ let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~revdep ~
   ) @
   (if revdep || lower_bounds then
      [
-       env "OPAMEXTERNALSOLVER" "builtin-0install";
+       run "opam option solver=builtin-0install";
      ]
    else
      []
