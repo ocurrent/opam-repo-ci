@@ -7,18 +7,26 @@
 (source
  (github ocurrent/opam-ci-check))
 
-(authors "Author Name")
+(authors
+ "Puneeth Chaganti <punchagan@muse-amuse.in>"
+ "Shon Feder <shon.feder@gmail.com>")
 
-(maintainers "Maintainer Name")
+(maintainers
+ "Puneeth Chaganti <punchagan@muse-amuse.in>"
+ "Shon Feder <shon.feder@gmail.com>")
 
-(license LICENSE)
+; TODO: Add a license field
+;(license LICENSE)
 
-(documentation https://url/to/documentation)
+(documentation
+ https://www.ocurrent.org/opam-ci-check/opam-ci-check/index.html)
 
 (package
  (name opam-ci-check)
- (synopsis "A short synopsis")
- (description "A longer description")
+ (synopsis
+  "CLI tool that tests whether packages are publishable on the opam repository.")
+ (description
+  "opam-ci-check is used in the opam repo CI and can be used locally and in other CI pipelines to test the deliverability of packages.")
  (depends
   (ocaml
    (>= 4.14.0))
@@ -31,6 +39,4 @@
   (mula
    (>= 0.1.2)))
  (tags
-  (topics "to describe" your project)))
-
-; See the complete stanza docs at https://dune.readthedocs.io/en/stable/dune-files.html#dune-project
+  ("opam" "ci" "lint" "reverse dependency")))
