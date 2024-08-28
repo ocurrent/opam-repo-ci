@@ -30,6 +30,7 @@ type error =
   | RestrictedPrefix of string
   | PrefixConflictClassMismatch of prefix_conflict_class_mismatch
   | ParseError
+  | DefaultTagsPresent of string list
 
 (**/**)
 
@@ -145,3 +146,8 @@ let msg_of_error (package, (err : error)) =
         pkg maintainer
   | ParseError ->
       Printf.sprintf "Error in %s: Failed to parse the opam file" pkg
+  | DefaultTagsPresent tags ->
+      Printf.sprintf
+        "Warning in %s: The package has not replaced the following default, \
+         example tags: %s"
+        pkg (String.concat ", " tags)
