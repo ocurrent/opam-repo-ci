@@ -1,4 +1,4 @@
 (library
  (name opam_ci_check)
  (public_name opam-ci-check)
- (libraries opam-client sexplib mula))
+ (libraries opam-client sexplib mula str))
