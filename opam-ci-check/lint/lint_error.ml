@@ -21,6 +21,7 @@ type error =
   | UnexpectedFile of string
   | ForbiddenPerm of string
   | OpamLint of (int * [ `Warning | `Error ] * string)
+  | MaintainerEmailMissing of string
   | FailedToDownload of string
   | NameCollision of string
   | WeakChecksum of string
@@ -137,5 +138,10 @@ let msg_of_error (package, (err : error)) =
   | OpamLint warn ->
       let warn = OpamFileTools.warns_to_string [ warn ] in
       Printf.sprintf "Error in %s: %s" pkg warn
+  | MaintainerEmailMissing maintainer ->
+      Printf.sprintf
+        "Error in %s: Maintainer email missing. Please add a maintainer email \
+         to the opam file. Maintainer: %s"
+        pkg maintainer
   | ParseError ->
       Printf.sprintf "Error in %s: Failed to parse the opam file" pkg

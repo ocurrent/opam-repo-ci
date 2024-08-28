@@ -260,6 +260,14 @@ module Checks = struct
         if is_build then [ (pkg, DuneIsBuild) ] else errors
     | None -> []
 
+  let check_maintainer_email ~pkg opam =
+    let maintainers = OpamFile.OPAM.maintainer opam in
+    List.filter_map
+      (fun m ->
+        if Str.string_match (Str.regexp ".*<?.*@.*>?") m 0 then None
+        else Some (pkg, MaintainerEmailMissing m))
+      maintainers
+
   let opam_lint ~pkg opam =
     OpamFileTools.lint ~check_upstream:true opam
     |> List.map (fun x -> (pkg, OpamLint x))
@@ -343,6 +351,7 @@ module Checks = struct
         check_checksums;
         check_package_dir ~repo_dir;
         opam_lint;
+        check_maintainer_email;
         check_no_pin_depends;
         check_no_extra_files;
         Prefix.check_prefix_conflict_class_mismatch;

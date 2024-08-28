@@ -43,6 +43,7 @@ Setup repo for incorrect b package tests
 
 Test the following:
 - [b.0.0.1] is missing the [author] field
+- [b.0.0.1] is missing the maintainer's email in the [maintainer] field
 - [b.0.0.2] has an extra unknown field
 - [b.0.0.3] has a pin-depends present, and a conflict class without the required prefix; use of extra-files and a weak checksum algorithm
 - [system-b.0.0.1] is using a restricted prefix in its name
@@ -54,6 +55,7 @@ Test the following:
   $ opam-ci-check lint -r . -c b.0.0.1
   Linting opam-repository at $TESTCASE_ROOT/. ...
   Error in b.0.0.1:            warning 25: Missing field 'authors'
+  Error in b.0.0.1: Maintainer email missing. Please add a maintainer email to the opam file. Maintainer: Jane
   [1]
   $ opam-ci-check lint -r . -c b.0.0.2
   Linting opam-repository at $TESTCASE_ROOT/. ...
