@@ -268,6 +268,21 @@ module Checks = struct
         else Some (pkg, MaintainerEmailMissing m))
       maintainers
 
+  let check_tags ~pkg opam =
+    (* Check if any of the default tags are present *)
+    let tags = OpamFile.OPAM.tags opam in
+    let default_tags =
+      [ "add topics"; "topics"; "to describe"; "your"; "project" ]
+    in
+    let default_tags_present =
+      List.filter_map
+        (fun tag -> if List.mem tag tags then Some tag else None)
+        default_tags
+    in
+    match default_tags_present with
+    | [] -> []
+    | _ -> [ (pkg, DefaultTagsPresent default_tags_present) ]
+
   let opam_lint ~pkg opam =
     OpamFileTools.lint ~check_upstream:true opam
     |> List.map (fun x -> (pkg, OpamLint x))
@@ -352,6 +367,7 @@ module Checks = struct
         check_package_dir ~repo_dir;
         opam_lint;
         check_maintainer_email;
+        check_tags;
         check_no_pin_depends;
         check_no_extra_files;
         Prefix.check_prefix_conflict_class_mismatch;

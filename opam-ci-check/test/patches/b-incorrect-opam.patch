@@ -3,7 +3,7 @@ new file mode 100644
 index 0000000..3697498
 --- /dev/null
 +++ b/packages/b/b.0.0.1/opam
-@@ -0,0 +1,13 @@
+@@ -0,0 +1,14 @@
 +opam-version: "2.0"
 +synopsis: "Synopsis"
 +description: "Description"
@@ -13,6 +13,7 @@ index 0000000..3697498
 +bug-reports: "https://github.com/ocurrent/opam-repo-ci/issues"
 +dev-repo: "git+https://github.com/ocurrent/opam-repo-ci.git"
 +doc: "https://ocurrent.github.io/ocurrent/"
++tags: ["topics" "sample" "project"]
 +build: []
 +depends: [
 +  "a-1" {>= "0.0.1"}
