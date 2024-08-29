@@ -19,7 +19,7 @@ let lint (changed_pkgs, new_pkgs) local_repo_dir =
           Ok ()
       | errors ->
           errors |> List.map Lint.msg_of_error |> String.concat "\n"
-          |> Result.error)
+          |> Printf.sprintf "%s\n" |> Result.error)
 
 let show_revdeps pkg local_repo_dir no_transitive_revdeps =
   (* Get revdeps for the package *)
