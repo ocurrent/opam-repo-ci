@@ -48,6 +48,12 @@ depends: [
   "alcotest" {>= "1.0.0" & with-test}
   "alcotest-lwt" {>= "1.0.1" & with-test}
   "odoc" {with-doc}
+
+  # pin-depends
+  "opam-ci-check"
+]
+pin-depends: [
+  "opam-ci-check.0.1~dev" "git+https://github.com/ocurrent/opam-ci-check.git#94890d5ed8d2ff6bbca0e5278af008d70468e25d"
 ]
 conflicts: [
   "ocaml-migrate-parsetree" {= "1.7.1"}
