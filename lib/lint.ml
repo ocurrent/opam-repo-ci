@@ -231,7 +231,7 @@ module Checks = struct
       | OpamFormula.Atom (pkg, constr) ->
           if is_dune pkg then
             let v = get_lower_bound constr in
-            Some (Option.default "1.0" v)
+            Some (Option.default "" v)
           else None
       | Empty -> None
       | Block x -> aux x
@@ -249,10 +249,11 @@ module Checks = struct
           match (dune_constraint, dune_version) with
           | _, Error msg -> [ (pkg, FailedToDownload msg) ]
           | None, Ok None -> []
+          | Some "", _ -> [ (pkg, DuneLowerBoundMissing) ]
           | Some _, Ok None -> [ (pkg, DuneProjectMissing) ]
           | None, Ok (Some _) ->
               if is_dune (OpamPackage.name pkg) then []
-              else [ (pkg, DuneConstraintMissing) ]
+              else [ (pkg, DuneDependencyMissing) ]
           | Some dep, Ok (Some ver) ->
               if OpamVersionCompare.compare dep ver >= 0 then []
               else [ (pkg, BadDuneConstraint (dep, ver)) ]

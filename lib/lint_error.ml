@@ -15,7 +15,8 @@ type error =
   | UnmatchedVersion of OpamPackage.Version.t
   | DubiousDuneSubst
   | DuneProjectMissing
-  | DuneConstraintMissing
+  | DuneDependencyMissing
+  | DuneLowerBoundMissing
   | DuneIsBuild
   | BadDuneConstraint of string * string
   | UnexpectedFile of string
@@ -99,10 +100,15 @@ let msg_of_error (package, (err : error)) =
         "Warning in %s: The package seems to use dune but the dune-project \
          file is missing."
         pkg
-  | DuneConstraintMissing ->
+  | DuneDependencyMissing ->
       Printf.sprintf
         "Warning in %s: The package has a dune-project file but no explicit \
          dependency on dune was found."
+        pkg
+  | DuneLowerBoundMissing ->
+      Printf.sprintf
+        "Warning in %s: The package has a dune dependency without a lower \
+         bound."
         pkg
   | BadDuneConstraint (dep, ver) ->
       Printf.sprintf
