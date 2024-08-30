@@ -257,7 +257,7 @@ module Checks = struct
               if OpamVersionCompare.compare dep ver >= 0 then []
               else [ (pkg, BadDuneConstraint (dep, ver)) ]
         in
-        if is_build then [ (pkg, DuneIsBuild) ] else errors
+        if is_build then (pkg, DuneIsBuild) :: errors else errors
     | None -> []
 
   let check_maintainer_email ~pkg opam =
