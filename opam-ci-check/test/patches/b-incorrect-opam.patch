@@ -39,7 +39,7 @@ index 0000000..a47aabf
 +  ["dune" "subst"]
 +]
 +url {
-+  src: "./b.0.0.2.tgz"
++  src: "b.0.0.2.tgz"
 +  checksum: ["sha256=e26dfd7fa9731d0d43239c8b7d36bd3d79b0f709f1cdfa2ada7a7ab5d79d1911"]
 +}
 +depends: [
