@@ -68,7 +68,7 @@ build: debian-12-ocaml-4.02/amd64 opam-dev lower-bounds
     ENV OPAMCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMFIXUPCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMUPGRADECRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMEXTERNALSOLVER="builtin-0install"
+    RUN opam option solver=builtin-0install
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
         test "$res" != 31 && exit "$res"; \
@@ -155,7 +155,7 @@ build: debian-12-ocaml-4.03/amd64 opam-dev lower-bounds
     ENV OPAMCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMFIXUPCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMUPGRADECRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMEXTERNALSOLVER="builtin-0install"
+    RUN opam option solver=builtin-0install
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
         test "$res" != 31 && exit "$res"; \
@@ -242,7 +242,7 @@ build: debian-12-ocaml-4.04/amd64 opam-dev lower-bounds
     ENV OPAMCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMFIXUPCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMUPGRADECRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMEXTERNALSOLVER="builtin-0install"
+    RUN opam option solver=builtin-0install
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
         test "$res" != 31 && exit "$res"; \
@@ -329,7 +329,7 @@ build: debian-12-ocaml-4.05/amd64 opam-dev lower-bounds
     ENV OPAMCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMFIXUPCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMUPGRADECRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMEXTERNALSOLVER="builtin-0install"
+    RUN opam option solver=builtin-0install
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
         test "$res" != 31 && exit "$res"; \
@@ -416,7 +416,7 @@ build: debian-12-ocaml-4.06/amd64 opam-dev lower-bounds
     ENV OPAMCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMFIXUPCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMUPGRADECRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMEXTERNALSOLVER="builtin-0install"
+    RUN opam option solver=builtin-0install
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
         test "$res" != 31 && exit "$res"; \
@@ -503,7 +503,7 @@ build: debian-12-ocaml-4.07/amd64 opam-dev lower-bounds
     ENV OPAMCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMFIXUPCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMUPGRADECRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMEXTERNALSOLVER="builtin-0install"
+    RUN opam option solver=builtin-0install
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
         test "$res" != 31 && exit "$res"; \
@@ -590,7 +590,7 @@ build: debian-12-ocaml-4.08/amd64 opam-dev lower-bounds
     ENV OPAMCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMFIXUPCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMUPGRADECRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMEXTERNALSOLVER="builtin-0install"
+    RUN opam option solver=builtin-0install
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
         test "$res" != 31 && exit "$res"; \
@@ -677,7 +677,7 @@ build: debian-12-ocaml-4.09/amd64 opam-dev lower-bounds
     ENV OPAMCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMFIXUPCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMUPGRADECRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMEXTERNALSOLVER="builtin-0install"
+    RUN opam option solver=builtin-0install
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
         test "$res" != 31 && exit "$res"; \
@@ -764,7 +764,7 @@ build: debian-12-ocaml-4.10/amd64 opam-dev lower-bounds
     ENV OPAMCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMFIXUPCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMUPGRADECRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMEXTERNALSOLVER="builtin-0install"
+    RUN opam option solver=builtin-0install
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
         test "$res" != 31 && exit "$res"; \
@@ -851,7 +851,7 @@ build: debian-12-ocaml-4.11/amd64 opam-dev lower-bounds
     ENV OPAMCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMFIXUPCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMUPGRADECRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMEXTERNALSOLVER="builtin-0install"
+    RUN opam option solver=builtin-0install
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
         test "$res" != 31 && exit "$res"; \
@@ -938,7 +938,7 @@ build: debian-12-ocaml-4.12/amd64 opam-dev lower-bounds
     ENV OPAMCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMFIXUPCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMUPGRADECRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMEXTERNALSOLVER="builtin-0install"
+    RUN opam option solver=builtin-0install
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
         test "$res" != 31 && exit "$res"; \
@@ -1025,7 +1025,7 @@ build: debian-12-ocaml-4.13/amd64 opam-dev lower-bounds
     ENV OPAMCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMFIXUPCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMUPGRADECRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMEXTERNALSOLVER="builtin-0install"
+    RUN opam option solver=builtin-0install
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
         test "$res" != 31 && exit "$res"; \
@@ -1112,7 +1112,7 @@ build: debian-12-ocaml-4.14/amd64 opam-dev lower-bounds
     ENV OPAMCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMFIXUPCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMUPGRADECRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMEXTERNALSOLVER="builtin-0install"
+    RUN opam option solver=builtin-0install
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
         test "$res" != 31 && exit "$res"; \
@@ -1268,7 +1268,7 @@ build: debian-12-ocaml-5.0/amd64 opam-dev lower-bounds
     ENV OPAMCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMFIXUPCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMUPGRADECRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMEXTERNALSOLVER="builtin-0install"
+    RUN opam option solver=builtin-0install
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
         test "$res" != 31 && exit "$res"; \
@@ -1355,7 +1355,7 @@ build: debian-12-ocaml-5.1/amd64 opam-dev lower-bounds
     ENV OPAMCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMFIXUPCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMUPGRADECRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMEXTERNALSOLVER="builtin-0install"
+    RUN opam option solver=builtin-0install
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
         test "$res" != 31 && exit "$res"; \
@@ -1442,7 +1442,7 @@ build: debian-12-ocaml-5.2/amd64 opam-dev lower-bounds
     ENV OPAMCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMFIXUPCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMUPGRADECRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMEXTERNALSOLVER="builtin-0install"
+    RUN opam option solver=builtin-0install
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
         test "$res" != 31 && exit "$res"; \
