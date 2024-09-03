@@ -15,8 +15,7 @@
  "Puneeth Chaganti <punchagan@muse-amuse.in>"
  "Shon Feder <shon.feder@gmail.com>")
 
-; TODO: Add a license field
-;(license LICENSE)
+(license "Apache-2.0")
 
 (documentation
  https://www.ocurrent.org/opam-ci-check/opam-ci-check/index.html)
