@@ -1181,6 +1181,7 @@ build: debian-12-ocaml-4.14/amd64 opam-dev with-tests
         done; \
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
+    RUN opam option solver=builtin-0install
     RUN (opam reinstall --with-test a.0.0.1) || true
     RUN opam reinstall --with-test --verbose a.0.0.1; \
         res=$?; \
@@ -1511,6 +1512,7 @@ build: debian-12-ocaml-5.2/amd64 opam-dev with-tests
         done; \
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
+    RUN opam option solver=builtin-0install
     RUN (opam reinstall --with-test a.0.0.1) || true
     RUN opam reinstall --with-test --verbose a.0.0.1; \
         res=$?; \
