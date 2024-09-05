@@ -23,6 +23,7 @@ depends: [
   "dune" {>= "3.7"}
   "ocaml" {>= "4.14.1"}
   "current_incr" {>= "0.6.0"} # see https://github.com/ocurrent/opam-repo-ci/pull/161
+  "current" {>= "0.6.6"}
   "current_git"
   "current_github"
   "current_docker"
