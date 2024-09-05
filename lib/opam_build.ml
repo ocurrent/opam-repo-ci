@@ -23,7 +23,7 @@ let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~revdep ~
    else
      []
   ) @
-  (if revdep || lower_bounds || with_tests then
+  (if revdep || lower_bounds then
      [
        run "opam option solver=builtin-0install";
      ]
