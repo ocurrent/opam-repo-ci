@@ -5,7 +5,6 @@ module Client = Opam_repo_ci_api.Client
 module Common = Opam_repo_ci_api.Common
 module Status_tree = Opam_repo_ci.Status_tree
 module Server = Cohttp_lwt_unix.Server
-module Response = Cohttp.Response.Make(Server.IO)
 module Transfer_IO = Cohttp__Transfer_io.Make(Server.IO)
 
 let headers = Cohttp.Header.init_with "Content-Type" "text/html; charset=utf-8"
