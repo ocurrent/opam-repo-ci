@@ -12,6 +12,7 @@ authors: [
   "Puneeth Chaganti <punchagan@muse-amuse.in>"
   "Shon Feder <shon.feder@gmail.com>"
 ]
+license: "Apache-2.0"
 tags: ["opam" "ci" "lint" "reverse dependency"]
 homepage: "https://github.com/ocurrent/opam-ci-check"
 doc: "https://www.ocurrent.org/opam-ci-check/opam-ci-check/index.html"
