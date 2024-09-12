@@ -7,6 +7,7 @@ WORKDIR /src
 RUN opam install -y --deps-only .
 ADD --chown=opam . .
 RUN opam exec -- dune build ./_build/install/default/bin/opam-repo-ci-service
+RUN cp $(opam exec -- which opam-ci-check) /src/_build/install/default/bin/opam-ci-check
 
 FROM debian:12
 RUN apt-get update && apt-get install libev4 openssh-client curl gnupg2 dumb-init git graphviz libsqlite3-dev ca-certificates netbase gzip bzip2 xz-utils unzip tar docker.io -y --no-install-recommends
@@ -15,3 +16,4 @@ WORKDIR /var/lib/ocurrent
 ENTRYPOINT ["dumb-init", "/usr/local/bin/opam-repo-ci-service"]
 ENV OCAMLRUNPARAM=a=2
 COPY --from=build /src/_build/install/default/bin/opam-repo-ci-service /usr/local/bin/
+COPY --from=build /src/_build/install/default/bin/opam-ci-check /usr/local/bin/
