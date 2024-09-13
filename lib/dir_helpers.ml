@@ -1,3 +1,7 @@
+(* SPDX-License-Identifier: Apache-2.0
+ * Copyright (c) 2024 Puneeth Chaganti <punchagan@muse-amuse.in>, Shon Feder <shon.feder@gmail.com>, Tarides <contact@tarides.com>
+ *)
+
 let create_temp_dir prefix =
   let base_temp_dir = Filename.get_temp_dir_name () in
   let unique_temp_dir =

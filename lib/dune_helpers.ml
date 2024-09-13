@@ -1,3 +1,7 @@
+(* SPDX-License-Identifier: Apache-2.0
+ * Copyright (c) 2024 Puneeth Chaganti <punchagan@muse-amuse.in>, Shon Feder <shon.feder@gmail.com>, Tarides <contact@tarides.com>
+ *)
+
 let write_file ~file ~contents =
   let ch = open_out file in
   output_string ch contents;

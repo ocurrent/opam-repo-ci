@@ -1,3 +1,7 @@
+(* SPDX-License-Identifier: Apache-2.0
+ * Copyright (c) 2024 Puneeth Chaganti <punchagan@muse-amuse.in>, Shon Feder <shon.feder@gmail.com>, Tarides <contact@tarides.com>
+ *)
+
 (** Some package name prefixes must be used along with specific conflict classes
 
     If either a restricted prefix or conflict class exists, then the
