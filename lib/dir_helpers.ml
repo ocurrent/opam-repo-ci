@@ -17,8 +17,11 @@ let remove_dir dir =
     Array.iter
       (fun entry ->
         let entry = Filename.concat dir entry in
-        if Sys.is_directory entry then remove_dir_rec entry
-        else Sys.remove entry)
+        let entry_is_directory =
+          (* Sys.is_directory raises a Sys_error for broken symlinks *)
+          try Sys.is_directory entry with Sys_error _ -> false
+        in
+        if entry_is_directory then remove_dir_rec entry else Sys.remove entry)
       entries;
     Sys.rmdir dir
   in
