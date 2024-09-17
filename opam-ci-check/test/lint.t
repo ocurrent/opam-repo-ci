@@ -35,7 +35,8 @@ Setup repo for incorrect b package tests
   Created tarball b.0.0.4.tgz
   Updated checksum for b.0.0.4.tgz in b.0.0.4's opam file
   $ echo "(lang dune 3.16)" > dune-project
-  $ sh "scripts/setup_sources.sh" b 0.0.5 dune-project
+  $ ln -s /tmp/non-existant-link random-link
+  $ sh "scripts/setup_sources.sh" b 0.0.5 dune-project random-link
   Created tarball b.0.0.5.tgz
   Updated checksum for b.0.0.5.tgz in b.0.0.5's opam file
   $ git commit -qm b-incorrect-opam
