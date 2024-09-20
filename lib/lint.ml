@@ -77,8 +77,13 @@ module Lint = struct
 
   let run { master } job { Key.src; packages } () =
     Current.Job.start job ~pool ~level:Current.Level.Harmless >>= fun () ->
-    Current_git.with_checkout ~job src @@ fun dir ->
-    Check.of_dir ~master ~job ~packages dir
+    match packages with
+    | [] ->
+      Current.Job.log job "No packages to lint.";
+      Lwt.return (Ok ())
+    | _ ->
+      Current_git.with_checkout ~job src @@ fun dir ->
+      Check.of_dir ~master ~job ~packages dir
   let pp f _ = Fmt.string f "Lint"
 
   let auto_cancel = true
