@@ -13,6 +13,32 @@ module Check = struct
   let marshal () = Yojson.Safe.to_string `Null
   let unmarshal _ = ()
 
+  let parse_errors_from_log job =
+    let job_id = Current.Job.id job in
+    let path = Current.Job.log_path job_id in
+    match path with
+    | Ok path ->
+        Lwt_io.with_file ~mode:Lwt_io.input (Fpath.to_string path) (fun ch ->
+          let rec aux acc =
+            (* We choose the relevant output lines by filtering lines starting
+               with Error/Warning. The other log lines in the file would start
+               with a timestamp (logged info), or not start with the
+               Error/Warning prefix (other text output from the CLI tool). *)
+            Lwt_io.read_line_opt ch >>= function
+            | Some line ->
+              if (String.starts_with ~prefix:"Error" line ||
+                  String.starts_with ~prefix:"Warning" line)
+              then
+                aux (line :: acc)
+              else
+                aux acc
+            | None -> Lwt.return acc
+          in
+          aux [] >>= function
+          | [] -> Lwt.return (Error (`Msg "Could not find any Error/Warning lines in CLI output."))
+          | errors -> Lwt.return (Ok (String.concat "\n" errors)))
+    | Error (`Msg m) -> Lwt.return (Error (`Msg (Fmt.str "Could not find the log file for job <%s>: %s" job_id m)))
+
   let of_dir ~master ~job ~packages cwd =
     let master = Current_git.Commit.hash master in
     exec ~cwd ~job [|"git"; "merge"; "-q"; "--"; master|] >>/= fun () ->
@@ -38,6 +64,17 @@ module Check = struct
     in
     let cmd = ["opam-ci-check"; "lint"; "--opam-repository"; "."] @ changed @ new_ in
     exec ~cwd ~job (cmd |> Array.of_list)
+    >>= function
+    | Error (`Msg err) ->
+      (* The exec function doesn't capture stdout when the command fails; so we
+         parse the command output from the log file, instead. *)
+        parse_errors_from_log job >>= (function
+        | Ok errors -> Lwt_result.fail (`Msg errors)
+        | Error (`Msg msg) ->
+          let error_msg = (Fmt.str "internal error: %s - %s" err msg) in
+          Lwt_result.fail (`Msg error_msg))
+    | Ok () ->
+        Lwt_result.return ()
 end
 
 module Lint = struct
