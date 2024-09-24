@@ -129,9 +129,23 @@ let link_jobs ~owner ~name ~hash ?selected jobs =
     let k = String.split_on_char Common.status_sep variant in
     let x =
       let label_txt = List.hd (List.rev k) in
-      let label = txt (Fmt.str "%s (%a)" label_txt Client.State.pp outcome) in
+      let is_lint = String.equal label_txt "(lint)" in
+      let label_status =
+        match (outcome, is_lint) with
+        | Failed _, true -> "failed"
+        | _ -> Fmt.str "%a" Client.State.pp outcome
+      in
+      let label = txt (Fmt.str "%s (%s)" label_txt label_status) in
       let label = if selected = Some variant then b [label] else label in
-      outcome, [a ~a:[a_href uri] [label]]
+      let log_link = a ~a:[a_href uri] [label] in
+      let error_ul =
+        match (outcome, is_lint) with
+        | Failed msg, true ->
+          let items = String.split_on_char '\n' msg |> List.map (fun s -> li [txt s]) in
+          [ul items]
+        | _ -> [] in
+      let elements = log_link :: error_ul in
+      outcome, elements
     in
     Status_tree.add k x trees
   in
