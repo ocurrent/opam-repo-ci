@@ -23,7 +23,7 @@
 (package
  (name opam-ci-check)
  (synopsis
-  "CLI tool that tests whether packages are publishable on the opam repository.")
+  "CLI tool that tests whether packages are publishable on the opam repository")
  (description
   "opam-ci-check is used in the opam repo CI and can be used locally and in other CI pipelines to test the deliverability of packages.")
  (depends
