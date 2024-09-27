@@ -53,7 +53,7 @@ depends: [
   "opam-ci-check"
 ]
 pin-depends: [
-  "opam-ci-check.0.1~dev" "git+https://github.com/ocurrent/opam-ci-check.git#b00f2e016ce6cbc311d488af1aae8d6c8854dfa0"
+  "opam-ci-check.0.1~dev" "git+https://github.com/shonfeder/opam-ci-check.git#5e0be64509d2e4f0230970078dd72af15fc926ec"
 ]
 conflicts: [
   "ocaml-migrate-parsetree" {= "1.7.1"}
