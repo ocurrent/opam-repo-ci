@@ -5,8 +5,11 @@
 open Cmdliner
 open Opam_ci_check
 
+(* This is Cmdliner.Term.map, which is not available in Cmdliner 1.1.1 *)
+let map_term f x = Term.app (Term.const f) x
+
 let to_exit_code : (unit, string) result Term.t -> Cmd.Exit.code Term.t =
-  Term.map @@ function
+  map_term @@ function
   | Ok () -> 0
   | Error msg ->
       Printf.eprintf "%s%!" msg;
