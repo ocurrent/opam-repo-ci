@@ -399,7 +399,7 @@ let run_package_lint ~newly_published ~repo_dir pkg =
   In_channel.with_open_text opam_path (fun ic ->
       let opam =
         try Ok (OpamFile.OPAM.read_from_channel ic)
-        with OpamPp.Bad_format e | OpamPp.Bad_version e -> Error e
+        with OpamPp.Bad_format e | OpamPp.Bad_version (e, _) -> Error e
       in
       match opam with
       | Ok opam ->

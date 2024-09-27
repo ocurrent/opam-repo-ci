@@ -34,7 +34,7 @@
   (cmdliner
    (>= 1.1.1))
   (opam-client
-   (>= 2.2))
+   (>= 2.3.0~alpha1))
   (mula
    (>= 0.1.2)))
  (tags

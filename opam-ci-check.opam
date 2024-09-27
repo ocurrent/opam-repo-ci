@@ -22,7 +22,7 @@ depends: [
   "dune" {>= "3.15"}
   "sexplib"
   "cmdliner" {>= "1.1.1"}
-  "opam-client" {>= "2.2"}
+  "opam-client" {>= "2.3.0~alpha1"}
   "mula" {>= "0.1.2"}
   "odoc" {with-doc}
 ]
