@@ -1,10 +1,17 @@
 *.cap
 *.install
+*.log
 .*.swp
+.DS_Store
 .env
+.idea
 .merlin
 .vscode
-_build
-_opam
+_build/
+_opam/
 capnp-secrets
+tmp/
 var
+
+# Particular to opam-ci-check
+/.opam-revdeps/

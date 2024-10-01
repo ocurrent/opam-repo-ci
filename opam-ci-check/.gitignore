@@ -1,9 +1,0 @@
-.DS_Store
-.idea
-*.log
-tmp/
-
-
-_opam/
-_build/
-/.opam-revdeps/
