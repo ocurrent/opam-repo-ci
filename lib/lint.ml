@@ -63,6 +63,16 @@ module Check = struct
           | new_ -> ["--newly-published"; String.concat "," new_ ]
     in
     let cmd = ["opam-ci-check"; "lint"; "--opam-repository"; "."] @ changed @ new_ in
+    (* Show instructions to run locally *)
+    let install_instructions = ["opam"; "pin"; "opam-ci-check"; "git+https://github.com/ocurrent/opam-repo-ci.git#live"] in
+    Current.Job.write job
+    (Fmt.str "@.\
+              To reproduce locally, on the opam-repository PR branch, run: @.\
+              @[@;<4 4>%s@]\
+              @[@;<4 4>%s@]@.@."
+     (String.concat " " install_instructions)
+     (String.concat " " cmd));
+    (* Run the lint! *)
     exec ~cwd ~job (cmd |> Array.of_list)
     >>= function
     | Error (`Msg err) ->
