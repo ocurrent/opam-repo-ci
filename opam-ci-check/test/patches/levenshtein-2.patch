@@ -1,0 +1,72 @@
+diff --git a/packages/fieffind/fieffind.0.0.1/opam b/packages/fieffind/fieffind.0.0.1/opam
+new file mode 100644
+index 0000000..5246a83
+--- /dev/null
++++ b/packages/fieffind/fieffind.0.0.1/opam
+@@ -0,0 +1,12 @@
++opam-version: "2.0"
++synopsis: "Synopsis"
++description: "Description"
++maintainer: "Maintainer <me@example.com>"
++author: "Author"
++license: "Apache-2.0"
++homepage: "https://github.com/ocurrent/opam-repo-ci"
++bug-reports: "https://github.com/ocurrent/opam-repo-ci/issues"
++dev-repo: "git+https://github.com/ocurrent/opam-repo-ci.git"
++doc: "https://ocurrent.github.io/ocurrent/"
++build: []
++depends: []
+diff --git a/packages/fieffinder/fieffinder.0.0.1/opam b/packages/fieffinder/fieffinder.0.0.1/opam
+new file mode 100644
+index 0000000..5246a83
+--- /dev/null
++++ b/packages/fieffinder/fieffinder.0.0.1/opam
+@@ -0,0 +1,12 @@
++opam-version: "2.0"
++synopsis: "Synopsis"
++description: "Description"
++maintainer: "Maintainer <me@example.com>"
++author: "Author"
++license: "Apache-2.0"
++homepage: "https://github.com/ocurrent/opam-repo-ci"
++bug-reports: "https://github.com/ocurrent/opam-repo-ci/issues"
++dev-repo: "git+https://github.com/ocurrent/opam-repo-ci.git"
++doc: "https://ocurrent.github.io/ocurrent/"
++build: []
++depends: []
+diff --git a/packages/field1/field1.0.0.2/opam b/packages/field1/field1.0.0.2/opam
+new file mode 100644
+index 0000000..5246a83
+--- /dev/null
++++ b/packages/field1/field1.0.0.2/opam
+@@ -0,0 +1,12 @@
++opam-version: "2.0"
++synopsis: "Synopsis"
++description: "Description"
++maintainer: "Maintainer <me@example.com>"
++author: "Author"
++license: "Apache-2.0"
++homepage: "https://github.com/ocurrent/opam-repo-ci"
++bug-reports: "https://github.com/ocurrent/opam-repo-ci/issues"
++dev-repo: "git+https://github.com/ocurrent/opam-repo-ci.git"
++doc: "https://ocurrent.github.io/ocurrent/"
++build: []
++depends: []
+diff --git a/packages/fielf/fielf.0.0.1/opam b/packages/fielf/fielf.0.0.1/opam
+new file mode 100644
+index 0000000..5246a83
+--- /dev/null
++++ b/packages/fielf/fielf.0.0.1/opam
+@@ -0,0 +1,12 @@
++opam-version: "2.0"
++synopsis: "Synopsis"
++description: "Description"
++maintainer: "Maintainer <me@example.com>"
++author: "Author"
++license: "Apache-2.0"
++homepage: "https://github.com/ocurrent/opam-repo-ci"
++bug-reports: "https://github.com/ocurrent/opam-repo-ci/issues"
++dev-repo: "git+https://github.com/ocurrent/opam-repo-ci.git"
++doc: "https://ocurrent.github.io/ocurrent/"
++build: []
++depends: []
