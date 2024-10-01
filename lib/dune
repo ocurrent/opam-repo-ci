@@ -1,5 +1,6 @@
 (library
  (name opam_repo_ci)
+ (package opam-repo-ci-api)
  (preprocess
   (pps ppx_deriving.std ppx_deriving_yojson))
  (libraries

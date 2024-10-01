@@ -1,7 +1,9 @@
 (test
- (name test_opam_ci_check))
+ (name test_opam_ci_check)
+ (package opam-ci-check))
 
 (cram
+ (package opam-ci-check)
  (deps
   %{bin:opam-ci-check}
   ./scripts/setup_repo.sh

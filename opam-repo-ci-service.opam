@@ -16,11 +16,11 @@ depends: [
   "prometheus" {>= "1.2"} # needed for ocurrent
   "ppx_sexp_conv"
   "ppx_deriving_yojson"
-  "ppx_deriving"
+  "ppx_deriving" {with-test}
   "mirage-crypto-rng" {>= "0.11.0"}
   "logs"
   "fmt" {>= "0.8.7"}
-  "dune" {>= "3.7"}
+  "dune" {>= "3.16"}
   "ocaml" {>= "4.14.1"}
   "current_incr" {>= "0.6.0"} # see https://github.com/ocurrent/opam-repo-ci/pull/161
   "current" {>= "0.6.6"}
@@ -35,7 +35,6 @@ depends: [
   "memtrace" {>= "0.1.1"}
   "capnp-rpc-lwt" {>= "0.8.0"}
   "capnp-rpc-unix" {>= "0.8.0"}
-  "opam-repo-ci-api"
   "opam-state" {>= "2.3.0~alpha1"}
   "opam-format" {>= "2.3.0~alpha1"}
   "opam-file-format" {>= "2.1.2"}
@@ -43,17 +42,15 @@ depends: [
   "conf-libev"
   "dockerfile" {>= "6.3.0"}
   "dockerfile-opam" {>= "6.3.0"}
-  "ocaml-version" {>= "2.4.0"}
+  "ocaml-version" {>= "3.6.9"}
   "mula" {>= "0.1.2"}
   "alcotest" {>= "1.0.0" & with-test}
   "alcotest-lwt" {>= "1.0.1" & with-test}
   "odoc" {with-doc}
 
-  # pin-depends
+  # Internal dependencies
   "opam-ci-check"
-]
-pin-depends: [
-  "opam-ci-check.0.1~dev" "git+https://github.com/ocurrent/opam-ci-check.git#c6f883f4500bd69755bcf884a95ccac298cc8c6b"
+  "opam-repo-ci-api"
 ]
 conflicts: [
   "ocaml-migrate-parsetree" {= "1.7.1"}
