@@ -1,10 +1,10 @@
+*.cap
 *.install
+.*.swp
+.env
 .merlin
+.vscode
 _build
 _opam
-var
-*.cap
-.*.swp
-.vscode
 capnp-secrets
-.env
+var
