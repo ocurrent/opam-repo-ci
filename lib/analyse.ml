@@ -143,8 +143,8 @@ module Analysis = struct
     let filename = OpamFile.make (OpamFilename.raw path) in
     match OpamFile.OPAM.read_from_string ~filename content with
     | opam_file -> Ok opam_file
-    | exception OpamPp.Bad_format (_, msg)
-    | exception OpamPp.Bad_version (_, msg) ->
+    | exception OpamPp.Bad_format ((_, msg) : OpamPp.bad_format)
+    | exception OpamPp.Bad_version (((_, msg): OpamPp.bad_format), _) ->
       Error (`Msg (Printf.sprintf "%S failed to be parsed: %s" path msg))
 
   let files_are_changed_significantly ~old_file ~new_file =

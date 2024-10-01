@@ -36,8 +36,8 @@ depends: [
   "capnp-rpc-lwt" {>= "0.8.0"}
   "capnp-rpc-unix" {>= "0.8.0"}
   "opam-repo-ci-api"
-  "opam-state" {>= "2.2.0~beta1"}
-  "opam-format" {>= "2.2.0~beta1"}
+  "opam-state" {>= "2.3.0~alpha1"}
+  "opam-format" {>= "2.3.0~alpha1"}
   "opam-file-format" {>= "2.1.2"}
   "sexplib" {>= "v0.14.0"}
   "conf-libev"
@@ -53,7 +53,7 @@ depends: [
   "opam-ci-check"
 ]
 pin-depends: [
-  "opam-ci-check.0.1~dev" "git+https://github.com/ocurrent/opam-ci-check.git#b00f2e016ce6cbc311d488af1aae8d6c8854dfa0"
+  "opam-ci-check.0.1~dev" "git+https://github.com/ocurrent/opam-ci-check.git#c6f883f4500bd69755bcf884a95ccac298cc8c6b"
 ]
 conflicts: [
   "ocaml-migrate-parsetree" {= "1.7.1"}
