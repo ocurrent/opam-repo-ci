@@ -9,12 +9,12 @@ This tool is in progress.
 ## Installation
 
 ``` sh
-opam install https://github.com/ocurrent/opam-ci-check.git
+opam pin opam-ci-check https://github.com/ocurrent/opam-repo-ci.git
 ```
 
 ## Documentation
 
-https://www.ocurrent.org/opam-ci-check/
+https://www.ocurrent.org/opam-repo-ci
 
 ## Contribution
 
