@@ -11,13 +11,27 @@ license: "Apache-2.0"
 homepage: "https://github.com/ocurrent/opam-repo-ci"
 bug-reports: "https://github.com/ocurrent/opam-repo-ci/issues"
 depends: [
-  "dune" {>= "3.7"}
+  "dune" {>= "3.16"}
   "ocaml" {>= "4.14.1"}
   "current_rpc"
   "capnp" {>= "3.4.0"}
   "capnp-rpc-lwt"
   "dockerfile"
   "odoc" {with-doc}
+  "current" {>= "0.6.6"}
+  "current_docker"
+  "current_github"
+  "current_ocluster"
+  "dockerfile-opam" {>= "6.3.0"}
+  "logs"
+  "mula" {>= "0.1.2"}
+  "obuilder-spec"
+  "ocaml-version" {>= "3.6.9"}
+  "opam-format" {>= "2.3.0~alpha1"}
+  "opam-state" {>= "2.3.0~alpha1"}
+  "ppx_deriving" {>= "5.2.1"}
+  "ppx_deriving_yojson"
+  "sexplib" {>= "v0.16.0"}
 ]
 conflicts: [
   "conduit-lwt-unix" {< "4.0.1"}

@@ -8,17 +8,22 @@
   (glob_files ./patches/*)))
 
 (cram
+ (package opam-repo-ci-service)
  (deps
   %{bin:opam-repo-ci-local}
   ./scripts/setup_repo.sh
   (glob_files ./patches/*)))
 
 (rule
- (with-stdout-to
-  specs.output
-  (run ./test.exe --dump-specs)))
+ (package opam-repo-ci-service)
+ (alias runtest)
+ (action
+  (with-stdout-to
+   specs.output
+   (run ./test.exe --dump-specs))))
 
 (rule
+ (package opam-repo-ci-service)
  (alias runtest)
  (action
   (diff specs.expected specs.output)))

@@ -11,7 +11,7 @@ license: "Apache-2.0"
 homepage: "https://github.com/ocurrent/opam-repo-ci"
 bug-reports: "https://github.com/ocurrent/opam-repo-ci/issues"
 depends: [
-  "dune" {>= "3.7"}
+  "dune" {>= "3.16"}
   "yojson"
   "logs"
   "fmt" {>= "0.8.7"}

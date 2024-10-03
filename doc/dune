@@ -1,13 +1,17 @@
 (executable
  (name doc)
+ (public_name opam_repo_ci_service_doc)
+ (package opam-repo-ci-service)
  (libraries opam_repo_ci))
 
 (rule
+ (package opam-repo-ci-service)
  (target platforms-new.md)
  (action
-  (run ./doc.exe -o %{target})))
+  (run %{dep:./doc.exe} -o %{target})))
 
 (rule
+ (package opam-repo-ci-service)
  (alias doc)
  (mode promote)
  (action
