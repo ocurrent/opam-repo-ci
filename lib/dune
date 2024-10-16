@@ -20,5 +20,4 @@
   obuilder-spec
   opam-format
   opam-state
-  opam-repo-ci-api
-  mula))
+  opam-repo-ci-api))
