@@ -1,6 +1,9 @@
 open Current.Syntax
 open Lwt.Infix
 
+module Spec = Opam_ci_check.Spec
+module Variant = Opam_ci_check.Variant
+module Opam_build = Opam_ci_check.Opam_build
 module Git = Current_git
 module Raw = Current_docker.Raw
 
@@ -158,7 +161,7 @@ module Op = struct
           ~os (Opam_build.build_spec ~base ~local:true ~for_docker:true build_config)
     in
     Current.Job.write job
-      (Fmt.str "@[<v>Base: %a@,%a@]@." Raw.Image.pp image Spec.pp_summary ty);
+      (Fmt.str "@[<v>Base: %s@,%a@]@." image Spec.pp_summary ty);
     Current.Job.write job
       (Fmt.str
           "@.To reproduce locally:@.@.cd $(mktemp -d)@.%a@.cat > Dockerfile \

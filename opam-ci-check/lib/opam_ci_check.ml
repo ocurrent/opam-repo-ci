@@ -5,3 +5,7 @@
 module Revdeps = Revdeps
 module Test = Test
 module Lint = Lint
+module Opam_build = Opam_build
+module Variant = Variant
+module Opam_version = Opam_version
+module Spec = Spec

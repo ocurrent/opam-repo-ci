@@ -2,6 +2,9 @@ open Current.Syntax
 
 module Docker = Current_docker.Default
 module Distro = Dockerfile_opam.Distro
+module Opam_version = Opam_ci_check.Opam_version
+module Variant = Opam_ci_check.Variant
+module Spec = Opam_ci_check.Spec
 
 let master_distro = (Distro.resolve_alias Distro.master_distro :> Distro.t)
 let default_compilers_full = Ocaml_version.Releases.[ v4_14; Ocaml_version.Releases.latest ] (* NOTE: Should probably stay with list length 2 *)
@@ -192,7 +195,7 @@ let get_base ~arch variant =
         Docker.peek ~schedule:weekly ~arch:(Ocaml_version.to_docker_arch arch)
           ("ocaml/opam:" ^ Variant.docker_tag variant)
       in
-      Spec.Docker (Current_docker.Raw.Image.of_hash repo_id)
+      Spec.Docker repo_id
 
 let build (module Builder : Build_intf.S) ~analysis ~pkgopts ~master ~source ~opam_version ~lower_bounds ~revdeps label variant =
   let arch = Variant.arch variant in
