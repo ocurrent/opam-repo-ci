@@ -2,6 +2,9 @@ open Current.Syntax
 open Capnp_rpc_lwt
 open Lwt.Infix
 
+module Variant = Opam_ci_check.Variant
+module Spec = Opam_ci_check.Spec
+module Opam_build = Opam_ci_check.Opam_build
 module Git = Current_git
 
 let ( >>!= ) = Lwt_result.bind

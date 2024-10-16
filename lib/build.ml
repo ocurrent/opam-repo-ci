@@ -2,6 +2,9 @@ open Current.Syntax
 
 module Docker = Current_docker.Default
 module Distro = Dockerfile_opam.Distro
+module Opam_version = Opam_ci_check.Opam_version
+module Variant = Opam_ci_check.Variant
+module Spec = Opam_ci_check.Spec
 
 let master_distro = (Distro.resolve_alias Distro.master_distro :> Distro.t)
 let default_compilers_full = Ocaml_version.Releases.[ v4_14; Ocaml_version.Releases.latest ] (* NOTE: Should probably stay with list length 2 *)

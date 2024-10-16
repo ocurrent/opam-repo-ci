@@ -5,8 +5,8 @@
     to conform with the interface for [Cluster_build]. *)
 val v :
   label:string ->
-  spec:Spec.t Current.t ->
-  base:Spec.base Current.t ->
+  spec:Opam_ci_check.Spec.t Current.t ->
+  base:Opam_ci_check.Spec.base Current.t ->
   master:Current_git.Commit.t Current.t ->
   urgent:([ `High | `Low ] -> bool) option Current.t ->
   Current_git.Commit_id.t Current.t -> unit Current.t
@@ -19,11 +19,11 @@ val v :
     The spec is generated on top of [base], and the OCurrent job is run after
     the job specified by [after], making it a dependency. *)
 val list_revdeps :
-  variant:Variant.t ->
-  opam_version:Opam_version.t ->
+  variant:Opam_ci_check.Variant.t ->
+  opam_version:Opam_ci_check.Opam_version.t ->
   pkgopt:Package_opt.t Current.t ->
   new_pkgs:OpamPackage.t list Current.t ->
-  base:Spec.base Current.t ->
+  base:Opam_ci_check.Spec.base Current.t ->
   master:Current_git.Commit.t Current.t ->
   after:unit Current.t ->
   Current_git.Commit_id.t Current.t -> OpamPackage.Set.t Current.t

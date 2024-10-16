@@ -23,7 +23,11 @@ depends: [
   "sexplib"
   "cmdliner" {>= "1.1.1"}
   "opam-client" {>= "2.3.0~alpha1"}
+  "ocaml-version" {>= "3.6.9"}
+  "obuilder-spec"
   "odoc" {with-doc}
+  "ppx_deriving" {>= "5.2.1"}
+  "ppx_deriving_yojson"
 ]
 build: [
   ["dune" "subst"] {dev}

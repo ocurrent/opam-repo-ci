@@ -1,4 +1,12 @@
 (library
  (name opam_ci_check)
  (public_name opam-ci-check)
- (libraries opam-client sexplib str))
+ (preprocess
+  (pps ppx_deriving.std ppx_deriving_yojson))
+ (libraries
+  opam-client
+  sexplib
+  str
+  ocaml-version
+  obuilder-spec
+  current_docker))
