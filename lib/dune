@@ -20,4 +20,5 @@
   obuilder-spec
   opam-format
   opam-state
-  opam-repo-ci-api))
+  opam-repo-ci-api
+  opam_ci_check))

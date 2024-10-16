@@ -1,5 +1,7 @@
 open Opam_repo_ci
 
+module Opam_version = Opam_ci_check.Opam_version
+module Variant = Opam_ci_check.Variant
 module Git = Current_git
 
 type platform = {
