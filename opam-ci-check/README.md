@@ -21,7 +21,7 @@ https://www.ocurrent.org/opam-repo-ci
 Contributions are most welcome!
 
 <!-- TODO -->
-- [File issues](https://github.com/ocurrent/opam-ci-check/issues) to report bugs or feature requests.
+- [File issues](https://github.com/ocurrent/opam-repo-ci/issues) to report bugs or feature requests.
 - [Contribute code or documentation](./CONTRIBUTING.md)
 
 ---
