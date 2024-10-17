@@ -4,6 +4,7 @@
 
 open Cmdliner
 open Opam_ci_check
+module Distro = Dockerfile_opam.Distro
 
 (* This is Cmdliner.Term.map, which is not available in Cmdliner 1.1.1 *)
 let map_term f x = Term.app (Term.const f) x
@@ -69,6 +70,28 @@ let test_revdeps pkg local_repo_dir use_dune no_transitive_revdeps =
           Error
             (Printf.sprintf "tests failed in %d reverse dependencies"
                num_failed_installs)
+
+let make_config pkg =
+  let variant =
+    let distro =
+      (Distro.resolve_alias Distro.master_distro :> Distro.t)
+      |> Distro.tag_of_distro
+    in
+    let compiler =
+      Ocaml_version.(to_string (with_just_major_and_minor Releases.latest))
+    in
+    (* TODO: Support other archs *)
+    Variant.v ~distro ~compiler:(compiler, None) ~arch:`X86_64
+  in
+  let opam_version = `Dev in
+  Spec.opam ~variant ~lower_bounds:false ~with_tests:true ~opam_version pkg
+
+let build_run_spec pkg opam_repository =
+  let pkg = OpamPackage.of_string pkg in
+  let config = make_config pkg in
+  let base = Spec.Docker ("ocaml/opam:" ^ Variant.docker_tag config.variant) in
+  Test.build_run_spec ?opam_repository ~base config
+  |> Result.map_error (fun _ -> "Failed to build and test the package")
 
 let make_abs_path s =
   if Filename.is_relative s then Filename.concat (Sys.getcwd ()) s else s
@@ -181,11 +204,22 @@ let test_cmd =
   in
   Cmd.v info term
 
+let build_test_cmd =
+  let doc = "Build and test a package" in
+  let term =
+    Term.(const build_run_spec $ pkg_term $ local_opam_repo_term)
+    |> to_exit_code
+  in
+  let info =
+    Cmd.info "build-test" ~doc ~sdocs:"COMMON OPTIONS" ~exits:Cmd.Exit.defaults
+  in
+  Cmd.v info term
+
 let cmd : Cmd.Exit.code Cmd.t =
   let doc = "A tool to list revdeps and test the revdeps locally" in
   let exits = Cmd.Exit.defaults in
   let default = Term.(ret (const (fun _ -> `Help (`Pager, None)) $ const ())) in
   let info = Cmd.info "opam-ci-check" ~doc ~sdocs:"COMMON OPTIONS" ~exits in
-  Cmd.group ~default info [ lint_cmd; list_cmd; test_cmd ]
+  Cmd.group ~default info [ lint_cmd; list_cmd; test_cmd; build_test_cmd ]
 
 let () = exit (Cmd.eval' cmd)

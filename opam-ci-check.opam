@@ -21,9 +21,12 @@ depends: [
   "ocaml" {>= "4.14.0"}
   "dune" {>= "3.16"}
   "sexplib"
+  "bos" {>= "0.2.1"}
+  "fpath" {>= "0.7.3"}
   "cmdliner" {>= "1.1.1"}
   "opam-client" {>= "2.3.0~alpha1"}
   "ocaml-version" {>= "3.6.9"}
+  "dockerfile-opam" {>= "6.3.0"}
   "obuilder-spec"
   "odoc" {with-doc}
   "ppx_deriving" {>= "5.2.1"}
