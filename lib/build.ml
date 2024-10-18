@@ -194,16 +194,15 @@ let get_base ~arch variant =
       in
       Spec.Docker (Current_docker.Raw.Image.of_hash repo_id)
 
-let build (module Builder : Build_intf.S) ~analysis ~pkgopts ~master ~source ~opam_version ~lower_bounds ~revdeps label variant =
+let build (module Builder : Build_intf.S)
+    ~analysis ~master ~source ~opam_version ~lower_bounds ~revdeps label variant
+  : _ Node.t =
   let arch = Variant.arch variant in
   let analysis = with_label label analysis in
   let pkgopts =
-    (* Add fake dependency from pkgs to analysis so that the package being tested appears
-      below the platform, to make the diagram look nicer. Ideally, the pulls of the
-      base images should be moved to the top (not be per-package at all). *)
-    let+ _ = analysis
-    and+ pkgopts in
-    pkgopts
+    let+ analysis = analysis in
+    Analyse.Analysis.packages analysis
+    |> List.filter_map get_significant_available_pkg
   in
   let pkgs = Current.map (List.map (fun x ->x.Package_opt.pkg)) pkgopts in
   let build_pkg pkgopt =
@@ -257,11 +256,7 @@ let with_cluster ~ocluster ~analysis ~lint ~master source =
     let v = Cluster_build.v ocluster
     let list_revdeps = Cluster_build.list_revdeps ocluster
   end in
-  let pkgopts =
-    Current.map (fun x -> Analyse.Analysis.packages x
-    |> List.filter_map get_significant_available_pkg) analysis
-  in
-  let build = build (module Builder) ~analysis ~pkgopts ~master ~source in
+  let build = build (module Builder) ~analysis ~master ~source in
   [
     Node.leaf ~label:"(lint)" (Node.action `Linted lint);
     Node.branch ~label:"compilers" (compilers ~arch:`X86_64 ~build ());
@@ -273,11 +268,7 @@ let with_cluster ~ocluster ~analysis ~lint ~master source =
 
 let with_docker ~host_arch ~analysis ~lint ~master source =
   let module Builder : Build_intf.S = Local_build in
-  let pkgopts =
-    Current.map (fun x -> Analyse.Analysis.packages x
-    |> List.filter_map get_significant_available_pkg) analysis
-  in
-  let build = build (module Builder) ~analysis ~pkgopts ~master ~source in
+  let build = build (module Builder) ~analysis ~master ~source in
   [
     Node.leaf ~label:"(lint)" (Node.action `Linted lint);
     Node.branch ~label:"compilers" (compilers ~minimal:true ~arch:host_arch ~build ());
