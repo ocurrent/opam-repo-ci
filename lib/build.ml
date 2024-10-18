@@ -251,14 +251,13 @@ let build (module Builder : Build_intf.S)
   |> (fun x -> Node.branch ~label [x])
   |> Node.collapse ~key:"platform" ~value:label ~input:analysis
 
-let with_cluster ~ocluster ~analysis ~lint ~master source =
+let with_cluster ~ocluster ~analysis ~master source =
   let module Builder : Build_intf.S = struct
     let v = Cluster_build.v ocluster
     let list_revdeps = Cluster_build.list_revdeps ocluster
   end in
   let build = build (module Builder) ~analysis ~master ~source in
   [
-    Node.leaf ~label:"(lint)" (Node.action `Linted lint);
     Node.branch ~label:"compilers" (compilers ~arch:`X86_64 ~build ());
     Node.branch ~label:"distributions" (linux_distributions ~arch:`X86_64 ~build);
     Node.branch ~label:"macos" (macos ~build);
@@ -266,10 +265,7 @@ let with_cluster ~ocluster ~analysis ~lint ~master source =
     Node.branch ~label:"extras" (extras ~build);
   ]
 
-let with_docker ~host_arch ~analysis ~lint ~master source =
+let with_docker ~host_arch ~analysis ~master source =
   let module Builder : Build_intf.S = Local_build in
   let build = build (module Builder) ~analysis ~master ~source in
-  [
-    Node.leaf ~label:"(lint)" (Node.action `Linted lint);
-    Node.branch ~label:"compilers" (compilers ~minimal:true ~arch:host_arch ~build ());
-  ]
+  [Node.branch ~label:"compilers" (compilers ~minimal:true ~arch:host_arch ~build ())]
