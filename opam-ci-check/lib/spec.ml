@@ -1,11 +1,11 @@
 (* TODO: Make macOS use docker images *)
 type base =
-  | Docker of Current_docker.Raw.Image.t
+  | Docker of string
   | Macos of string
   | Freebsd of string
 
 let base_to_string = function
-  | Docker img -> Current_docker.Raw.Image.hash img
+  | Docker img -> img
   | Macos base -> base
   | Freebsd base -> base
 
