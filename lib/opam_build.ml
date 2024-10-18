@@ -180,3 +180,12 @@ let revdeps ?(local=false) ~for_docker ~opam_version ~base ~variant ~pkg () =
         pkg pkg
     ]
   )
+
+let build_spec ?(local=false) ~for_docker ~base config =
+  let {Spec.variant; ty} = config in
+  let base = Spec.base_to_string base in
+  match ty with
+  | `Opam (`List_revdeps { opam_version }, pkg) ->
+    revdeps ~local ~for_docker ~opam_version ~base ~variant ~pkg ()
+  | `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) ->
+    spec ~local ~for_docker ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_tests ~pkg ()
