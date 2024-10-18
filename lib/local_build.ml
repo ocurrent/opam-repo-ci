@@ -144,27 +144,21 @@ module Op = struct
     let os = match Variant.os variant with
       | `Macos | `Linux | `Freebsd -> `Unix
     in
-    let build_spec =
-      let base = Spec.base_to_string base in
-      match ty with
-      | `Opam (`List_revdeps { opam_version }, pkg) ->
-          Opam_build.revdeps ~local:true ~for_docker:true ~opam_version ~base ~variant ~pkg ()
-      | `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) ->
-          Opam_build.spec ~local:true ~for_docker:true ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_tests ~pkg ()
+    let build_config = {Spec.variant; ty}
     in
-    let base =
+    let image =
       match base with
       | Macos _s -> failwith "Local MacOS OBuilder worker not supported"
       | Freebsd _s -> failwith "Local FreeBSD OBuilder worker not supported"
-      | Docker base -> base
+      | Docker image -> image
     in
     let make_dockerfile ~for_user =
       (if for_user then "" else Buildkit_syntax.add (Variant.arch variant))
       ^ Obuilder_spec.Docker.dockerfile_of_spec ~buildkit:(not for_user)
-          ~os build_spec
+          ~os (Opam_build.build_spec ~base ~local:true ~for_docker:true build_config)
     in
     Current.Job.write job
-      (Fmt.str "@[<v>Base: %a@,%a@]@." Raw.Image.pp base Spec.pp_summary ty);
+      (Fmt.str "@[<v>Base: %a@,%a@]@." Raw.Image.pp image Spec.pp_summary ty);
     Current.Job.write job
       (Fmt.str
           "@.To reproduce locally:@.@.cd $(mktemp -d)@.%a@.cat > Dockerfile \
