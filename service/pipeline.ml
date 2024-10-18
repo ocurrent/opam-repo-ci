@@ -8,11 +8,11 @@ module Common = Opam_repo_ci_api.Common
 module Distro = Dockerfile_opam.Distro
 
 module Results : sig
-  type t = Index.job_ids Current.t * Summary.t Current.t
+  type t = Build.result
   val empty : t
   val merge : t -> t -> t
 end = struct
-  type t = Index.job_ids Current.t * Summary.t Current.t
+  type t = Build.result
 
   let empty = (Current.return Index.Job_map.empty, Current.return Summary.empty)
 

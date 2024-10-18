@@ -3,6 +3,8 @@ open Current.Syntax
 module Docker = Current_docker.Default
 module Distro = Dockerfile_opam.Distro
 
+type result = Index.job_ids Current.t * Summary.t Current.t
+
 let master_distro = (Distro.resolve_alias Distro.master_distro :> Distro.t)
 let default_compilers_full = Ocaml_version.Releases.[ v4_14; Ocaml_version.Releases.latest ] (* NOTE: Should probably stay with list length 2 *)
 let default_compilers = List.map Ocaml_version.with_just_major_and_minor default_compilers_full
@@ -196,7 +198,7 @@ let get_base ~arch variant =
 
 let build (module Builder : Build_intf.S)
     ~analysis ~master ~source ~opam_version ~lower_bounds ~revdeps label variant
-  : _ Node.t =
+  : result Node.t =
   let arch = Variant.arch variant in
   let analysis = with_label label analysis in
   let pkgopts =
