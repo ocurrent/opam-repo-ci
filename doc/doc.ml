@@ -2,16 +2,9 @@ open Opam_repo_ci
 
 module Git = Current_git
 
-type platform = {
-  variant : Variant.t;
-  opam_version : Opam_version.t;
-  lower_bounds : bool;
-  revdeps : bool;
-}
-
 let yesno_of_bool b = if b then "Yes" else "No"
 
-let output_platform { variant; opam_version; lower_bounds; revdeps } =
+let output_platform Build.{ variant; opam_version; lower_bounds; revdeps; label = _ } =
   Format.asprintf
     "| %s | %s | %s | %s | %s | %s |"
     (Variant.distribution variant)
@@ -21,7 +14,7 @@ let output_platform { variant; opam_version; lower_bounds; revdeps } =
     (yesno_of_bool lower_bounds)
     (yesno_of_bool revdeps)
 
-let compare_platform p p' =
+let compare_platform (p : Build.build_recipe) (p' : Build.build_recipe) =
   let module V = Variant in
   let cmp = String.compare in
   match
@@ -40,31 +33,28 @@ let compare_platform p p' =
   | _ ->
   cmp (V.ocaml_version_to_string p.variant) (V.ocaml_version_to_string p'.variant)
 
-let platforms =
+let platforms : Build.build_recipe list =
   let arch = `X86_64 in
-  let build ~opam_version ~lower_bounds ~revdeps _ variant =
-    { variant; opam_version; lower_bounds; revdeps; }
-  in
   List.sort_uniq compare_platform @@
-  (Build.compilers ~arch ~build ()) @
-  (Build.linux_distributions ~arch ~build) @
-  (Build.macos ~build) @
-  (Build.freebsd ~build) @
-  (Build.extras ~build)
+  (Build.compilers ~arch ()) @
+  (Build.linux_distributions ~arch ) @
+  (Build.macos ()) @
+  (Build.freebsd ()) @
+  (Build.extras ())
 
 let operating_systems =
   platforms
-  |> List.map (fun p -> Variant.distribution p.variant)
+  |> List.map (fun p -> Variant.distribution p.Build.variant)
   |> List.sort_uniq String.compare
 
 let architectures =
   platforms
-  |> List.map (fun p -> Ocaml_version.string_of_arch (Variant.arch p.variant))
+  |> List.map (fun p -> Ocaml_version.string_of_arch (Variant.arch p.Build.variant))
   |> List.sort_uniq String.compare
 
 let ocaml_versions =
   platforms
-  |> List.map (fun p -> Variant.ocaml_version_to_string p.variant)
+  |> List.map (fun p -> Variant.ocaml_version_to_string p.Build.variant)
   |> List.sort_uniq String.compare
 
 let print_items oc items =

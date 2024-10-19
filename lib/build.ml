@@ -1,5 +1,13 @@
 open Current.Syntax
 
+type build_recipe = {
+  opam_version: Opam_version.t;
+  lower_bounds: bool;
+  revdeps: bool;
+  label: string;
+  variant: Variant.t;
+}
+
 module Docker = Current_docker.Default
 module Distro = Dockerfile_opam.Distro
 
@@ -48,7 +56,7 @@ let get_significant_available_pkg = function
 
 (** The stable releases of OCaml since 4.02 plus the latest
     alpha / beta / release-candidate for each unreleased version. *)
-let compilers ?(minimal=false) ~arch ~build () =
+let compilers ?(minimal=false) ~arch (): build_recipe list =
   let master_distro = Distro.tag_of_distro master_distro in
   let versions =
     if minimal then
@@ -57,11 +65,12 @@ let compilers ?(minimal=false) ~arch ~build () =
       Ocaml_version.Releases.recent @ Ocaml_version.Releases.unreleased_betas
   in
   List.map (fun v ->
+    let lower_bounds = true in
     let v = Ocaml_version.with_just_major_and_minor v in
     let revdeps = List.exists (Ocaml_version.equal v) default_compilers in (* TODO: Remove this when the cluster is ready *)
-    let v = Ocaml_version.to_string v in
-    let variant = Variant.v ~arch ~distro:master_distro ~compiler:(v, None) in
-    build ~opam_version ~lower_bounds:true ~revdeps v variant
+    let label = Ocaml_version.to_string v in
+    let variant = Variant.v ~arch ~distro:master_distro ~compiler:(label, None) in
+    {opam_version; lower_bounds; revdeps; label; variant}
   ) versions
 
 let is_supported_linux_distro distro =
@@ -77,90 +86,104 @@ let is_supported_linux_distro distro =
     | `Cygwin
     | `Windows -> false (* TODO: Unlock these when Windows is ready *)
 
-let linux_distributions ~arch ~build =
-  let build ~distro ~arch ~compiler =
-    let variant = Variant.v ~arch ~distro ~compiler in
-    let label = Fmt.str "%s-ocaml-%s" distro (Variant.ocaml_version_to_string variant) in
-    build ~opam_version ~lower_bounds:false ~revdeps:false label variant
-  in
+let linux_distributions ~arch : build_recipe list =
   List.fold_left (fun acc comp ->
     let comp = Ocaml_version.to_string comp in
     List.fold_left (fun acc' distro ->
         if is_supported_linux_distro distro then
+          let lower_bounds = false in
+          let revdeps = false in
           let distro = Distro.tag_of_distro distro in
-          build ~arch ~distro ~compiler:(comp, None) :: acc'
+          let variant = Variant.v ~arch ~distro ~compiler:(comp, None) in
+          let label = Fmt.str "%s-ocaml-%s" distro (Variant.ocaml_version_to_string variant) in
+          let recipe = {opam_version; lower_bounds; revdeps; label; variant} in
+          recipe :: acc'
         else
           acc'
     ) acc (Distro.active_distros arch)
   ) [] default_compilers
 
-let macos ~build =
-  let build ~distro ~arch ~compiler =
-    let variant = Variant.v ~arch ~distro ~compiler in
-    let label = Fmt.str "%s-%s" (Variant.docker_tag variant) (Ocaml_version.string_of_arch arch) in
-    build ~opam_version ~lower_bounds:false ~revdeps:false label variant
-  in
+let macos () : build_recipe list =
   List.fold_left (fun acc comp ->
     let comp = Ocaml_version.to_string comp in
     List.fold_left (fun acc arch ->
-      build ~distro:Variant.macos_homebrew ~arch ~compiler:(comp, None) :: acc
+        let lower_bounds = false in
+        let revdeps = false in
+        let variant = Variant.v ~arch ~distro:Variant.macos_homebrew ~compiler:(comp, None) in
+        let label = Fmt.str "%s-%s" (Variant.docker_tag variant) (Ocaml_version.string_of_arch arch) in
+        let recipe = {opam_version; lower_bounds; revdeps; label; variant} in
+        recipe :: acc
     ) acc [`Aarch64; `X86_64]
   ) [] default_compilers
 
-let freebsd ~build =
-  let build ~distro ~arch ~compiler =
-    let variant = Variant.v ~arch ~distro ~compiler in
-    let label = Fmt.str "%s-%s" (Variant.docker_tag variant) (Ocaml_version.string_of_arch arch) in
-    build ~opam_version ~lower_bounds:false ~revdeps:false label variant
-  in
+let freebsd () : build_recipe list =
   List.fold_left (fun acc comp ->
-    let comp = Ocaml_version.to_string comp in
-    List.fold_left (fun acc arch ->
-      build ~distro:Variant.freebsd ~arch ~compiler:(comp, None) :: acc
-    ) acc [`X86_64]
-  ) [] default_compilers
+      let comp = Ocaml_version.to_string comp in
+      List.fold_left (fun acc arch ->
+          let lower_bounds = false in
+          let revdeps = false in
+          let variant = Variant.v ~arch ~distro:Variant.freebsd ~compiler:(comp, None) in
+          let label = Fmt.str "%s-%s" (Variant.docker_tag variant) (Ocaml_version.string_of_arch arch) in
+          let recipe = {opam_version; lower_bounds; revdeps; label; variant} in
+          recipe :: acc
+        ) acc [`X86_64]
+    ) [] default_compilers
 
 (* Non-linux-x86_64 compiler variants. eg ls390x, arm64, flambda, afl etc *)
-let extras ~build =
-  let build ~opam_version ~distro ~arch ~compiler label =
-    let variant = Variant.v ~arch ~distro ~compiler in
-    let label = if String.equal label "" then "" else label^"-" in
-    let label = Fmt.str "%socaml-%s" label (Variant.ocaml_version_to_string variant) in
-    build ~opam_version ~lower_bounds:false ~revdeps:false label variant
+let extras () : build_recipe list =
+  let mk_label variant l  =
+    let l' = if String.equal l "" then "" else l^"-" in
+    Fmt.str "%socaml-%s" l' (Variant.ocaml_version_to_string variant)
   in
   let master_distro = Distro.tag_of_distro master_distro in
-  List.fold_left (fun acc comp_full ->
-    let comp = Ocaml_version.to_string (Ocaml_version.with_just_major_and_minor comp_full) in
-    let switches =
-      List.filter_map (fun v ->
-        match Ocaml_version.extra v with
-        | None -> None
-        | Some label ->
-            (* TODO: This should be in ocaml-version or ocaml-dockerfile *)
-            (* TODO: The same code is used in docker-base-images *)
-            let label = String.map (function '+' -> '-' | c -> c) label in
-            Some (build ~opam_version ~arch:`X86_64 ~distro:master_distro ~compiler:(comp, Some label) "")
-      ) (Ocaml_version.Opam.V2.switches `X86_64 comp_full)
-    in
-    let arches =
-      List.filter_map (function
-        | `X86_64 -> None
-        | `Riscv64 ->
-            let label = Ocaml_version.to_opam_arch `Riscv64 in
-            let riscv_distro = (Distro.resolve_alias (`Ubuntu `LTS) :> Distro.t) in
-            let riscv_distro = Distro.tag_of_distro riscv_distro in
-            Some (build ~opam_version ~arch:`Riscv64 ~distro:riscv_distro ~compiler:(comp, None) label)
-        | arch ->
-            let label = Ocaml_version.to_opam_arch arch in
-            Some (build ~opam_version ~arch ~distro:master_distro ~compiler:(comp, None) label)
-      ) Ocaml_version.arches
-    in
-    List.map (fun opam_version ->
-      let opam_string = "opam-" ^ Opam_version.to_string opam_version in
-      build ~opam_version ~arch:`X86_64 ~distro:master_distro ~compiler:(comp, None) opam_string)
-      [ `V2_0; `V2_1; `V2_2 ] @
-    switches @ arches @ acc
-  ) [] default_compilers_full
+  ListLabels.fold_left
+    default_compilers_full
+    ~init:[]
+    ~f:(fun acc comp_full ->
+        let comp = Ocaml_version.to_string (Ocaml_version.with_just_major_and_minor comp_full) in
+        let switches =
+          List.filter_map (fun v ->
+              match Ocaml_version.extra v with
+              | None -> None
+              | Some label ->
+                let lower_bounds = false in
+                let revdeps = false in
+                let variant = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(comp, Some label) in
+                let label = String.map (function '+' -> '-' | c -> c) label |> mk_label variant in
+                let recipe = {opam_version; lower_bounds; revdeps; label; variant} in
+                Some recipe
+            ) (Ocaml_version.Opam.V2.switches `X86_64 comp_full)
+        in
+        let arches =
+          List.filter_map (function
+              | `X86_64 -> None
+              | `Riscv64 ->
+                let lower_bounds = false in
+                let revdeps = false in
+                let distro = Distro.tag_of_distro (Distro.resolve_alias (`Ubuntu `LTS) :> Distro.t) in
+                let variant = Variant.v ~arch:`Riscv64 ~distro ~compiler:(comp, None) in
+                let label = Ocaml_version.to_opam_arch `Riscv64 |> mk_label variant in
+                let recipe = {opam_version; lower_bounds; revdeps; label; variant} in
+                Some recipe
+              | arch ->
+                let lower_bounds = false in
+                let revdeps = false in
+                let variant = Variant.v ~arch ~distro:master_distro ~compiler:(comp, None) in
+                let label = Ocaml_version.to_opam_arch arch |> mk_label variant in
+                let recipe = {opam_version; lower_bounds; revdeps; label; variant} in
+                Some recipe
+            ) Ocaml_version.arches
+        in
+        let opam_version_tests =
+          [ `V2_0; `V2_1; `V2_2 ]
+          |> List.map (fun opam_version ->
+              let lower_bounds = false in
+              let revdeps = false in
+              let variant = Variant.v ~arch:`X86_64 ~distro:master_distro ~compiler:(comp, None) in
+              let label = mk_label variant "opam-" ^ Opam_version.to_string opam_version in
+              {opam_version; lower_bounds; revdeps; label; variant})
+        in
+        opam_version_tests @ switches @ arches @ acc)
 
 let test_revdeps (module Builder : Build_intf.S) ~opam_version ~master ~base ~variant ~pkgopt ~after ~new_pkgs source =
   let revdeps =
@@ -196,9 +219,18 @@ let get_base ~arch variant =
       in
       Spec.Docker (Current_docker.Raw.Image.of_hash repo_id)
 
-let build (module Builder : Build_intf.S)
-    ~analysis ~master ~source ~opam_version ~lower_bounds ~revdeps label variant
-  : result Node.t =
+let build
+    (module Builder: Build_intf.S)
+    ~(analysis: Analyse.Analysis.t Current.t)
+    ~(master: Current_git.Commit.t Current.t)
+    ~(source: Current_git.Commit_id.t Current.t)
+    {
+      opam_version;
+      lower_bounds;
+      revdeps;
+      label;
+      variant
+    } :  result Node.t =
   let arch = Variant.arch variant in
   let analysis = with_label label analysis in
   let pkgopts =
@@ -260,14 +292,14 @@ let with_cluster ~ocluster ~analysis ~master source =
   end in
   let build = build (module Builder) ~analysis ~master ~source in
   [
-    Node.branch ~label:"compilers" (compilers ~arch:`X86_64 ~build ());
-    Node.branch ~label:"distributions" (linux_distributions ~arch:`X86_64 ~build);
-    Node.branch ~label:"macos" (macos ~build);
-    Node.branch ~label:"freebsd" (freebsd ~build);
-    Node.branch ~label:"extras" (extras ~build);
+    Node.branch ~label:"compilers" (List.map build @@ compilers ~arch:`X86_64 ());
+    Node.branch ~label:"distributions" (List.map build @@ linux_distributions ~arch:`X86_64);
+    Node.branch ~label:"macos" (List.map build @@ macos ());
+    Node.branch ~label:"freebsd" (List.map build @@ freebsd ());
+    Node.branch ~label:"extras" (List.map build @@ extras ());
   ]
 
 let with_docker ~host_arch ~analysis ~master source =
   let module Builder : Build_intf.S = Local_build in
   let build = build (module Builder) ~analysis ~master ~source in
-  [Node.branch ~label:"compilers" (compilers ~minimal:true ~arch:host_arch ~build ())]
+  [Node.branch ~label:"compilers" (List.map build @@ compilers ~minimal:true ~arch:host_arch ())]
