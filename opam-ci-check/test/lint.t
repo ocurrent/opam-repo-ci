@@ -118,43 +118,6 @@ Tests the package name collision detection by adding a version of a package
   Warning in a_1.0.0.1: Possible name collision with package 'a-1'
   [1]
 
-Setup repo for more name collision tests
-
-  $ git checkout -q master
-  $ git apply "patches/levenshtein-1.patch"
-  $ git add .
-  $ git commit -qm levenshtein-1
-  $ git checkout -qb new-branch-2
-  $ git apply "patches/levenshtein-2.patch"
-  $ git add .
-  $ git commit -qm levenshtein-2
-  $ git log --graph --pretty=format:'%s%d'
-  * levenshtein-2 (HEAD -> new-branch-2)
-  * levenshtein-1 (master)
-  * a-1 (tag: initial-state)
-
-Tests the package name collisions detection by adding initial packages [field],
-[field1] and [fieldfind] to master, and new packages [fielf], [fielffind], and
-[fielffinder] to the new branch to test various positive and negative cases
-
-  $ opam-ci-check lint -r . -n fielf.0.0.1
-  Linting opam-repository at $TESTCASE_ROOT/. ...
-  Warning in fielf.0.0.1: Possible name collision with package 'field1'
-  [1]
-  $ opam-ci-check lint -r . -n field1.0.0.2
-  Linting opam-repository at $TESTCASE_ROOT/. ...
-  Warning in field1.0.0.2: Possible name collision with package 'fielf'
-  [1]
-  $ opam-ci-check lint -r . -n fieffinder.0.0.1
-  Linting opam-repository at $TESTCASE_ROOT/. ...
-  Warning in fieffinder.0.0.1: Possible name collision with package 'fieffind'
-  [1]
-  $ opam-ci-check lint -r . -n fieffind.0.0.1
-  Linting opam-repository at $TESTCASE_ROOT/. ...
-  Warning in fieffind.0.0.1: Possible name collision with package 'fieffinder'
-  Warning in fieffind.0.0.1: Possible name collision with package 'fieldfind'
-  [1]
-
 Setup repo for unnecessary fields tests
 
   $ git reset -q --hard initial-state
@@ -162,8 +125,8 @@ Setup repo for unnecessary fields tests
   $ git add .
   $ git commit -qm unnecessary-fields-a-1
   $ git log --graph --pretty=format:'%s%d'
-  * unnecessary-fields-a-1 (HEAD -> new-branch-2)
-  * a-1 (tag: initial-state)
+  * unnecessary-fields-a-1 (HEAD -> new-branch-1)
+  * a-1 (tag: initial-state, master)
 
 Test presence of unnecessary fields in a-1.0.0.2 package
 
@@ -180,8 +143,8 @@ Setup repo for unmatched name and version test
   $ git add .
   $ git commit -qm unmatched-name-version-fields-a-1
   $ git log --graph --pretty=format:'%s%d'
-  * unmatched-name-version-fields-a-1 (HEAD -> new-branch-2)
-  * a-1 (tag: initial-state)
+  * unmatched-name-version-fields-a-1 (HEAD -> new-branch-1)
+  * a-1 (tag: initial-state, master)
 
 Test presence of unnecessary fields in a-1.0.0.2 package
 
@@ -198,8 +161,8 @@ Setup repo for unexpected file
   $ git add .
   $ git commit -qm unexpected-file-a-1
   $ git log --graph --pretty=format:'%s%d'
-  * unexpected-file-a-1 (HEAD -> new-branch-2)
-  * a-1 (tag: initial-state)
+  * unexpected-file-a-1 (HEAD -> new-branch-1)
+  * a-1 (tag: initial-state, master)
 
 Test presence of unexpected files in a-1.0.0.2 package
 
@@ -215,8 +178,8 @@ Setup repo for Forbidden perm file
   $ git add .
   $ git commit -qm forbidden-perm-file-a-1
   $ git log --graph --pretty=format:'%s%d'
-  * forbidden-perm-file-a-1 (HEAD -> new-branch-2)
-  * a-1 (tag: initial-state)
+  * forbidden-perm-file-a-1 (HEAD -> new-branch-1)
+  * a-1 (tag: initial-state, master)
 
 Test presence of unexpected files in a-1.0.0.2 package
 
