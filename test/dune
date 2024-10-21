@@ -11,6 +11,7 @@
  (package opam-repo-ci-service)
  (deps
   %{bin:opam-repo-ci-local}
+  %{bin:opam-ci-check}
   ./scripts/setup_repo.sh
   (glob_files ./patches/*)))
 
