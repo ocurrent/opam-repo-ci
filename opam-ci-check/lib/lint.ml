@@ -309,40 +309,18 @@ module Checks = struct
     get_files dir |> List.map check_file |> List.concat
 
   (** [package_name_collision p0 p1] returns true if [p0] is similar to [p1].
-    Similarity is defined to be either:
+    Similarity is defined to be:
 
     - Case-insensitive string equality considering underscores ([_])
-      and dashes ([-]) to be equal
-    - A Levenshtein distance within 1/6 of the length of the string (rounding up),
-      with names of three characters or less ignored as a special case
-
-    As examples, by this relation:
-
-    - [lru-cache] and [lru_cache] collide
-    - [lru-cache] and [LRU-cache] collide
-    - [lru-cache] and [cache-lru] do not collide
-    - [ocaml] and [pcaml] collide
-    - [ocamlfind] and [ocamlbind] do not collide *)
+      and dashes ([-]) to be equal *)
   let package_name_collision p0 p1 =
     let dash_underscore p0 p1 =
-      let f = function '_' -> '-' | c -> c in
+      let f = function '_' -> '-' | c -> Char.lowercase_ascii c in
       let p0 = String.map f p0 in
       let p1 = String.map f p1 in
       String.equal p0 p1
     in
-    let levenstein_distance p0 p1 =
-      let l = String.length p0 in
-      if l <= 3 then false
-      else
-        let k = ((l - 1) / 16) + 2 in
-        (* Ignore distances of 1, too many false positives:
-           https://github.com/ocaml/opam-repository/pull/25678 *)
-        match Mula.Strings.Lev.get_distance ~k p0 p1 with
-        | None -> false
-        | Some n when n <= 1 -> false
-        | Some _ -> true
-    in
-    dash_underscore p0 p1 || levenstein_distance p0 p1
+    dash_underscore p0 p1
 
   let check_name_collisions ~pkg packages _opam =
     let pkg_name = pkg.OpamPackage.name |> OpamPackage.Name.to_string in
