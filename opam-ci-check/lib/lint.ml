@@ -312,13 +312,15 @@ module Checks = struct
     Similarity is defined to be:
 
     - Case-insensitive string equality considering underscores ([_])
-      and dashes ([-]) to be equal *)
+      dashes ([-]), and the empty string to be equal *)
   let package_name_collision p0 p1 =
     let dash_underscore p0 p1 =
-      let f = function '_' -> '-' | c -> Char.lowercase_ascii c in
-      let p0 = String.map f p0 in
-      let p1 = String.map f p1 in
-      String.equal p0 p1
+      let f = function
+        | '_' | '-' -> None
+        | c -> Some (Char.lowercase_ascii c) in
+      let p0 = p0 |> String.to_seq |> Seq.filter_map f in
+      let p1 = p1 |> String.to_seq |> Seq.filter_map f in
+      Seq.equal Char.equal p0 p1
     in
     dash_underscore p0 p1
 
