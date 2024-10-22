@@ -4,6 +4,15 @@
 
 include module type of Lint_error
 
+module Checks : sig
+  val package_name_collision: string -> string -> bool
+  (** [package_name_collision p0 p1] returns true if [p0] is similar to [p1].
+    Similarity is defined to be:
+
+    - Case-insensitive string equality considering underscores ([_])
+      dashes ([-]), and the empty string to be equal *)
+end
+
 val check :
   new_pkgs:string list ->
   changed_pkgs:string list ->

@@ -1,6 +1,7 @@
 (test
  (name test_opam_ci_check)
- (package opam-ci-check))
+ (package opam-ci-check)
+ (libraries opam_ci_check))
 
 (cram
  (package opam-ci-check)
