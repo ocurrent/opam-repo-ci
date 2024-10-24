@@ -8,11 +8,11 @@ module Common = Opam_repo_ci_api.Common
 module Distro = Dockerfile_opam.Distro
 
 module Results : sig
-  type t = Index.job_ids Current.t * Summary.t Current.t
+  type t = Build.result
   val empty : t
   val merge : t -> t -> t
 end = struct
-  type t = Index.job_ids Current.t * Summary.t Current.t
+  type t = Build.result
 
   let empty = (Current.return Index.Job_map.empty, Current.return Summary.empty)
 
@@ -120,7 +120,8 @@ let test_pr ~ocluster ~master head =
   let builds =
     Node.root
       (Node.leaf ~label:"(analysis)" (Node.action `Analysed latest_analysis)
-      :: Build.with_cluster ~ocluster ~analysis ~lint ~master commit_id)
+       :: Node.leaf ~label:"(lint)" (Node.action `Linted lint)
+       :: Build.with_cluster ~ocluster ~analysis ~master commit_id)
   in
   summarise ~repo ~hash builds
 
@@ -172,8 +173,9 @@ let local_test_pr ?test_config repo pr_branch () =
   in
   let builds =
     Node.root
-      (Node.leaf ~label:"(analysis)" (Node.action `Analysed analysis)
-      :: Build.with_docker ~host_arch:Conf.host_arch ~analysis ~lint ~master pr_branch_id)
+      ( Node.leaf ~label:"(analysis)" (Node.action `Analysed analysis)
+      :: Node.leaf ~label:"(lint)" (Node.action `Linted lint)
+      :: Build.with_docker ~host_arch:Conf.host_arch ~analysis ~master pr_branch_id )
   in
   summarise ~repo:dummy_repo ~hash:pr_hash builds
   |> Current.ignore_value

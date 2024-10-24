@@ -8,7 +8,7 @@ let specs =
   let pkg = OpamPackage.create (OpamPackage.Name.of_string "a") (OpamPackage.Version.of_string "0.0.1") in
   let revdep = OpamPackage.create (OpamPackage.Name.of_string "b") (OpamPackage.Version.of_string "0.1.0") in
   let arch = `X86_64 in
-  let build ~opam_version ~lower_bounds ~revdeps _s variant =
+  let spec Build.{opam_version; lower_bounds; revdeps; variant; label = _} =
     let image = [ Spec.opam ~variant ~lower_bounds:false ~with_tests:false ~opam_version pkg ] in
     let lower_bounds =
       if lower_bounds then
@@ -27,12 +27,12 @@ let specs =
     in
     image @ lower_bounds @ revdeps
   in
-  List.concat @@
-    (Build.compilers ~arch ~build ()) @
-    (Build.linux_distributions ~arch ~build) @
-    (Build.macos ~build) @
-    (Build.freebsd ~build) @
-    (Build.extras ~build)
+  List.concat_map spec @@
+    Build.compilers ~arch () @
+    Build.linux_distributions ~arch @
+    Build.macos () @
+    Build.freebsd () @
+    Build.extras ()
 
 let header title variant ?(lower_bounds=false) ?(with_tests=false) opam_version =
   let opam_version = "opam-" ^ Opam_version.to_string opam_version in
