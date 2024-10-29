@@ -71,7 +71,7 @@ let test_revdeps pkg local_repo_dir use_dune no_transitive_revdeps =
             (Printf.sprintf "tests failed in %d reverse dependencies"
                num_failed_installs)
 
-let make_config pkg =
+let make_config ~with_tests ~lower_bounds pkg =
   let variant =
     let distro =
       (Distro.resolve_alias Distro.master_distro :> Distro.t)
@@ -84,11 +84,11 @@ let make_config pkg =
     Variant.v ~distro ~compiler:(compiler, None) ~arch:`X86_64
   in
   let opam_version = `Dev in
-  Spec.opam ~variant ~lower_bounds:false ~with_tests:true ~opam_version pkg
+  Spec.opam ~variant ~lower_bounds ~with_tests ~opam_version pkg
 
-let build_run_spec no_cache pkg opam_repository =
+let build_run_spec no_cache with_tests lower_bounds pkg opam_repository =
   let pkg = OpamPackage.of_string pkg in
-  let config = make_config pkg in
+  let config = make_config ~with_tests ~lower_bounds pkg in
   let base = Spec.Docker ("ocaml/opam:" ^ Variant.docker_tag config.variant) in
   Test.build_run_spec ~use_cache:(not no_cache) ?opam_repository ~base config
   |> Result.map_error (fun _ -> "Failed to build and test the package")
@@ -208,14 +208,31 @@ let no_cache =
   let info = Arg.info [ "no-cache" ] ~doc:"Don't use the docker cache" in
   Arg.value (Arg.flag info)
 
-let build_test_cmd =
-  let doc = "Build and test a package" in
+let with_test =
+  let info =
+    Arg.info [ "with-test" ]
+      ~doc:"Build image which also runs tests for the package"
+  in
+  Arg.value (Arg.flag info)
+
+let lower_bounds =
+  let info =
+    Arg.info [ "lower-bounds" ] ~doc:"Build image using lower bounds packages"
+  in
+  Arg.value (Arg.flag info)
+
+let build_cmd =
+  let doc =
+    "Build a package optionally with tests and/or using lower bounds packages"
+  in
   let term =
-    Term.(const build_run_spec $ no_cache $ pkg_term $ local_opam_repo_term)
+    Term.(
+      const build_run_spec $ no_cache $ with_test $ lower_bounds $ pkg_term
+      $ local_opam_repo_term)
     |> to_exit_code
   in
   let info =
-    Cmd.info "build-test" ~doc ~sdocs:"COMMON OPTIONS" ~exits:Cmd.Exit.defaults
+    Cmd.info "build" ~doc ~sdocs:"COMMON OPTIONS" ~exits:Cmd.Exit.defaults
   in
   Cmd.v info term
 
@@ -224,6 +241,6 @@ let cmd : Cmd.Exit.code Cmd.t =
   let exits = Cmd.Exit.defaults in
   let default = Term.(ret (const (fun _ -> `Help (`Pager, None)) $ const ())) in
   let info = Cmd.info "opam-ci-check" ~doc ~sdocs:"COMMON OPTIONS" ~exits in
-  Cmd.group ~default info [ lint_cmd; list_cmd; test_cmd; build_test_cmd ]
+  Cmd.group ~default info [ lint_cmd; list_cmd; test_cmd; build_cmd ]
 
 let () = exit (Cmd.eval' cmd)
