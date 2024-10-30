@@ -86,11 +86,11 @@ let make_config pkg =
   let opam_version = `Dev in
   Spec.opam ~variant ~lower_bounds:false ~with_tests:true ~opam_version pkg
 
-let build_run_spec pkg opam_repository =
+let build_run_spec no_cache pkg opam_repository =
   let pkg = OpamPackage.of_string pkg in
   let config = make_config pkg in
   let base = Spec.Docker ("ocaml/opam:" ^ Variant.docker_tag config.variant) in
-  Test.build_run_spec ?opam_repository ~base config
+  Test.build_run_spec ~use_cache:(not no_cache) ?opam_repository ~base config
   |> Result.map_error (fun _ -> "Failed to build and test the package")
 
 let make_abs_path s =
@@ -204,10 +204,14 @@ let test_cmd =
   in
   Cmd.v info term
 
+let no_cache =
+  let info = Arg.info [ "no-cache" ] ~doc:"Don't use the docker cache" in
+  Arg.value (Arg.flag info)
+
 let build_test_cmd =
   let doc = "Build and test a package" in
   let term =
-    Term.(const build_run_spec $ pkg_term $ local_opam_repo_term)
+    Term.(const build_run_spec $ no_cache $ pkg_term $ local_opam_repo_term)
     |> to_exit_code
   in
   let info =

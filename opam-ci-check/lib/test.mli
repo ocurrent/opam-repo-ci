@@ -23,6 +23,7 @@ val test_packages_with_dune :
   string -> string -> OpamPackage.t list -> (unit, 'a) result
 
 val build_run_spec :
+  ?use_cache:bool ->
   ?opam_repository:string ->
   base:Spec.base ->
   Spec.t ->

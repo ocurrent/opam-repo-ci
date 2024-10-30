@@ -73,10 +73,11 @@ let test_packages_with_dune opam_repository target_pkg packages =
   Ok ()
 
 let ( let* ) = Result.bind
+let docker_build = Bos.Cmd.(v "docker" % "build")
 
 (* Use Docker's ability to build from git repos to default to official opam repo.
    See https://docs.docker.com/build/concepts/context/#git-repositories *)
-let build_run_spec
+let build_run_spec ?(use_cache = true)
     ?(opam_repository = "https://github.com/ocaml/opam-repository.git") ~base
     config =
   let spec = Opam_build.build_spec ~local:true ~for_docker:true ~base config in
@@ -101,8 +102,11 @@ let build_run_spec
          let* () = Bos.OS.File.write dockerfile_path dockerfile in
          let* () = Bos.OS.Dir.set_current tmp_dir in
          let cmd =
+           let with_cache =
+             if use_cache then Bos.Cmd.empty else Bos.Cmd.v "--no-cache"
+           in
            Bos.Cmd.(
-             v "docker" % "build" % "--no-cache" % "--progress=plain" % "--file"
+             docker_build %% with_cache % "--progress=plain" % "--file"
              % Fpath.to_string dockerfile_path
              % "--" % opam_repository)
          in
