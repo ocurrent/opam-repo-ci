@@ -16,13 +16,13 @@ depends: [
   "current_rpc"
   "capnp" {>= "3.4.0"}
   "capnp-rpc-lwt"
-  "dockerfile"
+  "dockerfile" {>= "8.2.3"}
+  "dockerfile-opam" {>= "8.2.3"}
   "odoc" {with-doc}
   "current" {>= "0.6.6"}
   "current_docker"
   "current_github"
   "current_ocluster"
-  "dockerfile-opam" {>= "6.3.0"}
   "logs"
   "mula" {>= "0.1.2"}
   "obuilder-spec"

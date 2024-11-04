@@ -40,8 +40,8 @@ depends: [
   "opam-file-format" {>= "2.1.2"}
   "sexplib" {>= "v0.14.0"}
   "conf-libev"
-  "dockerfile" {>= "6.3.0"}
-  "dockerfile-opam" {>= "6.3.0"}
+  "dockerfile" {>= "8.2.3"}
+  "dockerfile-opam" {>= "8.2.3"}
   "ocaml-version" {>= "3.6.9"}
   "mula" {>= "0.1.2"}
   "alcotest" {>= "1.0.0" & with-test}

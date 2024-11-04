@@ -8,8 +8,8 @@
 - debian-12
 - debian-testing
 - debian-unstable
-- fedora-39
 - fedora-40
+- fedora-41
 - freebsd
 - macos-homebrew
 - opensuse-15.6
@@ -17,6 +17,7 @@
 - ubuntu-20.04
 - ubuntu-22.04
 - ubuntu-24.04
+- ubuntu-24.10
 
 ## Architectures
 
@@ -109,10 +110,10 @@
 | debian-testing | amd64 | 5.2 | dev | No | No |
 | debian-unstable | amd64 | 4.14 | dev | No | No |
 | debian-unstable | amd64 | 5.2 | dev | No | No |
-| fedora-39 | amd64 | 4.14 | dev | No | No |
-| fedora-39 | amd64 | 5.2 | dev | No | No |
 | fedora-40 | amd64 | 4.14 | dev | No | No |
 | fedora-40 | amd64 | 5.2 | dev | No | No |
+| fedora-41 | amd64 | 4.14 | dev | No | No |
+| fedora-41 | amd64 | 5.2 | dev | No | No |
 | freebsd | amd64 | 4.14 | dev | No | No |
 | freebsd | amd64 | 5.2 | dev | No | No |
 | macos-homebrew | amd64 | 4.14 | dev | No | No |
@@ -131,3 +132,5 @@
 | ubuntu-24.04 | amd64 | 5.2 | dev | No | No |
 | ubuntu-24.04 | riscv64 | 4.14 | dev | No | No |
 | ubuntu-24.04 | riscv64 | 5.2 | dev | No | No |
+| ubuntu-24.10 | amd64 | 4.14 | dev | No | No |
+| ubuntu-24.10 | amd64 | 5.2 | dev | No | No |

@@ -22,7 +22,8 @@ depends: [
   "current_ocluster"
   "current_docker"
   "current_github"
-  "dockerfile-opam"
+  "dockerfile" {>= "8.2.3"}
+  "dockerfile-opam" {>= "8.2.3"}
   "obuilder-spec"
   "ocaml-version"
   "prometheus-app"
@@ -34,7 +35,6 @@ depends: [
   "capnp-rpc-unix"
   "opam-repo-ci-api"
   "conf-libev"
-  "dockerfile"
   "ppx_deriving_yojson"
   "odoc" {with-doc}
   "capnp-rpc-lwt" {>= "1.2.3"}

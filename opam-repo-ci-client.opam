@@ -18,7 +18,7 @@ depends: [
   "current_rpc"
   "capnp-rpc-unix"
   "opam-repo-ci-api"
-  "dockerfile"
+  "dockerfile" {>= "8.2.3"}
   "odoc" {with-doc}
 ]
 conflicts: [
