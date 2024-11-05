@@ -134,7 +134,7 @@ module Commit_info_cache = struct
     let key = (owner, name, hash) in
     (* Decrement existing status if it exists *)
     Hashtbl.find_opt cache key
-    |> Option.iter (fun x -> Metrics.modify_n_per_status (fun x -> x - 1) x.build_status);
+    |> Stdlib.Option.iter (fun x -> Metrics.modify_n_per_status (fun x -> x - 1) x.build_status);
     (* Increment new status *)
     Metrics.modify_n_per_status (fun x -> x + 1) status.build_status;
     Hashtbl.add cache key status
@@ -152,7 +152,7 @@ module Commit_info_cache = struct
   let remove ~owner ~name ~hash =
     let key = (owner, name, hash) in
     Hashtbl.find_opt cache key
-    |> Option.iter (fun status ->
+    |> Stdlib.Option.iter (fun status ->
       Metrics.modify_n_per_status (fun x -> x - 1) status.build_status;
       Hashtbl.remove cache key)
 
@@ -279,7 +279,7 @@ let active_refs : (string * string) list Repo_map.t ref = ref Repo_map.empty
 let set_active_refs ~repo (refs : (string * string) list) =
   (* Remove statuses from Commit_info_cache corresponding to removed refs *)
   Repo_map.find_opt repo !active_refs
-  |> Option.iter (fun old_refs ->
+  |> Stdlib.Option.iter (fun old_refs ->
     (* Set difference: find removed refs that have been merged or closed *)
     let removed_refs =
       List.filter
@@ -295,7 +295,7 @@ let set_active_refs ~repo (refs : (string * string) list) =
   active_refs := Repo_map.add repo refs !active_refs
 
 let get_active_refs repo =
-  Repo_map.find_opt repo !active_refs |> Option.value ~default:[]
+  Repo_map.find_opt repo !active_refs |> Stdlib.Option.value ~default:[]
 
 let get_jobs_per_ref repo =
   let active_refs = get_active_refs repo in

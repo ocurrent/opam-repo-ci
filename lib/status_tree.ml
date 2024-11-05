@@ -54,7 +54,7 @@ let filter ?(inv=false) f ts =
       in
       if res = [] then None else Some res
   in
-  Option.value ~default:[] @@ aux ts
+  Stdlib.Option.value ~default:[] @@ aux ts
 
 let partition f ts =
   filter f ts, filter ~inv:true f ts

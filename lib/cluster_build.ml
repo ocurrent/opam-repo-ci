@@ -17,7 +17,7 @@ let tail ?buffer ~job build_job =
     | Error (`Capnp e) -> Lwt.return @@ Fmt.error_msg "%a" Capnp_rpc.Error.pp e
     | Ok ("", _) -> Lwt_result.return ()
     | Ok (data, next) ->
-      Option.iter (fun b -> Buffer.add_string b data) buffer;
+      Stdlib.Option.iter (fun b -> Buffer.add_string b data) buffer;
       Current.Job.write job data;
       aux next
   in aux 0L

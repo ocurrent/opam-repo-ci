@@ -35,7 +35,7 @@ let host_os =
     Filename.quote_command "uname" ["-s"]
     |> Unix.open_process_in
     |> In_channel.input_line
-    |> Option.value ~default:"Linux"
+    |> Stdlib.Option.value ~default:"Linux"
   in
   match String.lowercase_ascii os with
   | "darwin" | "osx" -> "macos"
@@ -60,7 +60,7 @@ let host_arch =
     Filename.quote_command "uname" ["-m"]
     |> Unix.open_process_in
     |> In_channel.input_line
-    |> Option.value ~default:"x86_64"
+    |> Stdlib.Option.value ~default:"x86_64"
   in
   normalise_arch arch
   |> Ocaml_version.arch_of_string |> function

@@ -134,7 +134,7 @@ let main config mode app capnp_address github_auth submission_uri prometheus_con
       ~cap_file:Conf.Capnp.cap_file capnp_address >>= fun (vat, rpc_engine_resolver) ->
     let ocluster = Capnp_rpc_unix.Vat.import_exn vat submission_uri in
     let engine = Current.Engine.create ~config (Pipeline.v ~ocluster ~app) in
-    Option.iter (fun r -> Capability.resolve_ok r (Api_impl.make_ci ~engine)) rpc_engine_resolver;
+    Stdlib.Option.iter (fun r -> Capability.resolve_ok r (Api_impl.make_ci ~engine)) rpc_engine_resolver;
     let authn = Option.map Current_github.Auth.make_login_uri github_auth in
     let has_role =
       if github_auth = None then Current_web.Site.allow_all

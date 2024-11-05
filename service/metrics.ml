@@ -55,4 +55,4 @@ let update () =
         (float_of_int s.ok))
       jobs_per_ref
   in
-  Option.iter f !primary_repo
+  Stdlib.Option.iter f !primary_repo
