@@ -1528,7 +1528,7 @@ build: debian-12-ocaml-5.2/amd64 opam-dev with-tests
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-12-ocaml-5.3-alpha1/amd64 opam-dev
+build: debian-12-ocaml-5.3-beta1/amd64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
@@ -1562,7 +1562,7 @@ build: debian-12-ocaml-5.3-alpha1/amd64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-12-ocaml-5.3-alpha1/amd64 opam-dev lower-bounds
+build: debian-12-ocaml-5.3-beta1/amd64 opam-dev lower-bounds
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
