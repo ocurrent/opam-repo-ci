@@ -11,7 +11,7 @@ let () =
 let setup_capnp ~engine ~listen_address secret_key cap_file capnp_address =
   Capnp_setup.run ~listen_address ~secret_key ~cap_file capnp_address
   >|= fun (_, rpc_engine_resolver) ->
-  Option.iter
+  Stdlib.Option.iter
     (fun r -> Capability.resolve_ok r (Api_impl.make_ci ~engine))
     rpc_engine_resolver
 
