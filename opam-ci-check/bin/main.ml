@@ -71,25 +71,79 @@ let test_revdeps pkg local_repo_dir use_dune no_transitive_revdeps =
             (Printf.sprintf "tests failed in %d reverse dependencies"
                num_failed_installs)
 
-let make_config ~with_tests ~lower_bounds pkg =
-  let variant =
-    let distro =
-      (Distro.resolve_alias Distro.master_distro :> Distro.t)
-      |> Distro.tag_of_distro
+let default_compiler () =
+  let compiler =
+    Ocaml_version.(to_string (with_just_major_and_minor Releases.latest))
+  in
+  (compiler, None)
+
+let default_distro () =
+  (Distro.resolve_alias Distro.master_distro :> Distro.t)
+  |> Distro.tag_of_distro
+
+let parse_distro_compiler_hash base =
+  let img, hash =
+    match Astring.String.cut ~sep:"@" base with
+    | Some (s, hash) -> (s, Some hash)
+    | None -> (base, None)
+  in
+  let _docker_img, tag =
+    match Astring.String.cut ~sep:":" img with
+    | Some (docker_img, tag) -> (docker_img, tag)
+    | None -> ("ocaml/opam", img)
+  in
+  let distro, ocaml =
+    match Astring.String.cut ~sep:"-ocaml-" tag with
+    | Some (distro, ocaml) -> (Some distro, Some ocaml)
+    | None ->
+        if
+          String.starts_with ~prefix:"ocaml-" tag
+          || Str.string_match (Str.regexp "[0-9]") tag 0
+        then (None, Some tag)
+        else (Some tag, None)
+  in
+  let compiler =
+    let ( let* ) = Stdlib.Option.bind in
+    let* ocaml = ocaml in
+    let version_variant =
+      ocaml
+      |> Str.replace_first (Str.regexp "ocaml-") ""
+      |> Str.replace_first (Str.regexp {|-\(beta\|alpha\)|}) "~\\1"
     in
-    let compiler =
-      Ocaml_version.(to_string (with_just_major_and_minor Releases.latest))
+    let version, variant =
+      match Astring.String.cut ~sep:"-" version_variant with
+      | Some (version, variant) -> (version, Some variant)
+      | None -> (version_variant, None)
     in
-    (* TODO: Support other archs *)
-    Variant.v ~distro ~compiler:(compiler, None) ~arch:`X86_64
+    Some (version, variant)
+  in
+  (distro, compiler, hash)
+
+let config_from_base_image ~base_image ~with_tests ~lower_bounds pkg =
+  let distro, compiler, hash =
+    match base_image with
+    | Some base_image -> parse_distro_compiler_hash base_image
+    | None -> (None, None, None)
   in
   let opam_version = `Dev in
-  Spec.opam ~variant ~lower_bounds ~with_tests ~opam_version pkg
+  let distro = Stdlib.Option.value distro ~default:(default_distro ()) in
+  let compiler = Stdlib.Option.value compiler ~default:(default_compiler ()) in
+  (* TODO: Support other archs *)
+  let variant = Variant.v ~distro ~compiler ~arch:`X86_64 in
+  let base =
+    Spec.Docker
+      (if Option.is_some hash then Option.get base_image
+       else "ocaml/opam:" ^ Variant.docker_tag variant)
+  in
+  let config = Spec.opam ~variant ~lower_bounds ~with_tests ~opam_version pkg in
+  (base, config)
 
-let build_run_spec no_cache with_tests lower_bounds pkg opam_repository =
+let build_run_spec no_cache base_image with_tests lower_bounds pkg
+    opam_repository =
   let pkg = OpamPackage.of_string pkg in
-  let config = make_config ~with_tests ~lower_bounds pkg in
-  let base = Spec.Docker ("ocaml/opam:" ^ Variant.docker_tag config.variant) in
+  let base, config =
+    config_from_base_image ~base_image ~with_tests ~lower_bounds pkg
+  in
   Test.build_run_spec ~use_cache:(not no_cache) ?opam_repository ~base config
   |> Result.map_error (fun _ -> "Failed to build and test the package")
 
@@ -221,14 +275,23 @@ let lower_bounds =
   in
   Arg.value (Arg.flag info)
 
+let base_image =
+  let info =
+    Arg.info [ "base-image" ]
+      ~doc:
+        "Base image to use for the build. Defaults to ocaml/opam on Debian \
+         stable with the latest OCaml release."
+  in
+  Arg.value (Arg.opt (Arg.some Arg.string) None info)
+
 let build_cmd =
   let doc =
     "Build a package optionally with tests and/or using lower bounds packages"
   in
   let term =
     Term.(
-      const build_run_spec $ no_cache $ with_test $ lower_bounds $ pkg_term
-      $ local_opam_repo_term)
+      const build_run_spec $ no_cache $ base_image $ with_test $ lower_bounds
+      $ pkg_term $ local_opam_repo_term)
     |> to_exit_code
   in
   let info =
