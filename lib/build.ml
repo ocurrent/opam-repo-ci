@@ -55,7 +55,7 @@ let compilers ?(minimal=false) ~arch ~build () =
     if minimal then
       [ List.hd @@ List.rev Ocaml_version.Releases.recent ]
     else
-      Ocaml_version.Releases.recent @ Ocaml_version.Releases.unreleased_betas
+      Opam_ci_check.Compiler_version.all_supported
   in
   List.map (fun v ->
     let v = Ocaml_version.with_just_major_and_minor v in
