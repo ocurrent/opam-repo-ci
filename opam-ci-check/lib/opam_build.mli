@@ -20,3 +20,10 @@ val revdeps :
   pkg:OpamPackage.t ->
   unit ->
   Obuilder_spec.t
+
+val build_spec :
+  ?local:bool ->
+  for_docker:bool ->
+  base:Spec.base  ->
+  Spec.t ->
+  Obuilder_spec.t

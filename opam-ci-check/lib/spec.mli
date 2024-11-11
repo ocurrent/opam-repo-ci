@@ -4,7 +4,7 @@
     MacOS and FreeBSD do not yet have Docker images and
     start from custom base images stored in the workers. *)
 type base =
-  | Docker of Current_docker.Raw.Image.t
+  | Docker of string
   | Macos of string
   | Freebsd of string
 

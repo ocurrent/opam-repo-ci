@@ -6,7 +6,7 @@ val compilers :
     lower_bounds:bool ->
     revdeps:bool ->
     string ->
-    Variant.t ->
+    Opam_ci_check.Variant.t ->
     'a) ->
   unit ->
   'a list
@@ -18,7 +18,7 @@ val linux_distributions :
     lower_bounds:bool ->
     revdeps:bool ->
     string ->
-    Variant.t ->
+    Opam_ci_check.Variant.t ->
     'a) ->
   'a list
 
@@ -28,7 +28,7 @@ val macos :
     lower_bounds:bool ->
     revdeps:bool ->
     string ->
-    Variant.t ->
+    Opam_ci_check.Variant.t ->
     'a) ->
   'a list
 
@@ -38,17 +38,17 @@ val freebsd :
     lower_bounds:bool ->
     revdeps:bool ->
     string ->
-    Variant.t ->
+    Opam_ci_check.Variant.t ->
     'a) ->
   'a list
 
 val extras :
   build:
-    (opam_version:Opam_version.t ->
+    (opam_version:Opam_ci_check.Opam_version.t ->
     lower_bounds:bool ->
     revdeps:bool ->
     string ->
-    Variant.t ->
+    Opam_ci_check.Variant.t ->
     'a) ->
   'a list
 

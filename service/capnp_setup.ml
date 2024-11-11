@@ -14,7 +14,7 @@ let run ?listen_address ~secret_key ~cap_file = function
       Capnp_rpc_unix.Vat_config.create
         ~public_address
         ~secret_key:(`File secret_key)
-        (Option.value listen_address ~default:public_address)
+        (Stdlib.Option.value listen_address ~default:public_address)
     in
     let rpc_engine, rpc_engine_resolver = Capability.promise () in
     let service_id = Capnp_rpc_unix.Vat_config.derived_id config "ci" in

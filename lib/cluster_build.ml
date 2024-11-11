@@ -2,6 +2,9 @@ open Current.Syntax
 open Capnp_rpc_lwt
 open Lwt.Infix
 
+module Variant = Opam_ci_check.Variant
+module Spec = Opam_ci_check.Spec
+module Opam_build = Opam_ci_check.Opam_build
 module Git = Current_git
 
 let ( >>!= ) = Lwt_result.bind
@@ -17,7 +20,7 @@ let tail ?buffer ~job build_job =
     | Error (`Capnp e) -> Lwt.return @@ Fmt.error_msg "%a" Capnp_rpc.Error.pp e
     | Ok ("", _) -> Lwt_result.return ()
     | Ok (data, next) ->
-      Option.iter (fun b -> Buffer.add_string b data) buffer;
+      Stdlib.Option.iter (fun b -> Buffer.add_string b data) buffer;
       Current.Job.write job data;
       aux next
   in aux 0L
@@ -106,14 +109,7 @@ module Op = struct
     let os = match Variant.os variant with
       | `Macos | `Linux | `Freebsd -> `Unix
     in
-    let build_spec ~for_docker =
-      let base = Spec.base_to_string base in
-      match ty with
-      | `Opam (`List_revdeps { opam_version }, pkg) ->
-          Opam_build.revdeps ~for_docker ~opam_version ~base ~variant ~pkg ()
-      | `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) ->
-          Opam_build.spec ~for_docker ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_tests ~pkg ()
-    in
+    let build_config = {Spec.variant; ty} in
     Current.Job.write job
       (Fmt.str "@.\
                 To reproduce locally:@.@.\
@@ -127,8 +123,8 @@ module Op = struct
                 docker build -f ../Dockerfile .@.@."
          Current_git.Commit_id.pp_user_clone commit
          master
-         (Obuilder_spec.Docker.dockerfile_of_spec ~os ~buildkit:false (build_spec ~for_docker:true)));
-    let spec_str = Fmt.to_to_string Obuilder_spec.pp (build_spec ~for_docker:false) in
+         (Obuilder_spec.Docker.dockerfile_of_spec ~os ~buildkit:false (Opam_build.build_spec ~for_docker:true ~base build_config)));
+    let spec_str = Fmt.to_to_string Obuilder_spec.pp (Opam_build.build_spec ~for_docker:false ~base build_config) in
     let action = Cluster_api.Submission.obuilder_build spec_str in
     let src = (Git.Commit_id.repo commit, [master; Git.Commit_id.hash commit]) in
     let cache_hint =

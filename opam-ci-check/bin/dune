@@ -1,5 +1,5 @@
 (executable
  (public_name opam-ci-check)
  (name main)
- (libraries opam_ci_check cmdliner opam-client)
+ (libraries opam_ci_check cmdliner opam-client dockerfile-opam)
  (package opam-ci-check))

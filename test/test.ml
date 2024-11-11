@@ -1,7 +1,9 @@
-
-
 open Opam_repo_ci
 
+module Spec = Opam_ci_check.Spec
+module Opam_version = Opam_ci_check.Opam_version
+module Variant = Opam_ci_check.Variant
+module Opam_build = Opam_ci_check.Opam_build
 module Git = Current_git
 
 let specs =
