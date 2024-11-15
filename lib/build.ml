@@ -156,7 +156,7 @@ let extras ~build =
     List.map (fun opam_version ->
       let opam_string = "opam-" ^ Opam_version.to_string opam_version in
       build ~opam_version ~arch:`X86_64 ~distro:master_distro ~compiler:(comp, None) opam_string)
-      [ `V2_0; `V2_1; `V2_2 ] @
+      [ `V2_0; `V2_1; `V2_2; `V2_3 ] @
     switches @ arches @ acc
   ) [] default_compilers_full
 
