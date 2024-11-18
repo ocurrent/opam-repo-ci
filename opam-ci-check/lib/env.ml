@@ -42,15 +42,12 @@ let create_local_switch_maybe repo_path =
     ()
   in
   (* FIXME: reinit if already exists? *)
-  if not (OpamFilename.exists_dir root_dir) then
-    match repo_path with
-    | Some d ->
-        OpamConsole.msg
-          "Creating local opam switch in %s with default repository URL %s\n"
-          (OpamFilename.Dir.to_string root_dir)
-          d;
-        create_switch_dir d
-    | None -> failwith "Opam local repository path must be specified!"
+  if not (OpamFilename.exists_dir root_dir) then (
+    OpamConsole.msg
+      "Creating local opam switch in %s with default repository URL %s\n"
+      (OpamFilename.Dir.to_string root_dir)
+      repo_path;
+    create_switch_dir repo_path)
   else ()
 
 let with_locked_switch () =

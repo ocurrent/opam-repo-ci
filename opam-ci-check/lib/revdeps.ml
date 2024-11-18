@@ -61,7 +61,7 @@ let non_transitive_revdeps st package_set =
 let list_revdeps ?(opam_repo = "https://opam.ocaml.org") ?(transitive = true)
     pkg =
   (* Create local opam root and switch *)
-  Env.create_local_switch_maybe (Some opam_repo);
+  Env.create_local_switch_maybe opam_repo;
   OpamConsole.msg "Listing revdeps for %s\n" pkg;
   let package = OpamPackage.of_string pkg in
   let package_set = OpamPackage.Set.singleton package in
