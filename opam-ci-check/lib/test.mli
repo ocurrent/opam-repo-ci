@@ -24,6 +24,7 @@ val test_packages_with_dune :
 
 val build_run_spec :
   ?use_cache:bool ->
+  ?only_print:bool ->
   ?opam_repository:string ->
   base:Spec.base ->
   Spec.t ->
