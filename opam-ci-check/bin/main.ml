@@ -71,8 +71,8 @@ let test_revdeps pkg local_repo_dir use_dune no_transitive_revdeps =
             (Printf.sprintf "tests failed in %d reverse dependencies"
                num_failed_installs)
 
-let build_run_spec ~variant ~hash ~no_cache ~with_tests ~lower_bounds ~pkg
-    ~opam_repository =
+let build_run_spec ~variant ~hash ~no_cache ~only_print ~with_tests
+    ~lower_bounds ~pkg ~opam_repository =
   let pkg = OpamPackage.of_string pkg in
   let base =
     let hash =
@@ -86,7 +86,8 @@ let build_run_spec ~variant ~hash ~no_cache ~with_tests ~lower_bounds ~pkg
   let config =
     Spec.opam ~variant ~lower_bounds ~with_tests ~opam_version:`Dev pkg
   in
-  Test.build_run_spec ~use_cache:(not no_cache) ?opam_repository ~base config
+  Test.build_run_spec ~use_cache:(not no_cache) ~only_print ?opam_repository
+    ~base config
   |> Result.map_error (fun _ -> "Failed to build and test the package")
 
 let make_abs_path s =
@@ -307,6 +308,13 @@ Use of other values for the distro and compiler will result in a build failure.
   in
   Arg.value (Arg.(opt (some string) None) info)
 
+let only_print =
+  let info =
+    Arg.info [ "only-print" ]
+      ~doc:"Only print the Dockerfile, but don't build it"
+  in
+  Arg.value (Arg.flag info)
+
 let build_cmd =
   let doc =
     "Build a package optionally with tests and/or using lower bounds packages"
@@ -317,12 +325,13 @@ let build_cmd =
     let+ variant = variant
     and+ hash = hash
     and+ no_cache = no_cache
+    and+ only_print = only_print
     and+ lower_bounds = lower_bounds
     and+ with_tests = with_test
     and+ pkg = pkg_term
     and+ opam_repository = local_opam_repo_term in
-    build_run_spec ~variant ~hash ~no_cache ~with_tests ~lower_bounds ~pkg
-      ~opam_repository
+    build_run_spec ~variant ~hash ~no_cache ~only_print ~with_tests
+      ~lower_bounds ~pkg ~opam_repository
   in
   let info =
     Cmd.info "build" ~doc ~sdocs:"COMMON OPTIONS" ~exits:Cmd.Exit.defaults

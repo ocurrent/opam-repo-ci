@@ -77,41 +77,46 @@ let docker_build = Bos.Cmd.(v "docker" % "build")
 
 (* Use Docker's ability to build from git repos to default to official opam repo.
    See https://docs.docker.com/build/concepts/context/#git-repositories *)
-let build_run_spec ?(use_cache = true)
+let build_run_spec ?(use_cache = true) ?(only_print = false)
     ?(opam_repository = "https://github.com/ocaml/opam-repository.git") ~base
     config =
   let spec = Opam_build.build_spec ~for_docker:true ~base config in
   let dockerfile =
     Obuilder_spec.Docker.dockerfile_of_spec ~buildkit:false ~os:`Unix spec
   in
-  let dockerignore = ".git\nREADME.md\n" in
-  ()
-  |> Bos.OS.Dir.with_tmp "opam-ci-check-build-%s"
-       (fun
-         (* Create the docker file and ignore file in the tmp dir to avoid polluting the opam-repo  *)
-           tmp_dir
-         ()
-       ->
-         let dockerfile_path = Fpath.(tmp_dir / "Dockerfile") in
-         let* () =
-           (* See https://docs.docker.com/build/concepts/context/#filename-and-location *)
-           Bos.OS.File.write
-             Fpath.(tmp_dir / "Dockerfile.dockerignore")
-             dockerignore
-         in
-         let* () = Bos.OS.File.write dockerfile_path dockerfile in
-         let* () = Bos.OS.Dir.set_current tmp_dir in
-         let cmd =
-           let with_cache =
-             if use_cache then Bos.Cmd.empty else Bos.Cmd.v "--no-cache"
+  if only_print then (
+    print_endline dockerfile;
+    Ok ())
+  else
+    (* We don't want to build the entire opam-repo, so we ignore the .git directory *)
+    let dockerignore = ".git\nREADME.md\n" in
+    ()
+    |> Bos.OS.Dir.with_tmp "opam-ci-check-build-%s"
+         (fun
+           (* Create the docker file and ignore file in the tmp dir to avoid polluting the opam-repo  *)
+             tmp_dir
+           ()
+         ->
+           let dockerfile_path = Fpath.(tmp_dir / "Dockerfile") in
+           let* () =
+             (* See https://docs.docker.com/build/concepts/context/#filename-and-location *)
+             Bos.OS.File.write
+               Fpath.(tmp_dir / "Dockerfile.dockerignore")
+               dockerignore
            in
-           Bos.Cmd.(
-             docker_build %% with_cache % "--progress=plain" % "--file"
-             % Fpath.to_string dockerfile_path
-             % "--" % opam_repository)
-         in
-         match Bos.OS.Cmd.(in_string dockerfile |> run_in cmd) with
-         | Ok () -> Ok ()
-         | Error (`Msg err) ->
-             Error (`Msg ("Failed to build and test the package: " ^ err)))
-  |> Result.join
+           let* () = Bos.OS.File.write dockerfile_path dockerfile in
+           let* () = Bos.OS.Dir.set_current tmp_dir in
+           let cmd =
+             let with_cache =
+               if use_cache then Bos.Cmd.empty else Bos.Cmd.v "--no-cache"
+             in
+             Bos.Cmd.(
+               docker_build %% with_cache % "--progress=plain" % "--file"
+               % Fpath.to_string dockerfile_path
+               % "--" % opam_repository)
+           in
+           match Bos.OS.Cmd.(in_string dockerfile |> run_in cmd) with
+           | Ok () -> Ok ()
+           | Error (`Msg err) ->
+               Error (`Msg ("Failed to build and test the package: " ^ err)))
+    |> Result.join
