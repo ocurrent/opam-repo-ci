@@ -42,6 +42,16 @@ val freebsd :
     'a) ->
   'a list
 
+val windows :
+  build:
+    (opam_version:[> `Dev ] ->
+    lower_bounds:bool ->
+    revdeps:bool ->
+    string ->
+    Opam_ci_check.Variant.t ->
+    'a) ->
+  'a list
+
 val extras :
   build:
     (opam_version:Opam_ci_check.Opam_version.t ->

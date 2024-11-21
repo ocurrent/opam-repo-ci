@@ -5,6 +5,7 @@ let cache ~variant =
   match Variant.os variant with
   | `Freebsd
   | `Linux -> [ Obuilder_spec.Cache.v download_cache ~target:"/home/opam/.opam/download-cache" ]
+  | `Windows -> [ Obuilder_spec.Cache.v download_cache ~target:"c:\\Users\\opam\\AppData\\local\\opam\\download-cache" ]
   | `Macos -> [ Obuilder_spec.Cache.v download_cache ~target:"/Users/mac1000/.opam/download-cache";
                 Obuilder_spec.Cache.v "homebrew" ~target:"/Users/mac1000/Library/Caches/Homebrew" ]
 let network = ["host"]
@@ -84,30 +85,35 @@ let setup_repository ?(local=false) ~variant ~for_docker ~opam_version () =
   let open Obuilder_spec in
   let home_dir = match Variant.os variant with
     | `Macos -> None
+    | `Windows -> Some "/cygdrive/c/Users/opam"
     | `Freebsd
     | `Linux -> Some "/home/opam"
   in
   let prefix = match Variant.os variant with
     | `Macos -> "~/local"
     | `Freebsd -> "/usr/local"
-    | `Linux -> "/usr"
+    | `Windows | `Linux -> "/usr"
   in
   let ln = match Variant.os variant with
-    | `Macos -> "ln"
+    | `Windows | `Macos -> "ln"
     | `Freebsd | `Linux -> "sudo ln"
+  in
+  let dst = match Variant.os variant with
+    | `Windows -> "/Users/opam/opam-repository/"
+    | `Macos | `Freebsd | `Linux -> "opam-repository/"
   in
   let opam_version_str = Opam_version.to_string opam_version
   in
   let opam_repo_args = match Variant.os variant with
     | `Macos -> " -k local" (* TODO: (copy ...) do not copy the content of .git or something like that and make the subsequent opam pin fail *)
-    | `Freebsd | `Linux -> ""
+    | `Windows | `Freebsd | `Linux -> ""
   in
   let opamrc = match Variant.os variant with
     (* NOTE: [for_docker] is required because docker does not support bubblewrap in docker build *)
     (* docker run has --privileged but docker build does not have it *)
     (* so we need to remove the part re-enabling the sandbox. *)
     | `Linux when not for_docker -> " --config .opamrc-sandbox"
-    | `Freebsd | `Macos | `Linux -> ""
+    | `Windows | `Freebsd | `Macos | `Linux -> ""
     (* TODO: On MacOS, the sandbox is always (and should be) enabled by default but does not have those ~/.opamrc-sandbox files *)
   in
   (* If we are testing a minimal opam-repository without
@@ -130,7 +136,7 @@ let setup_repository ?(local=false) ~variant ~for_docker ~opam_version () =
   env "CI" "true" :: env "OPAM_REPO_CI" "true" :: (* Advertise CI for test frameworks *)
   [
     run "rm -rf opam-repository/";
-    copy ["."] ~dst:"opam-repository/";
+    copy ["."] ~dst;
     run "opam repository set-url%s --strict default opam-repository/" opam_repo_args;
     run ~network "opam %s || true" (match opam_version with `V2_1 | `V2_2 | `V2_3 | `Dev -> "update --depexts" | `V2_0 -> "depext -u");
   ] @
