@@ -60,7 +60,6 @@ Test the following:
   $ opam-ci-check lint -r . -c b.0.0.1
   Linting opam-repository at $TESTCASE_ROOT/. ...
   Error in b.0.0.1:            warning 25: Missing field 'authors'
-  Error in b.0.0.1: Maintainer email missing. Please add a maintainer email to the opam file. Maintainer: Jane
   Warning in b.0.0.1: The package has not replaced the following default, example tags: topics, project
   [1]
   $ opam-ci-check lint -r . -c b.0.0.2
@@ -187,3 +186,60 @@ Test presence of unexpected files in a-1.0.0.2 package
   Linting opam-repository at $TESTCASE_ROOT/. ...
   Error in a-1.0.0.2: Forbidden permission for file packages/a-1/a-1.0.0.2/opam. All files should have permissions 644.
   [1]
+
+# Maintainer contact lint
+
+The maintainer contact lint requires that a package EITHER provide a URL for the
+`bug-tracker` OR that at least one email is provided in the `maintainer` field.
+If neither of there requirements are met, the check should fail, otherwise it
+should  passes.
+
+Add multiple maintainers with no email and remove the bug-reports field from a
+valid package:
+
+  $ git reset -q --hard initial-state
+  $ sed -i \
+  > -e 's/maintainer.*/maintainer: ["Maintainer1" "Maintaner2"]/' \
+  > -e '/bug-reports.*/d' \
+  > packages/a-1/a-1.0.0.1/opam
+  $ git diff packages/a-1/a-1.0.0.1/opam | grep '^[+-][^+-]'
+  -maintainer: "Maintainer <me@example.com>"
+  +maintainer: ["Maintainer1" "Maintaner2"]
+  -bug-reports: "https://github.com/ocurrent/opam-repo-ci/issues"
+
+Test that we report the expected linting error:
+
+  $ opam-ci-check lint -r . -c a-1.0.0.1
+  Linting opam-repository at $TESTCASE_ROOT/. ...
+  Error in a-1.0.0.1:            warning 36: Missing field 'bug-reports'
+  Error in a-1.0.0.1: There is no way to contact the maintainer(s) 'Maintainer1, Maintaner2'. A package must either specify a url for 'bug-reports' or provide an email address in the 'maintainer' field.
+  [1]
+
+Add one email to the maintainers, and ensure it now passes the maintainer
+contact lint:
+
+  $ sed -i \
+  > -e 's/"Maintaner2"/"Maintaner2 <me@example.com>"/' \
+  > packages/a-1/a-1.0.0.1/opam
+  $ git diff packages/a-1/a-1.0.0.1/opam | grep '^[+-][^+-]'
+  -maintainer: "Maintainer <me@example.com>"
+  +maintainer: ["Maintainer1" "Maintaner2 <me@example.com>"]
+  -bug-reports: "https://github.com/ocurrent/opam-repo-ci/issues"
+  $ opam-ci-check lint -r . -c a-1.0.0.1
+  Linting opam-repository at $TESTCASE_ROOT/. ...
+  Error in a-1.0.0.1:            warning 36: Missing field 'bug-reports'
+  [1]
+
+Just remove the email address, leaving the bug-reports and ensure that it now
+passes linting:
+
+  $ git reset -q --hard initial-state
+  $ sed -i \
+  > -e 's/maintainer.*/maintainer: ["Maintainer1" "Maintaner2"]/' \
+  > packages/a-1/a-1.0.0.1/opam
+  $ git diff packages/a-1/a-1.0.0.1/opam | grep '^[+-][^+-]'
+  -maintainer: "Maintainer <me@example.com>"
+  +maintainer: ["Maintainer1" "Maintaner2"]
+  $ opam-ci-check lint -r . -c a-1.0.0.1
+  Linting opam-repository at $TESTCASE_ROOT/. ...
+  No errors
