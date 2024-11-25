@@ -16,6 +16,7 @@ end
 val check :
   new_pkgs:string list ->
   changed_pkgs:string list ->
+  ?pkg_src_dir:string option ->
   string ->
   (OpamPackage.t * error) list
 (** [check ~new_pkgs ~changed_pkgs opam_repo] is a list of all the errors

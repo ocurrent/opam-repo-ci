@@ -21,6 +21,7 @@ let lint (changed_pkgs, new_pkgs) local_repo_dir =
   | None -> failwith "TODO: default to using the opam repository"
   | Some d -> (
       print_endline @@ Printf.sprintf "Linting opam-repository at %s ..." d;
+      (* TODO: Add the package source directory as CLI arg *)
       match Lint.check ~new_pkgs ~changed_pkgs d with
       | [] ->
           print_endline "No errors";
