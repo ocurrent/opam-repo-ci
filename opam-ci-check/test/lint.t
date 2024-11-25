@@ -198,10 +198,11 @@ Add multiple maintainers with no email and remove the bug-reports field from a
 valid package:
 
   $ git reset -q --hard initial-state
-  $ sed -i \
+  $ sed \
   > -e 's/maintainer.*/maintainer: ["Maintainer1" "Maintaner2"]/' \
   > -e '/bug-reports.*/d' \
-  > packages/a-1/a-1.0.0.1/opam
+  > packages/a-1/a-1.0.0.1/opam > opam.new
+  $ mv opam.new packages/a-1/a-1.0.0.1/opam
   $ git diff packages/a-1/a-1.0.0.1/opam | grep '^[+-][^+-]'
   -maintainer: "Maintainer <me@example.com>"
   +maintainer: ["Maintainer1" "Maintaner2"]
@@ -218,9 +219,10 @@ Test that we report the expected linting error:
 Add one email to the maintainers, and ensure it now passes the maintainer
 contact lint:
 
-  $ sed -i \
+  $ sed \
   > -e 's/"Maintaner2"/"Maintaner2 <me@example.com>"/' \
-  > packages/a-1/a-1.0.0.1/opam
+  > packages/a-1/a-1.0.0.1/opam > opam.new
+  $ mv opam.new packages/a-1/a-1.0.0.1/opam
   $ git diff packages/a-1/a-1.0.0.1/opam | grep '^[+-][^+-]'
   -maintainer: "Maintainer <me@example.com>"
   +maintainer: ["Maintainer1" "Maintaner2 <me@example.com>"]
@@ -234,9 +236,10 @@ Just remove the email address, leaving the bug-reports and ensure that it now
 passes linting:
 
   $ git reset -q --hard initial-state
-  $ sed -i \
+  $ sed \
   > -e 's/maintainer.*/maintainer: ["Maintainer1" "Maintaner2"]/' \
-  > packages/a-1/a-1.0.0.1/opam
+  > packages/a-1/a-1.0.0.1/opam > opam.new
+  $ mv opam.new packages/a-1/a-1.0.0.1/opam
   $ git diff packages/a-1/a-1.0.0.1/opam | grep '^[+-][^+-]'
   -maintainer: "Maintainer <me@example.com>"
   +maintainer: ["Maintainer1" "Maintaner2"]
