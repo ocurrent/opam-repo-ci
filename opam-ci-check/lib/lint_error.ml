@@ -137,14 +137,14 @@ let msg_of_error (package, (err : error)) =
         pkg other_pkg
   | UnexpectedFile file ->
       Printf.sprintf "Error in %s: Unexpected file in %s/%s" pkg
-        (Opam_helpers.path_from_pkg ~repo_dir:"" package)
+        (Opam_helpers.path_from_pkg ~opam_repo_dir:"" package)
         file
   | ForbiddenPerm file ->
       Printf.sprintf
         "Error in %s: Forbidden permission for file %s/%s. All files should \
          have permissions 644."
         pkg
-        (Opam_helpers.path_from_pkg ~repo_dir:"" package)
+        (Opam_helpers.path_from_pkg ~opam_repo_dir:"" package)
         (Filename.basename file)
   | OpamLint warn ->
       let warn = OpamFileTools.warns_to_string [ warn ] in

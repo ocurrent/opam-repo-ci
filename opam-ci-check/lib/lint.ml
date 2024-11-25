@@ -302,8 +302,8 @@ module Checks = struct
     | { st_kind = S_REG; st_perm = 0o664; _ } -> true
     | _ -> false
 
-  let check_package_dir ~repo_dir ~pkg _opam =
-    let dir = O.path_from_pkg ~repo_dir pkg in
+  let check_package_dir ~opam_repo_dir ~pkg _opam =
+    let dir = O.path_from_pkg ~opam_repo_dir pkg in
     let check_file = function
       | "opam" ->
           let path = dir // "opam" in
@@ -343,7 +343,7 @@ module Checks = struct
         else None)
       other_pkgs
 
-  let checks ~newly_published ~repo_dir packages =
+  let checks ~newly_published ~opam_repo_dir packages =
     let newly_published_checks =
       [ check_name_collisions packages; Prefix.check_name_restricted_prefix ]
     in
@@ -354,7 +354,7 @@ module Checks = struct
         check_dune_subst;
         check_dune_constraints;
         check_checksums;
-        check_package_dir ~repo_dir;
+        check_package_dir ~opam_repo_dir;
         opam_lint;
         check_maintainer_contact;
         check_tags;
@@ -365,8 +365,8 @@ module Checks = struct
     in
     if newly_published then checks @ newly_published_checks else checks
 
-  let run_checks ~repo_dir ~pkg ~packages ?(newly_published = false) opam =
-    checks ~newly_published packages ~repo_dir
+  let run_checks ~opam_repo_dir ~pkg ~packages ?(newly_published = false) opam =
+    checks ~newly_published packages ~opam_repo_dir
     |> List.map (fun f -> f ~pkg opam)
     |> List.concat
 
@@ -376,9 +376,9 @@ end
 let get_packages repo_dir =
   get_files (repo_dir // "packages") |> List.sort String.compare
 
-let run_package_lint ~newly_published ~repo_dir pkg =
+let run_package_lint ~newly_published ~opam_repo_dir pkg =
   let pkg = OpamPackage.of_string pkg in
-  let opam_path = O.path_from_pkg ~repo_dir pkg // "opam" in
+  let opam_path = O.path_from_pkg ~opam_repo_dir pkg // "opam" in
   (* NOTE: We use OpamFile.OPAM.read_from_channel instead of OpamFile.OPAM.file
      to prevent the name and version fields being automatically added *)
   In_channel.with_open_text opam_path (fun ic ->
@@ -388,17 +388,19 @@ let run_package_lint ~newly_published ~repo_dir pkg =
       in
       match opam with
       | Ok opam ->
-          let packages = get_packages repo_dir in
-          Checks.run_checks ~repo_dir ~pkg ~packages ~newly_published opam
+          let packages = get_packages opam_repo_dir in
+          Checks.run_checks ~opam_repo_dir ~pkg ~packages ~newly_published opam
       | Error _ -> [ Checks.parse_error pkg ])
 
-let check ~new_pkgs ~changed_pkgs repo_dir =
+let check ~new_pkgs ~changed_pkgs opam_repo_dir =
   let changed_errors =
-    List.map (run_package_lint ~newly_published:false ~repo_dir) changed_pkgs
+    List.map
+      (run_package_lint ~newly_published:false ~opam_repo_dir)
+      changed_pkgs
     |> List.concat
   in
   let new_pkg_errors =
-    List.map (run_package_lint ~newly_published:true ~repo_dir) new_pkgs
+    List.map (run_package_lint ~newly_published:true ~opam_repo_dir) new_pkgs
     |> List.concat
   in
   new_pkg_errors @ changed_errors
