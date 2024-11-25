@@ -151,10 +151,11 @@ let msg_of_error (package, (err : error)) =
       Printf.sprintf "Error in %s: %s" pkg warn
   | MaintainerWithoutContact maintainer ->
       Printf.sprintf
-        "Error in %s: There is no way to contact the maintainer(s) '%s'. A package \
-         must either specify a url for 'bug-reports' or provide an email \
-         address in the 'maintainer' field."
-        pkg (String.concat ", " maintainer)
+        "Error in %s: There is no way to contact the maintainer(s) '%s'. A \
+         package must either specify a url for 'bug-reports' or provide an \
+         email address in the 'maintainer' field."
+        pkg
+        (String.concat ", " maintainer)
   | ParseError ->
       Printf.sprintf "Error in %s: Failed to parse the opam file" pkg
   | DefaultTagsPresent tags ->
