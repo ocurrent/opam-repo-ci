@@ -4,7 +4,7 @@ name: Deploy odoc to GitHub Pages
 on:
   push:
     branches:
-      - main
+      - master
 
 permissions: read-all
 
