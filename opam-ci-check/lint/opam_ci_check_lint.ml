@@ -297,7 +297,14 @@ module Checks = struct
           if is_perm_correct path then [] else [ (pkg, ForbiddenPerm path) ]
       | file -> [ (pkg, UnexpectedFile file) ]
     in
-    get_files dir |> List.map check_file |> List.concat
+    (* FIXME: Would it be better to make skipping this check more explicit? *)
+    if Sys.file_exists dir then
+      get_files dir |> List.map check_file |> List.concat
+    else (
+      print_endline
+      @@ Printf.sprintf
+           "Skipped check_package_dir since package dir %s doesn't exist" dir;
+      [])
 
   (** [package_name_collision p0 p1] returns true if [p0] is similar to [p1].
     Similarity is defined to be:
