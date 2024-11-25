@@ -14,9 +14,9 @@ authors: [
 ]
 license: "Apache-2.0"
 tags: ["opam" "ci" "lint" "reverse dependency"]
-homepage: "https://github.com/ocurrent/opam-ci-check"
-doc: "https://www.ocurrent.org/opam-ci-check/opam-ci-check/index.html"
-bug-reports: "https://github.com/ocurrent/opam-ci-check/issues"
+homepage: "https://github.com/ocurrent/opam-repo-ci/tree/master/opam-ci-check"
+doc: "https://www.ocurrent.org/opam-repo-ci/opam-ci-check/index.html"
+bug-reports: "https://github.com/ocurrent/opam-repo-ci/issues"
 depends: [
   "ocaml" {>= "4.14.0"}
   "dune" {>= "3.16"}
@@ -46,4 +46,4 @@ build: [
     "@doc" {with-doc}
   ]
 ]
-dev-repo: "git+https://github.com/ocurrent/opam-ci-check.git"
+dev-repo: "git+https://github.com/ocurrent/opam-repo-ci.git"
