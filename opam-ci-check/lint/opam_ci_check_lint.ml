@@ -2,7 +2,8 @@
  * Copyright (c) 2024 Puneeth Chaganti <punchagan@muse-amuse.in>, Shon Feder <shon.feder@gmail.com>, Tarides <contact@tarides.com>
  *)
 
-module O = Opam_helpers
+module Opam_helpers = Opam_helpers
+
 
 let ( // ) = Filename.concat
 let get_files dir = dir |> Sys.readdir |> Array.to_list
@@ -303,7 +304,7 @@ module Checks = struct
     | _ -> false
 
   let check_package_dir ~opam_repo_dir ~pkg _opam =
-    let dir = O.path_from_pkg ~opam_repo_dir pkg in
+    let dir = Opam_helpers.path_from_pkg ~opam_repo_dir pkg in
     let check_file = function
       | "opam" ->
           let path = dir // "opam" in
