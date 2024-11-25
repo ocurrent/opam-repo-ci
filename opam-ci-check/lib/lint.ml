@@ -152,10 +152,10 @@ module Checks = struct
            (fun (_, url) -> check_one_url ~ctx:"extra-sources" url)
            (OpamFile.OPAM.extra_sources opam))
     and url_errs =
-      Option.default []
+      Stdlib.Option.value ~default:[]
         (Option.map (check_one_url ~ctx:"url") (OpamFile.OPAM.url opam))
     and extra_file_errs =
-      Option.default []
+      Stdlib.Option.value ~default:[]
         (Option.map
            (fun efs -> List.concat (List.map check_extra_file efs))
            (OpamFile.OPAM.extra_files opam))
@@ -235,7 +235,7 @@ module Checks = struct
       | OpamFormula.Atom (pkg, constr) ->
           if is_dune pkg then
             let v = get_lower_bound constr in
-            Some (Option.default "" v)
+            Some (Stdlib.Option.value ~default:"" v)
           else None
       | Empty -> None
       | Block x -> aux x
