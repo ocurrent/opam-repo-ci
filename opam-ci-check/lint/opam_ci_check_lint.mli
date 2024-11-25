@@ -2,6 +2,10 @@
  * Copyright (c) 2024 Puneeth Chaganti <punchagan@muse-amuse.in>, Shon Feder <shon.feder@gmail.com>, Tarides <contact@tarides.com>
  *)
 
+module Opam_helpers : sig
+  val path_from_pkg : opam_repo_dir:string -> OpamPackage.t -> string
+end
+
 include module type of Lint_error
 
 module Checks : sig
