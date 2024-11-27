@@ -265,13 +265,20 @@ module Checks = struct
         if is_build then (pkg, DuneIsBuild) :: errors else errors
     | None -> []
 
-  let check_maintainer_email ~pkg opam =
+
+  let check_maintainer_contact ~pkg opam =
+    let is_present bug_reports = bug_reports <> [] in
+    let includes_an_email maintainers =
+      List.exists
+          (fun m -> Str.string_match (Str.regexp ".*<?.*@.*>?") m 0)
+          maintainers
+    in
+    let bug_reports = OpamFile.OPAM.bug_reports opam in
     let maintainers = OpamFile.OPAM.maintainer opam in
-    List.filter_map
-      (fun m ->
-        if Str.string_match (Str.regexp ".*<?.*@.*>?") m 0 then None
-        else Some (pkg, MaintainerEmailMissing m))
-      maintainers
+    if is_present bug_reports || includes_an_email maintainers then
+      []
+    else
+      [ (pkg, MaintainerWithoutContact maintainers) ]
 
   let check_tags ~pkg opam =
     (* Check if any of the default tags are present *)
@@ -351,7 +358,7 @@ module Checks = struct
         check_checksums;
         check_package_dir ~repo_dir;
         opam_lint;
-        check_maintainer_email;
+        check_maintainer_contact;
         check_tags;
         check_no_pin_depends;
         check_no_extra_files;
