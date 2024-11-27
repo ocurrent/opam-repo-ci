@@ -13,10 +13,12 @@ Tests linting of correctly formatted opam packages
   * a-1 (tag: initial-state, master)
   $ opam-ci-check lint -r . -c a-1.0.0.2
   Linting opam-repository at $TESTCASE_ROOT/. ...
-  No errors
+  Error in a-1.0.0.2: No package source directory provided.
+  [1]
   $ opam-ci-check lint -r . -c b.0.0.3
   Linting opam-repository at $TESTCASE_ROOT/. ...
-  No errors
+  Error in b.0.0.3: No package source directory provided.
+  [1]
 
 Setup repo for incorrect b package tests
 
@@ -59,6 +61,7 @@ Test the following:
 
   $ opam-ci-check lint -r . -c b.0.0.1
   Linting opam-repository at $TESTCASE_ROOT/. ...
+  Error in b.0.0.1: No package source directory provided.
   Error in b.0.0.1:            warning 25: Missing field 'authors'
   Warning in b.0.0.1: The package has not replaced the following default, example tags: topics, project
   [1]
@@ -79,6 +82,7 @@ Test the following:
   [1]
   $ opam-ci-check lint -r . -c system-b.0.0.1
   Linting opam-repository at $TESTCASE_ROOT/. ...
+  Error in system-b.0.0.1: No package source directory provided.
   Error in system-b.0.0.1: package with prefix 'system-' requires conflict class 'ocaml-system'
   [1]
   $ opam-ci-check lint -r . -c b.0.0.4
@@ -91,10 +95,11 @@ Test the following:
   [1]
   $ opam-ci-check lint -r . -c b.0.0.6
   Linting opam-repository at $TESTCASE_ROOT/. ...
-  Error in b.0.0.6: Failed to parse the opam file
+  Error in $TESTCASE_ROOT/./packages/b/b.0.0.6/opam: Failed to parse the opam file due to 'Parse error'
   [1]
   $ opam-ci-check lint -r . -c b.0.0.7
   Linting opam-repository at $TESTCASE_ROOT/. ...
+  Error in b.0.0.7: No package source directory provided.
   Error in b.0.0.7:              error 23: Missing field 'maintainer'
   Error in b.0.0.7:            warning 25: Missing field 'authors'
   [1]
@@ -114,6 +119,7 @@ Tests the package name collision detection by adding a version of a package
 
   $ opam-ci-check lint -r . -n a_1.0.0.1
   Linting opam-repository at $TESTCASE_ROOT/. ...
+  Error in a_1.0.0.1: No package source directory provided.
   Warning in a_1.0.0.1: Possible name collision with package 'a-1'
   [1]
 
@@ -133,6 +139,7 @@ Test presence of unnecessary fields in a-1.0.0.2 package
   Linting opam-repository at $TESTCASE_ROOT/. ...
   Warning in a-1.0.0.2: Unnecessary field 'name'. It is suggested to remove it.
   Warning in a-1.0.0.2: Unnecessary field 'version'. It is suggested to remove it.
+  Error in a-1.0.0.2: No package source directory provided.
   [1]
 
 Setup repo for unmatched name and version test
@@ -151,6 +158,7 @@ Test presence of unnecessary fields in a-1.0.0.2 package
   Linting opam-repository at $TESTCASE_ROOT/. ...
   Error in a-1.0.0.2: The field 'name' that doesn't match its context. Field 'name' has value 'b-1' but was expected of value 'a-1'.
   Error in a-1.0.0.2: The field 'version' that doesn't match its context. Field 'version' has value '0.0.1' but was expected of value '0.0.2'.
+  Error in a-1.0.0.2: No package source directory provided.
   [1]
 
 Setup repo for unexpected file
@@ -167,6 +175,7 @@ Test presence of unexpected files in a-1.0.0.2 package
 
   $ opam-ci-check lint -r . -c a-1.0.0.2
   Linting opam-repository at $TESTCASE_ROOT/. ...
+  Error in a-1.0.0.2: No package source directory provided.
   Error in a-1.0.0.2: Unexpected file in packages/a-1/a-1.0.0.2/files
   [1]
 
@@ -184,6 +193,7 @@ Test presence of unexpected files in a-1.0.0.2 package
 
   $ opam-ci-check lint -r . -c a-1.0.0.2
   Linting opam-repository at $TESTCASE_ROOT/. ...
+  Error in a-1.0.0.2: No package source directory provided.
   Error in a-1.0.0.2: Forbidden permission for file packages/a-1/a-1.0.0.2/opam. All files should have permissions 644.
   [1]
 
@@ -212,6 +222,7 @@ Test that we report the expected linting error:
 
   $ opam-ci-check lint -r . -c a-1.0.0.1
   Linting opam-repository at $TESTCASE_ROOT/. ...
+  Error in a-1.0.0.1: No package source directory provided.
   Error in a-1.0.0.1:            warning 36: Missing field 'bug-reports'
   Error in a-1.0.0.1: There is no way to contact the maintainer(s) 'Maintainer1, Maintaner2'. A package must either specify a url for 'bug-reports' or provide an email address in the 'maintainer' field.
   [1]
@@ -229,6 +240,7 @@ contact lint:
   -bug-reports: "https://github.com/ocurrent/opam-repo-ci/issues"
   $ opam-ci-check lint -r . -c a-1.0.0.1
   Linting opam-repository at $TESTCASE_ROOT/. ...
+  Error in a-1.0.0.1: No package source directory provided.
   Error in a-1.0.0.1:            warning 36: Missing field 'bug-reports'
   [1]
 
@@ -245,4 +257,5 @@ passes linting:
   +maintainer: ["Maintainer1" "Maintaner2"]
   $ opam-ci-check lint -r . -c a-1.0.0.1
   Linting opam-repository at $TESTCASE_ROOT/. ...
-  No errors
+  Error in a-1.0.0.1: No package source directory provided.
+  [1]
