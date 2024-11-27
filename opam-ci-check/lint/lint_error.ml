@@ -19,22 +19,22 @@ type error =
   | UnmatchedVersion of OpamPackage.Version.t
   | DubiousDuneSubst
   | DuneProjectMissing
+  | DuneProjectParseError of string
   | DuneDependencyMissing
   | DuneLowerBoundMissing
   | DuneIsBuild
   | BadDuneConstraint of string * string
+  | NoPackageSources
   | UnexpectedFile of string
   | ForbiddenPerm of string
   | OpamLint of (int * [ `Warning | `Error ] * string)
   | MaintainerWithoutContact of string list
-  | FailedToDownload of string
   | NameCollision of string
   | WeakChecksum of string
   | PinDepends
   | ExtraFiles
   | RestrictedPrefix of string
   | PrefixConflictClassMismatch of prefix_conflict_class_mismatch
-  | ParseError
   | DefaultTagsPresent of string list
 
 (**/**)
@@ -96,8 +96,10 @@ let msg_of_error (package, (err : error)) =
         "Error in %s: extra-files present. This is not allowed in the \
          opam-repository. Please use extra-source instead."
         pkg
-  | FailedToDownload msg ->
-      Printf.sprintf "Error in %s: Failed to download the archive. Details: %s"
+  | NoPackageSources ->
+      Printf.sprintf "Error in %s: No package source directory provided." pkg
+  | DuneProjectParseError msg ->
+      Printf.sprintf "Error in %s: Failed to parse dune-project file with: '%s'"
         pkg msg
   | DuneProjectMissing ->
       Printf.sprintf
@@ -156,8 +158,6 @@ let msg_of_error (package, (err : error)) =
          email address in the 'maintainer' field."
         pkg
         (String.concat ", " maintainer)
-  | ParseError ->
-      Printf.sprintf "Error in %s: Failed to parse the opam file" pkg
   | DefaultTagsPresent tags ->
       Printf.sprintf
         "Warning in %s: The package has not replaced the following default, \

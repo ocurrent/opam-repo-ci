@@ -172,36 +172,18 @@ module Checks = struct
     | None | Some [] -> []
     | Some _ -> [ (pkg, ExtraFiles) ]
 
-  let get_dune_project_version ~pkg ~pkg_src_dir url =
-    let read_dune_project_version dir =
-      let dune_project = Filename.concat dir "dune-project" in
-      match
-        In_channel.input_all
-        |> In_channel.with_open_text dune_project
-        |> Sexplib.Sexp.parse
-      with
-      | exception Sys_error _ -> Ok None
-      | Sexplib.Sexp.Done (List [ Atom "lang"; Atom "dune"; Atom version ], _)
-        ->
-          Ok (Some version)
-      | Done _ -> Error "(lang dune ...) is not the first construct"
-      | Cont _ -> Error "Failed to parse the dune-project file"
-    in
-    match pkg_src_dir with
-    | Some dir -> read_dune_project_version dir
-    | None -> (
-        D.with_temp_dir "lint-dune-project-version-" @@ fun dir ->
-        let res =
-          OpamProcess.Job.run
-          @@ OpamRepository.pull_tree
-               (OpamPackage.to_string pkg)
-               (OpamFilename.Dir.of_string dir)
-               (OpamFile.URL.checksum url)
-               [ OpamFile.URL.url url ]
-        in
-        match res with
-        | OpamTypes.Not_available (_, msg) -> Error msg
-        | Up_to_date _ | Result _ -> read_dune_project_version dir)
+  let get_dune_project_version ~pkg_src_dir =
+    let dune_project = Filename.concat pkg_src_dir "dune-project" in
+    match
+      In_channel.input_all
+      |> In_channel.with_open_text dune_project
+      |> Sexplib.Sexp.parse
+    with
+    | exception Sys_error _ -> Ok None
+    | Sexplib.Sexp.Done (List [ Atom "lang"; Atom "dune"; Atom version ], _) ->
+        Ok (Some version)
+    | Done _ -> Error "(lang dune ...) is not the first construct"
+    | Cont _ -> Error "Failed to parse the dune-project file"
 
   let is_dune name =
     OpamPackage.Name.equal name (OpamPackage.Name.of_string "dune")
@@ -250,13 +232,13 @@ module Checks = struct
     (!is_build, aux opam.OpamFile.OPAM.depends)
 
   let check_dune_constraints ~pkg ~pkg_src_dir opam =
-    match opam.OpamFile.OPAM.url with
-    | Some url ->
-        let dune_version = get_dune_project_version ~pkg ~pkg_src_dir url in
+    match pkg_src_dir with
+    | Some pkg_src_dir ->
+        let dune_version = get_dune_project_version ~pkg_src_dir in
         let is_build, dune_constraint = get_dune_constraint opam in
         let errors =
           match (dune_constraint, dune_version) with
-          | _, Error msg -> [ (pkg, FailedToDownload msg) ]
+          | _, Error msg -> [ (pkg, DuneProjectParseError msg) ]
           | None, Ok None -> []
           | Some "", _ -> [ (pkg, DuneLowerBoundMissing) ]
           | Some _, Ok None -> [ (pkg, DuneProjectMissing) ]
@@ -268,7 +250,7 @@ module Checks = struct
               else [ (pkg, BadDuneConstraint (dep, ver)) ]
         in
         if is_build then (pkg, DuneIsBuild) :: errors else errors
-    | None -> []
+    | None -> [ (pkg, NoPackageSources) ]
 
   let check_maintainer_contact ~pkg opam =
     let is_present bug_reports = bug_reports <> [] in
@@ -370,46 +352,29 @@ module Checks = struct
     in
     if newly_published then checks @ newly_published_checks else checks
 
-  let run_checks ~opam_repo_dir ~pkg ~pkg_src_dir ~packages
-      ?(newly_published = false) opam =
+  let lint_package ~opam_repo_dir ~pkg ~pkg_src_dir ~repo_packages:packages
+      ~newly_published opam =
     checks ~newly_published ~opam_repo_dir ~pkg_src_dir packages
     |> List.map (fun f -> f ~pkg opam)
     |> List.concat
-
-  let parse_error pkg = (pkg, ParseError)
 end
+
+type t = {
+  pkg : OpamPackage.t;
+  newly_published : bool;
+  pkg_src_dir : string option;
+  opam : OpamFile.OPAM.t;
+}
+
+let v ~pkg ~newly_published ~pkg_src_dir opam =
+  { pkg; newly_published; pkg_src_dir; opam }
 
 let get_packages repo_dir =
   get_files (repo_dir // "packages") |> List.sort String.compare
 
-let run_package_lint ~newly_published ~opam_repo_dir ~pkg_src_dir pkg =
-  let pkg = OpamPackage.of_string pkg in
-  let opam_path = O.path_from_pkg ~opam_repo_dir pkg // "opam" in
-  (* NOTE: We use OpamFile.OPAM.read_from_channel instead of OpamFile.OPAM.file
-     to prevent the name and version fields being automatically added *)
-  In_channel.with_open_text opam_path (fun ic ->
-      let opam =
-        try Ok (OpamFile.OPAM.read_from_channel ic)
-        with OpamPp.Bad_format e | OpamPp.Bad_version (e, _) -> Error e
-      in
-      match opam with
-      | Ok opam ->
-          let packages = get_packages opam_repo_dir in
-          Checks.run_checks ~opam_repo_dir ~pkg ~pkg_src_dir ~packages
-            ~newly_published opam
-      | Error _ -> [ Checks.parse_error pkg ])
-
-let check ~new_pkgs ~changed_pkgs ?(pkg_src_dir = None) opam_repo_dir =
-  let changed_errors =
-    List.map
-      (run_package_lint ~newly_published:false ~opam_repo_dir ~pkg_src_dir)
-      changed_pkgs
-    |> List.concat
-  in
-  let new_pkg_errors =
-    List.map
-      (run_package_lint ~newly_published:true ~opam_repo_dir ~pkg_src_dir)
-      new_pkgs
-    |> List.concat
-  in
-  new_pkg_errors @ changed_errors
+let lint_packages ~opam_repo_dir ~repo_packages metas =
+  metas
+  |> List.map (fun { pkg; newly_published; pkg_src_dir; opam } ->
+         Checks.lint_package ~opam_repo_dir ~pkg ~pkg_src_dir ~repo_packages
+           ~newly_published opam)
+  |> List.concat
