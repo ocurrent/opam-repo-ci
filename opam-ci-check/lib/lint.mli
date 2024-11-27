@@ -13,27 +13,54 @@ module Checks : sig
       dashes ([-]), and the empty string to be equal *)
 end
 
-val check :
-  new_pkgs:string list ->
-  changed_pkgs:string list ->
-  ?pkg_src_dir:string option ->
-  string ->
-  (OpamPackage.t * error) list
-(** [check ~new_pkgs ~changed_pkgs opam_repo] is a list of all the errors
-    detected while linting the [new_pkgs] and [changed_pkgs] in the context of the
-    opam repository located at [opam_repo].
+type t
 
-    @param new_pkgs Packages which are to be newly published.
-    @param changed_pkgs Packages that have been updated (e.g., to add maintainers
-        update dependency versions).
-    @param opam_repo The path a local opam repository.
+val v :
+  pkg:OpamPackage.t ->
+  newly_published:bool ->
+  pkg_src_dir:string option ->
+  OpamFile.OPAM.t ->
+  t
+(** Create an object of type [t]
+    @param pkg Package that is being linted.
+    @param pkg_src_dir The path to a directory containing the package sources.
+    @param newly_published Flag to indicate if the [pkg] is being newly
+      published to the repository, meaning no previous versions of the package
+      have been published. Some additional checks are run for such packages.
+    @param opam Parsed OPAM metadata for the package.
+ *)
+
+val get_packages : string -> string list
+(** [get_packages repo] is a list of all the packages in the opam repository
+    located at [repo].
+
+    Example:
+
+    {[
+      let all_packages = get_packages repo
+    ]} *)
+
+val lint_packages :
+  opam_repo_dir:string ->
+  repo_packages:string list ->
+  t list ->
+  (OpamPackage.t * error) list
+(** [lint_packages ~opam_repo_dir ~repo_packages metas] is a list of all the
+    errors detected while linting the packages in the [metas] list in the
+    context of the opam repository located at [opam_repo_dir]. [repo_packages]
+    is the list of all the packages in the repository, used for some checks
+    like name clashes.
+
+    @param opam_repo_dir The path a local opam repository.
+    @param repo_packages List of names of all the packages in the opam repository.
 
     Examples:
 
     {[
-      let passes_all_checks = assert (check ~new_pkgs ~changed_pkgs repo |> List.length = 0)
-      let failed_some_checks = assert (check ~new_pkgs ~changed_pkgs repo |> List.length > 0)
+
+      let passes_all_checks = assert (lint_packages ~opam_repo_dir ~repo_packages metas |> List.length = 0)
+      let failed_some_checks = assert (lint_packages ~opam_repo_dir ~repo_packages metas |> List.length > 0)
       let messages_for_all_failed_checks =
-        check ~new_pkgs ~changed_pkgs repo
+        lint_packages ~opam_repo_dir ~repo_packages metas
         |> List.map msg_of_error
     ]} *)

@@ -6,6 +6,8 @@ open Cmdliner
 open Opam_ci_check
 module Distro = Dockerfile_opam.Distro
 
+let ( // ) = Filename.concat
+
 (* This is Cmdliner.Term.map, which is not available in Cmdliner 1.1.1 *)
 let map_term f x = Term.app (Term.const f) x
 
@@ -16,13 +18,60 @@ let to_exit_code : (unit, string) result Term.t -> Cmd.Exit.code Term.t =
       Printf.eprintf "%s%!" msg;
       1
 
+let fetch_package_src ~dir ~pkg opam =
+  match opam.OpamFile.OPAM.url with
+  | None -> None
+  | Some url -> (
+      let res =
+        OpamProcess.Job.run
+        @@ OpamRepository.pull_tree
+             (OpamPackage.to_string pkg)
+             (OpamFilename.Dir.of_string dir)
+             (OpamFile.URL.checksum url)
+             [ OpamFile.URL.url url ]
+      in
+      match res with
+      | OpamTypes.Not_available (_, msg) ->
+          print_endline msg;
+          None
+      | Up_to_date _ | Result _ -> Some dir)
+
+let read_package_opam ~opam_repo_dir pkg =
+  let opam_path = Opam_helpers.path_from_pkg ~opam_repo_dir pkg // "opam" in
+  (* NOTE: We use OpamFile.OPAM.read_from_channel instead of OpamFile.OPAM.file
+     to prevent the name and version fields being automatically added *)
+  In_channel.with_open_text opam_path @@ fun ic ->
+  try OpamFile.OPAM.read_from_channel ic
+  with
+  | OpamPp.Bad_format ((_, msg) : OpamPp.bad_format)
+  | OpamPp.Bad_version (((_, msg) : OpamPp.bad_format), _)
+    ->
+    Printf.eprintf "Error in %s: Failed to parse the opam file due to '%s'" opam_path msg;
+    exit 1
+
 let lint (changed_pkgs, new_pkgs) local_repo_dir =
   match local_repo_dir with
   | None -> failwith "TODO: default to using the opam repository"
-  | Some d -> (
-      print_endline @@ Printf.sprintf "Linting opam-repository at %s ..." d;
-      (* TODO: Add the package source directory as CLI arg *)
-      match Lint.check ~new_pkgs ~changed_pkgs d with
+  | Some opam_repo_dir -> (
+      print_endline
+      @@ Printf.sprintf "Linting opam-repository at %s ..." opam_repo_dir;
+      (* TODO: Allow providing package source directories from the CLI *)
+      Dir_helpers.with_temp_dir "opam-ci-check-lint-" @@ fun dir ->
+      let process_package ~newly_published pkg_str =
+        let pkg = OpamPackage.of_string pkg_str in
+        let opam = read_package_opam ~opam_repo_dir pkg in
+        let pkg_src_dir = fetch_package_src ~dir ~pkg opam in
+        Lint.v ~pkg ~newly_published ~pkg_src_dir opam
+      in
+      let all_lint_packages =
+        List.map (process_package ~newly_published:true) new_pkgs
+        @ List.map (process_package ~newly_published:false) changed_pkgs
+      in
+      let repo_packages = Lint.get_packages opam_repo_dir in
+      let errors =
+        Lint.lint_packages ~opam_repo_dir ~repo_packages all_lint_packages
+      in
+      match errors with
       | [] ->
           print_endline "No errors";
           Ok ()

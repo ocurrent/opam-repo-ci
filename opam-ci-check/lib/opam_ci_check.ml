@@ -10,3 +10,5 @@ module Variant = Variant
 module Opam_version = Opam_version
 module Compiler_version = Compiler_version
 module Spec = Spec
+module Dir_helpers = Dir_helpers
+module Opam_helpers = Opam_helpers
