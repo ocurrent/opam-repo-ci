@@ -33,6 +33,10 @@ let remove_dir dir =
 
 let with_temp_dir prefix f =
   let dir = create_temp_dir prefix in
-  let res = f dir in
-  remove_dir dir;
-  res
+  match f dir with
+  | exception exn ->
+      remove_dir dir;
+      raise exn
+  | result ->
+      remove_dir dir;
+      result
