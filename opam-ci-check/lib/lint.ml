@@ -383,9 +383,11 @@ let get_package_names repo_dir =
   get_files (repo_dir // "packages") |> List.sort String.compare
 
 let lint_packages ~opam_repo_dir metas =
-  let repo_package_names = get_package_names opam_repo_dir in
-  metas
-  |> List.map (fun { pkg; newly_published; pkg_src_dir; opam } ->
-         Checks.lint_package ~opam_repo_dir ~pkg ~pkg_src_dir
-           ~repo_package_names ~newly_published opam)
-  |> List.concat
+  if Sys.file_exists (opam_repo_dir // "packages") then
+    let repo_package_names = get_package_names opam_repo_dir in
+    metas
+    |> List.map (fun { pkg; newly_published; pkg_src_dir; opam } ->
+           Checks.lint_package ~opam_repo_dir ~pkg ~pkg_src_dir
+             ~repo_package_names ~newly_published opam)
+    |> List.concat |> Result.ok
+  else Error (Printf.sprintf "Invalid opam repository: %s" opam_repo_dir)
