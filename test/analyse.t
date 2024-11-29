@@ -111,6 +111,15 @@ See https://github.com/ocurrent/opam-repo-ci/issues/291
   $ opam-repo-ci-local --repo="." --branch=analyze-invalid-opam-file --analyse-only --no-web-server
   Error ""packages/a-1/a-1.0.0.1/opam" failed to be parsed: '.' is not a valid token"
 
-Clean up the build cache
+  $ rm -rf var
 
-  $ rm -rf ./var
+Test that a new root directory can be created.
+See https://github.com/ocurrent/opam-repo-ci/pull/397
+
+  $ git checkout -q -b add-a-new-dir initial-state
+  $ mkdir a-new-directory
+  $ touch a-new-directory/foo
+  $ git add  a-new-directory/foo
+  $ git commit -q -m "Add a new directory"
+  $ opam-repo-ci-local --repo="." --branch=add-a-new-dir --analyse-only --no-web-server
+  { "packages": [] }
