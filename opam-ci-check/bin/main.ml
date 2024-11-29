@@ -8,6 +8,12 @@ module Distro = Dockerfile_opam.Distro
 
 let ( // ) = Filename.concat
 
+(* [(let+)] is [Term.(const f $ v)] *)
+let ( let+ ) t f = Term.(const f $ t)
+
+(* [(and+)] is [Term.(const (fun x y -> (x, y)) $ a $ b)] *)
+let ( and+ ) a b = Term.(const (fun x y -> (x, y)) $ a $ b)
+
 (* This is Cmdliner.Term.map, which is not available in Cmdliner 1.1.1 *)
 let map_term f x = Term.app (Term.const f) x
 
@@ -49,24 +55,27 @@ let read_package_opam ~opam_repo_dir pkg =
     Printf.eprintf "Error in %s: Failed to parse the opam file due to '%s'" opam_path msg;
     exit 1
 
-let lint (changed_pkgs, new_pkgs) local_repo_dir =
+type package_spec = {
+  pkg : OpamPackage.t;
+  src : string option; (* package source directory *)
+  newly_published : bool option;
+}
+
+let lint package_specs local_repo_dir =
   match local_repo_dir with
   | None -> failwith "TODO: default to using the opam repository"
   | Some opam_repo_dir -> (
       print_endline
       @@ Printf.sprintf "Linting opam-repository at %s ..." opam_repo_dir;
-      (* TODO: Allow providing package source directories from the CLI *)
       Dir_helpers.with_temp_dir "opam-ci-check-lint-" @@ fun dir ->
-      let process_package ~newly_published pkg_str =
-        let pkg = OpamPackage.of_string pkg_str in
+      let process_package { pkg; src; newly_published } =
         let opam = read_package_opam ~opam_repo_dir pkg in
-        let pkg_src_dir = fetch_package_src ~dir ~pkg opam in
+        let pkg_src_dir =
+          if Option.is_none src then fetch_package_src ~dir ~pkg opam else src
+        in
         Lint.v ~pkg ~newly_published ~pkg_src_dir opam
       in
-      let all_lint_packages =
-        List.map (process_package ~newly_published:(Some true)) new_pkgs
-        @ List.map (process_package ~newly_published:(Some false)) changed_pkgs
-      in
+      let all_lint_packages = List.map process_package package_specs in
       let errors = Lint.lint_packages ~opam_repo_dir all_lint_packages in
       match errors with
       | Ok [] ->
@@ -188,35 +197,87 @@ let pkg_term =
   let info = Arg.info [] ~doc:"Package name + version" in
   Arg.required (Arg.pos 0 (Arg.some Arg.string) None info)
 
-let changed_pkgs_term =
-  let info =
-    Arg.info
-      [ "c"; "changed-packages" ]
-      ~doc:"List of changed package name + version"
-  in
-  Arg.value (Arg.opt (Arg.list Arg.string) [] info)
+let split_on_first c s =
+  match String.split_on_char c s with
+  | [a] | [a; ""] -> Ok (a, None)
+  | [a; b] -> Ok (a, Some b)
+  | _      -> Error s
 
-let newly_published_pkgs_term =
-  let info =
-    Arg.info [ "n"; "newly-published" ]
-      ~doc:"List of newly published package name + version"
+let arg_with_optional_attrs_conv arg_conv attrs_conv =
+  let (let^) = Result.bind in
+  let conv s =
+    match split_on_first ':' s with
+    | Ok (a, None) ->
+      let^ x = Arg.conv_parser arg_conv a in
+      Ok (x, [])
+    | Ok (a, Some attrs) ->
+      let^ x = Arg.conv_parser arg_conv a in
+      let^ attrs = Arg.(conv_parser (list attrs_conv)) attrs in
+      Ok (x, attrs)
+    | Error invalid ->
+      Fmt.error_msg
+        "Invalid argument spec %s. Argument specs should be of the form arg[:k1=v1[,k2=v2]]"
+        invalid
   in
-  Arg.value (Arg.opt (Arg.list Arg.string) [] info)
+  let pp fmt (x, attrs) =
+    Fmt.pf fmt "%a[:%a]"
+      Arg.(conv_printer arg_conv) x
+      Arg.(conv_printer (list ~sep:',' attrs_conv)) attrs
+  in
+  Arg.conv ~docv:"ARG[:key=value[,key=value]]" (conv, pp)
 
-let packages_term =
-  let create_term changed_pkgs newly_published_pkgs =
-    if changed_pkgs = [] && newly_published_pkgs = [] then
-      `Error
-        ( false,
-          "You must provide at least one changed or newly published package." )
-    else `Ok (changed_pkgs, newly_published_pkgs)
+let package_specs_term =
+  let opam_file_conv =
+      let conv = Arg.parser_of_kind_of_string ~kind:"opam package spec in the form <name.version>" OpamPackage.of_string_opt in
+      let pp = Fmt.of_to_string OpamPackage.to_string in
+      Arg.conv ~docv:"PACKAGE_SPEC" (conv, pp)
   in
-  Term.(ret (const create_term $ changed_pkgs_term $ newly_published_pkgs_term))
+  let attr_conv =
+    let parser s =
+      match split_on_first '=' s with
+      | Ok ("new", Some b) -> (
+          match bool_of_string_opt b with
+          | Some bool -> Ok (`New bool)
+          | None   -> Error (`Msg (b ^ " must be [true] or [false]"))
+        )
+      | Ok ("src", Some dir)  -> (
+          match Sys.is_directory dir with
+          | true -> Ok (`Src dir)
+          | false -> Error (`Msg (dir ^ " is not a directory"))
+          | exception (Sys_error msg) ->  Error (`Msg msg))
+      | _ -> Error (`Msg (Printf.sprintf "%s is an not a valid attribute. Only [src=<path>] or [new=<true|false>] allowed" s) )
+    in
+    let pp fmt v =
+      match v with
+      | `New b -> Fmt.pf fmt "new=%b" b
+      | `Src s -> Fmt.pf fmt "src=%s" s
+    in
+    Arg.conv ~docv:"ATTR" (parser, pp)
+  in
+  let package_spec_conv = arg_with_optional_attrs_conv opam_file_conv attr_conv
+  in
+  let info =
+    Arg.info []
+      ~doc:
+        "List of package specifications (format: \
+         <name.version>[:src=<path>][,new=<true|false>]). If [src] is not \
+         specified, the sources are downloaded from the source URL. If [new] \
+         is not specified, it is inferred from the opam repository."
+  in
+  let+ pgk_spec_data = Arg.value (Arg.pos_all package_spec_conv [] info) in
+  pgk_spec_data |>
+  List.map (fun (pkg, specs) ->
+      let src = List.find_map (function `Src s -> Some s | _ -> None) specs in
+      let newly_published = List.find_map (function `New b -> Some b | _ -> None) specs in
+      {pkg; src; newly_published}
+    )
+
 
 let lint_cmd =
   let doc = "Lint the opam repository directory" in
   let term =
-    Term.(const lint $ packages_term $ local_opam_repo_term) |> to_exit_code
+    Term.(const lint $ package_specs_term $ local_opam_repo_term)
+    |> to_exit_code
   in
   let info =
     Cmd.info "lint" ~doc ~sdocs:"COMMON OPTIONS" ~exits:Cmd.Exit.defaults
@@ -298,12 +359,6 @@ let compiler_conv =
     ver |> of_string_exn |> Fun.flip with_variant var |> to_string
   in
   Arg.conv ~docv:"COMPILER" (of_string, pp)
-
-(* [(let+)] is [Term.(const f $ v)] *)
-let ( let+ ) t f = Term.(const f $ t)
-
-(* [(and+)] is [Term.(const (fun x y -> (x, y)) $ a $ b)] *)
-let ( and+ ) a b = Term.(const (fun x y -> (x, y)) $ a $ b)
 
 let variant =
   let+ arch =

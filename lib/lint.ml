@@ -42,27 +42,18 @@ module Check = struct
   let of_dir ~master ~job ~packages cwd =
     let master = Current_git.Commit.hash master in
     exec ~cwd ~job [|"git"; "merge"; "-q"; "--"; master|] >>/= fun () ->
-    let changed =
+    let package_args =
       packages
       |> List.filter_map (fun (pkg, change) ->
-          match change with
-          | Analyse.Analysis.(New Release | Unavailable | SignificantlyChanged | InsignificantlyChanged ) -> Some (OpamPackage.to_string pkg)
-          | _ -> None)
-      |> function
-          | [] -> []
-          | changed -> ["--changed-packages"; String.concat "," changed ]
+           let pkg_str = OpamPackage.to_string pkg in
+           let new_arg = match change with
+             | Analyse.Analysis.(New Package) -> Some "true"
+             | Analyse.Analysis.(New Release | Unavailable | SignificantlyChanged | InsignificantlyChanged ) -> Some "false"
+             | Deleted -> None
+           in
+           Option.map (Printf.sprintf "%s:new=%s" pkg_str) new_arg)
     in
-    let new_ =
-      packages
-      |> List.filter_map (fun (pkg, change) ->
-          match change with
-          | Analyse.Analysis.(New Package) -> Some (OpamPackage.to_string pkg)
-          | _ -> None)
-      |> function
-          | [] -> []
-          | new_ -> ["--newly-published"; String.concat "," new_ ]
-    in
-    let cmd = ["opam-ci-check"; "lint"; "--opam-repository"; "."] @ changed @ new_ in
+    let cmd = ["opam-ci-check"; "lint"; "--opam-repository"; "."] @ package_args in
     (* Show instructions to run locally *)
     let install_instructions = ["opam"; "pin"; "opam-ci-check"; "git+https://github.com/ocurrent/opam-repo-ci.git#live"] in
     Current.Job.write job
