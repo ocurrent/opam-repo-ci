@@ -371,13 +371,24 @@ end
 
 type t = {
   pkg : OpamPackage.t;
-  newly_published : bool;
+  newly_published : bool option;
   pkg_src_dir : string option;
   opam : OpamFile.OPAM.t;
 }
 
-let v ~pkg ~newly_published ~pkg_src_dir opam =
+let v ~pkg ?(newly_published = None) ~pkg_src_dir opam =
   { pkg; newly_published; pkg_src_dir; opam }
+
+(** A package is considered newly published if the repository doesn't have any
+    other versions of the package, other than the current one.*)
+let is_newly_published ~opam_repo_dir pkg =
+  let pkg_name = OpamPackage.(pkg |> name |> Name.to_string) in
+  let pkg_str = OpamPackage.to_string pkg in
+  match get_files (opam_repo_dir // "packages" // pkg_name) with
+  | exception Sys_error _ -> true
+  | [] -> true
+  | [ v ] -> v = pkg_str
+  | _ -> false
 
 let get_package_names repo_dir =
   get_files (repo_dir // "packages") |> List.sort String.compare
@@ -387,6 +398,11 @@ let lint_packages ~opam_repo_dir metas =
     let repo_package_names = get_package_names opam_repo_dir in
     metas
     |> List.map (fun { pkg; newly_published; pkg_src_dir; opam } ->
+           let newly_published =
+             match newly_published with
+             | Some v -> v
+             | None -> is_newly_published ~opam_repo_dir pkg
+           in
            Checks.lint_package ~opam_repo_dir ~pkg ~pkg_src_dir
              ~repo_package_names ~newly_published opam)
     |> List.concat |> Result.ok
