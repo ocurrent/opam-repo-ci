@@ -1,0 +1,51 @@
+diff --git a/packages/b/b.0.0.2/opam b/packages/b/b.0.0.2/opam
+new file mode 100644
+index 0000000..326a3e0
+--- /dev/null
++++ b/packages/b/b.0.0.2/opam
+@@ -0,0 +1,19 @@
++opam-version: "2.0"
++synopsis: "Synopsis"
++description: "Description"
++maintainer: "Maintainer <me@example.com>"
++author: "Author"
++license: "Apache-2.0"
++homepage: "https://github.com/ocurrent/opam-repo-ci"
++bug-reports: "https://github.com/ocurrent/opam-repo-ci/issues"
++dev-repo: "git+https://github.com/ocurrent/opam-repo-ci.git"
++doc: "https://ocurrent.github.io/ocurrent/"
++build: []
++depends: [
++  "a-1" {>= "0.0.2"}
++  "dune" {>= "3.16.0"}
++]
++url {
++  src: "b.0.0.2.tgz"
++  checksum: ["sha256=e26dfd7fa9731d0d43239c8b7d36bd3d79b0f709f1cdfa2ada7a7ab5d79d1911"]
++}
+diff --git a/packages/b/b.0.0.3/opam b/packages/b/b.0.0.3/opam
+new file mode 100644
+index 0000000..3059614
+--- /dev/null
++++ b/packages/b/b.0.0.3/opam
+@@ -0,0 +1,19 @@
++opam-version: "2.0"
++synopsis: "Synopsis"
++description: "Description"
++maintainer: "Maintainer <me@example.com>"
++author: "Author"
++license: "Apache-2.0"
++homepage: "https://github.com/ocurrent/opam-repo-ci"
++bug-reports: "https://github.com/ocurrent/opam-repo-ci/issues"
++dev-repo: "git+https://github.com/ocurrent/opam-repo-ci.git"
++doc: "https://ocurrent.github.io/ocurrent/"
++build: []
++depends: [
++  "a-1" {< "0.0.2"}
++  "dune" {>= "3.16.0"}
++]
++url {
++  src: "b.0.0.3.tgz"
++  checksum: ["sha256=e26dfd7fa9731d0d43239c8b7d36bd3d79b0f709f1cdfa2ada7a7ab5d79d1911"]
++}
+

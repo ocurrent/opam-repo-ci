@@ -380,7 +380,10 @@ let v ~pkg ?(newly_published = None) ~pkg_src_dir opam =
   { pkg; newly_published; pkg_src_dir; opam }
 
 (** A package is considered newly published if the repository doesn't have any
-    other versions of the package, other than the current one.*)
+    other versions of the package, other than the current one.
+
+    NOTE: If two versions of a package are published in the same PR, this
+    inference would fail to detect the package as new.*)
 let is_newly_published ~opam_repo_dir pkg =
   let pkg_name = OpamPackage.(pkg |> name |> Name.to_string) in
   let pkg_str = OpamPackage.to_string pkg in
