@@ -195,8 +195,6 @@ module Analysis = struct
         | Error _ as err -> Lwt.return err
         | Ok pkgs ->
           match String.split_on_char '/' path with
-          | [_] | ".github"::_ ->
-            Lwt_result.return pkgs
           | "packages" :: name :: package :: "files" :: _ ->
             Lwt_result.return (add_pkg ~path ~name ~package SignificantlyChanged pkgs)
           | ["packages"; name; package; "opam"] ->
@@ -211,8 +209,11 @@ module Analysis = struct
                 get_opam ~cwd:dir path
                 >>= add_changed_pkg ~path ~name ~package ~old_content pkgs
             end
+          | "packages" :: _ ->
+            Fmt.failwith "Unexpected path %S in packages directory (expecting 'packages/name/name.l.m.n/{opam,files/*}')" path
           | _ ->
-            Fmt.failwith "Unexpected path %S in output (expecting 'packages/name/pkg/...')" path
+            (* Changes to any other path should be reviewed manually, since it's a change into repository meta data *)
+            Lwt_result.return pkgs
       ) (Ok OpamPackage.Map.empty)
 
   let has_tests opam =
