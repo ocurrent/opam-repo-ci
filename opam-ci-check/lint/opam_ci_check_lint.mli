@@ -17,7 +17,7 @@ type t
 
 val v :
   pkg:OpamPackage.t ->
-  newly_published:bool ->
+  ?newly_published:bool option ->
   pkg_src_dir:string option ->
   OpamFile.OPAM.t ->
   t
