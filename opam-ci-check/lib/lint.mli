@@ -30,36 +30,20 @@ val v :
     @param opam Parsed OPAM metadata for the package.
  *)
 
-val get_packages : string -> string list
-(** [get_packages repo] is a list of all the packages in the opam repository
-    located at [repo].
-
-    Example:
-
-    {[
-      let all_packages = get_packages repo
-    ]} *)
-
 val lint_packages :
-  opam_repo_dir:string ->
-  repo_packages:string list ->
-  t list ->
-  (OpamPackage.t * error) list
-(** [lint_packages ~opam_repo_dir ~repo_packages metas] is a list of all the
+  opam_repo_dir:string -> t list -> (OpamPackage.t * error) list
+(** [lint_packages ~opam_repo_dir metas] is a list of all the
     errors detected while linting the packages in the [metas] list in the
-    context of the opam repository located at [opam_repo_dir]. [repo_packages]
-    is the list of all the packages in the repository, used for some checks
-    like name clashes.
+    context of the opam repository located at [opam_repo_dir].
 
     @param opam_repo_dir The path a local opam repository.
-    @param repo_packages List of names of all the packages in the opam repository.
 
     Examples:
 
     {[
 
-      let passes_all_checks = assert (lint_packages ~opam_repo_dir ~repo_packages metas |> List.length = 0)
-      let failed_some_checks = assert (lint_packages ~opam_repo_dir ~repo_packages metas |> List.length > 0)
+      let passes_all_checks = assert (lint_packages ~opam_repo_dir metas |> List.length = 0)
+      let failed_some_checks = assert (lint_packages ~opam_repo_dir metas |> List.length > 0)
       let messages_for_all_failed_checks =
         lint_packages ~opam_repo_dir ~repo_packages metas
         |> List.map msg_of_error
