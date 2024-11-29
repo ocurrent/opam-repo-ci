@@ -29,7 +29,7 @@ depends: [
   "prometheus-app"
   "cmdliner" {>= "1.1.0"}
   "lwt"
-  "cohttp-lwt-unix" {>= "2.2.0"}
+  "cohttp-lwt-unix" {>= "6.0.0"}
   "mirage-crypto-rng" {>= "0.11.0"}
   "tyxml"
   "capnp-rpc-unix"
