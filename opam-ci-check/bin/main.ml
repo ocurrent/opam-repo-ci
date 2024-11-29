@@ -67,10 +67,7 @@ let lint (changed_pkgs, new_pkgs) local_repo_dir =
         List.map (process_package ~newly_published:true) new_pkgs
         @ List.map (process_package ~newly_published:false) changed_pkgs
       in
-      let repo_packages = Lint.get_packages opam_repo_dir in
-      let errors =
-        Lint.lint_packages ~opam_repo_dir ~repo_packages all_lint_packages
-      in
+      let errors = Lint.lint_packages ~opam_repo_dir all_lint_packages in
       match errors with
       | [] ->
           print_endline "No errors";
