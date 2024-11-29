@@ -31,7 +31,9 @@ val v :
  *)
 
 val lint_packages :
-  opam_repo_dir:string -> t list -> (OpamPackage.t * error) list
+  opam_repo_dir:string ->
+  t list ->
+  ((OpamPackage.t * error) list, string) result
 (** [lint_packages ~opam_repo_dir metas] is a list of all the
     errors detected while linting the packages in the [metas] list in the
     context of the opam repository located at [opam_repo_dir].
@@ -42,9 +44,9 @@ val lint_packages :
 
     {[
 
-      let passes_all_checks = assert (lint_packages ~opam_repo_dir metas |> List.length = 0)
-      let failed_some_checks = assert (lint_packages ~opam_repo_dir metas |> List.length > 0)
+      let passes_all_checks = assert (lint_packages ~opam_repo_dir metas |> Result.get_ok |> List.length = 0)
+      let failed_some_checks = assert (lint_packages ~opam_repo_dir metas |> Result.get_ok |> List.length > 0)
       let messages_for_all_failed_checks =
         lint_packages ~opam_repo_dir ~repo_packages metas
-        |> List.map msg_of_error
+        |> Result.get_ok |> List.map msg_of_error
     ]} *)
