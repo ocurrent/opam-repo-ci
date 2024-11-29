@@ -323,11 +323,11 @@ module Checks = struct
     in
     dash_underscore p0 p1
 
-  let check_name_collisions ~pkg packages _opam =
+  let check_name_collisions ~pkg package_names _opam =
     let pkg_name = pkg.OpamPackage.name |> OpamPackage.Name.to_string in
     let pkg_name_lower = String.lowercase_ascii pkg_name in
     let other_pkgs =
-      List.filter (fun s -> not @@ String.equal s pkg_name) packages
+      List.filter (fun s -> not @@ String.equal s pkg_name) package_names
     in
     List.filter_map
       (fun other_pkg ->
@@ -337,9 +337,12 @@ module Checks = struct
         else None)
       other_pkgs
 
-  let checks ~newly_published ~opam_repo_dir ~pkg_src_dir packages =
+  let checks ~newly_published ~opam_repo_dir ~pkg_src_dir repo_package_names =
     let newly_published_checks =
-      [ check_name_collisions packages; Prefix.check_name_restricted_prefix ]
+      [
+        check_name_collisions repo_package_names;
+        Prefix.check_name_restricted_prefix;
+      ]
     in
     let checks =
       [
@@ -359,9 +362,9 @@ module Checks = struct
     in
     if newly_published then checks @ newly_published_checks else checks
 
-  let lint_package ~opam_repo_dir ~pkg ~pkg_src_dir ~repo_packages:packages
+  let lint_package ~opam_repo_dir ~pkg ~pkg_src_dir ~repo_package_names
       ~newly_published opam =
-    checks ~newly_published ~opam_repo_dir ~pkg_src_dir packages
+    checks ~newly_published ~opam_repo_dir ~pkg_src_dir repo_package_names
     |> List.map (fun f -> f ~pkg opam)
     |> List.concat
 end
@@ -380,9 +383,9 @@ let get_package_names repo_dir =
   get_files (repo_dir // "packages") |> List.sort String.compare
 
 let lint_packages ~opam_repo_dir metas =
-  let repo_packages = get_package_names opam_repo_dir in
+  let repo_package_names = get_package_names opam_repo_dir in
   metas
   |> List.map (fun { pkg; newly_published; pkg_src_dir; opam } ->
-         Checks.lint_package ~opam_repo_dir ~pkg ~pkg_src_dir ~repo_packages
-           ~newly_published opam)
+         Checks.lint_package ~opam_repo_dir ~pkg ~pkg_src_dir
+           ~repo_package_names ~newly_published opam)
   |> List.concat
