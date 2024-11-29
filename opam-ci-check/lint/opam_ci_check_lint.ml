@@ -376,10 +376,11 @@ type t = {
 let v ~pkg ~newly_published ~pkg_src_dir opam =
   { pkg; newly_published; pkg_src_dir; opam }
 
-let get_packages repo_dir =
+let get_package_names repo_dir =
   get_files (repo_dir // "packages") |> List.sort String.compare
 
-let lint_packages ~opam_repo_dir ~repo_packages metas =
+let lint_packages ~opam_repo_dir metas =
+  let repo_packages = get_package_names opam_repo_dir in
   metas
   |> List.map (fun { pkg; newly_published; pkg_src_dir; opam } ->
          Checks.lint_package ~opam_repo_dir ~pkg ~pkg_src_dir ~repo_packages
