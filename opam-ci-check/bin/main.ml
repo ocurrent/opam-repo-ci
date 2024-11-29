@@ -69,12 +69,13 @@ let lint (changed_pkgs, new_pkgs) local_repo_dir =
       in
       let errors = Lint.lint_packages ~opam_repo_dir all_lint_packages in
       match errors with
-      | [] ->
+      | Ok [] ->
           print_endline "No errors";
           Ok ()
-      | errors ->
+      | Ok errors ->
           errors |> List.map Lint.msg_of_error |> String.concat "\n"
-          |> Printf.sprintf "%s\n" |> Result.error)
+          |> Printf.sprintf "%s\n" |> Result.error
+      | Error _ as e -> e)
 
 let show_revdeps pkg local_repo_dir no_transitive_revdeps =
   (* Get revdeps for the package *)
