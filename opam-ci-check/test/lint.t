@@ -1,24 +1,109 @@
-Setup test opam-repository directory
+# Error handling of CLI parsing
+
+Test for an invalid package spec
+
+  $ opam-ci-check lint -r . '=-~!:new=true'
+  opam-ci-check: invalid value '=-~!', expected opam package spec in the form
+                 <name.version>
+  Usage: opam-ci-check lint [--opam-repository=VAL] [OPTION]… [ARG]…
+  Try 'opam-ci-check lint --help' or 'opam-ci-check --help' for more information.
+  [124]
+
+Test for an invalid attributes
+
+Test for invalid attributes that are properly formed
+
+  $ opam-ci-check lint -r . 'foo.0.1.0:bar=baz'
+  opam-ci-check: invalid element in list ('bar=baz'): bar=baz is an not a valid
+                 attribute. Only [src=<path>] or [new=<true|false>] allowed
+  Usage: opam-ci-check lint [--opam-repository=VAL] [OPTION]… [ARG]…
+  Try 'opam-ci-check lint --help' or 'opam-ci-check --help' for more information.
+  [124]
+
+Test for an invalid values to a valid key
+
+  $ opam-ci-check lint -r . 'foo.0.1.0:new=invalid'
+  opam-ci-check: invalid element in list ('new=invalid'): invalid must be
+                 [true] or [false]
+  Usage: opam-ci-check lint [--opam-repository=VAL] [OPTION]… [ARG]…
+  Try 'opam-ci-check lint --help' or 'opam-ci-check --help' for more information.
+  [124]
+
+Test for a missing value
+
+  $ opam-ci-check lint -r . 'foo.0.1.0:src='
+  opam-ci-check: invalid element in list ('src='): src= is an not a valid
+                 attribute. Only [src=<path>] or [new=<true|false>] allowed
+  Usage: opam-ci-check lint [--opam-repository=VAL] [OPTION]… [ARG]…
+  Try 'opam-ci-check lint --help' or 'opam-ci-check --help' for more information.
+  [124]
+
+Test for a valid key with no value
+
+  $ opam-ci-check lint -r . 'foo.0.1.0:src'
+  opam-ci-check: invalid element in list ('src'): src is an not a valid
+                 attribute. Only [src=<path>] or [new=<true|false>] allowed
+  Usage: opam-ci-check lint [--opam-repository=VAL] [OPTION]… [ARG]…
+  Try 'opam-ci-check lint --help' or 'opam-ci-check --help' for more information.
+  [124]
+
+Test for `src` with a non-existent directory
+
+  $ opam-ci-check lint -r . 'foo.0.1.0:src=./not/a/dir'
+  opam-ci-check: invalid element in list ('src=./not/a/dir'): ./not/a/dir: No
+                 such file or directory
+  Usage: opam-ci-check lint [--opam-repository=VAL] [OPTION]… [ARG]…
+  Try 'opam-ci-check lint --help' or 'opam-ci-check --help' for more information.
+  [124]
+
+Test for invalid extra colons
+
+  $ opam-ci-check lint -r . 'foo.0.1.0:bing-bong:bang'
+  opam-ci-check: Invalid argument spec foo.0.1.0:bing-bong:bang. Argument specs
+                 should be of the form arg[:k1=v1[,k2=v2]]
+  Usage: opam-ci-check lint [--opam-repository=VAL] [OPTION]… [ARG]…
+  Try 'opam-ci-check lint --help' or 'opam-ci-check --help' for more information.
+  [124]
+
+# Setup test opam-repository directory
 
   $ sh "scripts/setup_repo.sh"
   $ git checkout -qb new-branch-1
 
+# Test linting
+
 Tests linting of correctly formatted opam packages
 
-  $ git apply "patches/b-correct.patch"
+  $ git apply "patches/b.0.0.1-correct.patch"
+  $ echo "(lang dune 3.16)" > dune-project
+  $ sh "scripts/setup_sources.sh" b 0.0.1 dune-project
+  Created tarball b.0.0.1.tgz
+  Updated checksum for b.0.0.1.tgz in b.0.0.1's opam file
   $ git add .
-  $ git commit -qm b-correct
+  $ git commit -qm b.0.0.1-correct
+  $ opam-ci-check lint -r . b.0.0.1 # Lint b.0.0.1 (new package) with inference
+  Linting opam-repository at $TESTCASE_ROOT/. ...
+  No errors
+  $ git apply "patches/b.0.0.3-correct.patch"
+  $ sh "scripts/setup_sources.sh" b 0.0.3 dune-project
+  Created tarball b.0.0.3.tgz
+  Updated checksum for b.0.0.3.tgz in b.0.0.3's opam file
+  $ git add .
+  $ git commit -qm b.0.0.3-correct
+  $ opam-ci-check lint -r . b.0.0.3   # Lint b.0.0.3 (old package) with inference
+  Linting opam-repository at $TESTCASE_ROOT/. ...
+  No errors
   $ git log --graph --pretty=format:'%s%d'
-  * b-correct (HEAD -> new-branch-1)
+  * b.0.0.3-correct (HEAD -> new-branch-1)
+  * b.0.0.1-correct
   * a-1 (tag: initial-state, master)
-  $ opam-ci-check lint -r . -c a-1.0.0.2
+  $ opam-ci-check lint -r . a-1.0.0.2:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
   Error in a-1.0.0.2: No package source directory provided.
   [1]
-  $ opam-ci-check lint -r . -c b.0.0.3
+  $ opam-ci-check lint -r . b.0.0.3:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
-  Error in b.0.0.3: No package source directory provided.
-  [1]
+  No errors
 
 Setup repo for incorrect b package tests
 
@@ -59,20 +144,20 @@ Test the following:
 - [b.0.0.6] has a incorrectly formatted opam file
 - [b.0.0.7] has opam lint errors/warnings
 
-  $ opam-ci-check lint -r . -c b.0.0.1
+  $ opam-ci-check lint -r . b.0.0.1:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
   Error in b.0.0.1: No package source directory provided.
   Error in b.0.0.1:            warning 25: Missing field 'authors'
   Warning in b.0.0.1: The package has not replaced the following default, example tags: topics, project
   [1]
-  $ opam-ci-check lint -r . -c b.0.0.2
+  $ opam-ci-check lint -r . b.0.0.2:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
   Warning in b.0.0.2: Dubious use of 'dune subst'. 'dune subst' should always only be called with {dev} (i.e. ["dune" "subst"] {dev}) If your opam file has been autogenerated by dune, you need to upgrade your dune-project to at least (lang dune 2.7).
   Warning in b.0.0.2: The package tagged dune as a build dependency. Due to a bug in dune (https://github.com/ocaml/dune/issues/2147) this should never be the case. Please remove the {build} tag from its filter.
   Warning in b.0.0.2: The package has a dune dependency without a lower bound.
   Error in b.0.0.2:              error  3: File format error in 'unknown-field' at line 11, column 0: Invalid field unknown-field
   [1]
-  $ opam-ci-check lint -r . -c b.0.0.3
+  $ opam-ci-check lint -r . b.0.0.3:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
   Error in b.0.0.3: Your dune-project file indicates that this package requires at least dune 3.16 but your opam file only requires dune >= 3.15.0. Please check which requirement is the right one, and fix the other.
   Error in b.0.0.3: Weak checksum algorithm(s) provided. Please use SHA-256 or SHA-512. Details: opam field extra-files contains only MD5 as checksum for 0install.install
@@ -80,24 +165,24 @@ Test the following:
   Error in b.0.0.3: extra-files present. This is not allowed in the opam-repository. Please use extra-source instead.
   Error in b.0.0.3: package with conflict class 'ocaml-host-arch' requires name prefix 'host-arch-'
   [1]
-  $ opam-ci-check lint -r . -c system-b.0.0.1
+  $ opam-ci-check lint -r . system-b.0.0.1:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
   Error in system-b.0.0.1: No package source directory provided.
   Error in system-b.0.0.1: package with prefix 'system-' requires conflict class 'ocaml-system'
   [1]
-  $ opam-ci-check lint -r . -c b.0.0.4
+  $ opam-ci-check lint -r . b.0.0.4:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
   Warning in b.0.0.4: The package seems to use dune but the dune-project file is missing.
   [1]
-  $ opam-ci-check lint -r . -c b.0.0.5
+  $ opam-ci-check lint -r . b.0.0.5:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
   Warning in b.0.0.5: The package has a dune-project file but no explicit dependency on dune was found.
   [1]
-  $ opam-ci-check lint -r . -c b.0.0.6
+  $ opam-ci-check lint -r . b.0.0.6:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
   Error in $TESTCASE_ROOT/./packages/b/b.0.0.6/opam: Failed to parse the opam file due to 'Parse error'
   [1]
-  $ opam-ci-check lint -r . -c b.0.0.7
+  $ opam-ci-check lint -r . b.0.0.7:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
   Error in b.0.0.7: No package source directory provided.
   Error in b.0.0.7:              error 23: Missing field 'maintainer'
@@ -117,7 +202,7 @@ Setup repo for name collision tests
 Tests the package name collision detection by adding a version of a package
 [a_1] that conflicts with the existing [a-1] package
 
-  $ opam-ci-check lint -r . -n a_1.0.0.1
+  $ opam-ci-check lint -r . a_1.0.0.1   # inferring that the package is new
   Linting opam-repository at $TESTCASE_ROOT/. ...
   Error in a_1.0.0.1: No package source directory provided.
   Warning in a_1.0.0.1: Possible name collision with package 'a-1'
@@ -135,7 +220,7 @@ Setup repo for unnecessary fields tests
 
 Test presence of unnecessary fields in a-1.0.0.2 package
 
-  $ opam-ci-check lint -r . -c a-1.0.0.2
+  $ opam-ci-check lint -r . a-1.0.0.2:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
   Warning in a-1.0.0.2: Unnecessary field 'name'. It is suggested to remove it.
   Warning in a-1.0.0.2: Unnecessary field 'version'. It is suggested to remove it.
@@ -154,7 +239,7 @@ Setup repo for unmatched name and version test
 
 Test presence of unnecessary fields in a-1.0.0.2 package
 
-  $ opam-ci-check lint -r . -c a-1.0.0.2
+  $ opam-ci-check lint -r . a-1.0.0.2:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
   Error in a-1.0.0.2: The field 'name' that doesn't match its context. Field 'name' has value 'b-1' but was expected of value 'a-1'.
   Error in a-1.0.0.2: The field 'version' that doesn't match its context. Field 'version' has value '0.0.1' but was expected of value '0.0.2'.
@@ -173,7 +258,7 @@ Setup repo for unexpected file
 
 Test presence of unexpected files in a-1.0.0.2 package
 
-  $ opam-ci-check lint -r . -c a-1.0.0.2
+  $ opam-ci-check lint -r . a-1.0.0.2:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
   Error in a-1.0.0.2: No package source directory provided.
   Error in a-1.0.0.2: Unexpected file in packages/a-1/a-1.0.0.2/files
@@ -191,7 +276,7 @@ Setup repo for Forbidden perm file
 
 Test presence of unexpected files in a-1.0.0.2 package
 
-  $ opam-ci-check lint -r . -c a-1.0.0.2
+  $ opam-ci-check lint -r . a-1.0.0.2:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
   Error in a-1.0.0.2: No package source directory provided.
   Error in a-1.0.0.2: Forbidden permission for file packages/a-1/a-1.0.0.2/opam. All files should have permissions 644.
@@ -220,7 +305,7 @@ valid package:
 
 Test that we report the expected linting error:
 
-  $ opam-ci-check lint -r . -c a-1.0.0.1
+  $ opam-ci-check lint -r . a-1.0.0.1:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
   Error in a-1.0.0.1: No package source directory provided.
   Error in a-1.0.0.1:            warning 36: Missing field 'bug-reports'
@@ -238,7 +323,7 @@ contact lint:
   -maintainer: "Maintainer <me@example.com>"
   +maintainer: ["Maintainer1" "Maintaner2 <me@example.com>"]
   -bug-reports: "https://github.com/ocurrent/opam-repo-ci/issues"
-  $ opam-ci-check lint -r . -c a-1.0.0.1
+  $ opam-ci-check lint -r . a-1.0.0.1:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
   Error in a-1.0.0.1: No package source directory provided.
   Error in a-1.0.0.1:            warning 36: Missing field 'bug-reports'
@@ -255,7 +340,7 @@ passes linting:
   $ git diff packages/a-1/a-1.0.0.1/opam | grep '^[+-][^+-]'
   -maintainer: "Maintainer <me@example.com>"
   +maintainer: ["Maintainer1" "Maintaner2"]
-  $ opam-ci-check lint -r . -c a-1.0.0.1
+  $ opam-ci-check lint -r . a-1.0.0.1:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
   Error in a-1.0.0.1: No package source directory provided.
   [1]
