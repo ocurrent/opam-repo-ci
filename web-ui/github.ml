@@ -283,10 +283,9 @@ module Repo_handle = struct
         (* Otherwise, an nginx reverse proxy will wait for the whole log before sending anything. *)
         Cohttp.Header.init_with "X-Accel-Buffering" "no"
       in
-      let res = Cohttp.Response.make ~status:`OK ~flush:true ~encoding:Cohttp.Transfer.Chunked ~headers () in
+      let res = Cohttp.Response.make ~status:`OK ~encoding:Cohttp.Transfer.Chunked ~headers () in
       let write _ic oc =
-        let flush = Cohttp.Response.flush res in
-        let writer = Transfer_IO.make_writer ~flush Cohttp.Transfer.Chunked oc in
+        let writer = Transfer_IO.make_writer ~flush:true Cohttp.Transfer.Chunked oc in
         Lwt.finalize
           (fun () ->
              stream_logs job ~owner ~name ~refs ~hash ~variant ~status chunk writer >>= fun () ->
