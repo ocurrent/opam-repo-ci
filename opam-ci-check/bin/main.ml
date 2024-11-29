@@ -64,8 +64,8 @@ let lint (changed_pkgs, new_pkgs) local_repo_dir =
         Lint.v ~pkg ~newly_published ~pkg_src_dir opam
       in
       let all_lint_packages =
-        List.map (process_package ~newly_published:true) new_pkgs
-        @ List.map (process_package ~newly_published:false) changed_pkgs
+        List.map (process_package ~newly_published:(Some true)) new_pkgs
+        @ List.map (process_package ~newly_published:(Some false)) changed_pkgs
       in
       let errors = Lint.lint_packages ~opam_repo_dir all_lint_packages in
       match errors with
