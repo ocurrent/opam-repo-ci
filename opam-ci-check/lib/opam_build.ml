@@ -9,7 +9,7 @@ let cache ~variant =
                 Obuilder_spec.Cache.v "homebrew" ~target:"/Users/mac1000/Library/Caches/Homebrew" ]
 let network = ["host"]
 
-let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~revdep ~pkg =
+let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
   let pkg_s = OpamPackage.to_string pkg in
   let with_tests_opt = if with_tests then " --with-test" else "" in
   let cache = cache ~variant in
@@ -19,13 +19,6 @@ let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~revdep ~
        env "OPAMCRITERIA"        "+removed,+count[version-lag,solution]";
        env "OPAMFIXUPCRITERIA"   "+removed,+count[version-lag,solution]";
        env "OPAMUPGRADECRITERIA" "+removed,+count[version-lag,solution]";
-     ]
-   else
-     []
-  ) @
-  (if revdep || lower_bounds then
-     [
-       run "opam option solver=builtin-0install";
      ]
    else
      []
@@ -122,10 +115,9 @@ let setup_repository ?(local=false) ~variant ~for_docker ~opam_version () =
      Otherwise the "opam pin" after the "opam repository set-url" will fail (cannot find the new package for some reason) *)
   run "%s -f %s/bin/opam-%s %s/bin/opam" ln prefix opam_version_str prefix ::
   run ~network "opam init --reinit%s -ni" opamrc :: (* TODO: Remove ~network when https://github.com/ocurrent/ocaml-dockerfile/pull/132 is merged *)
-  run "uname -rs && opam exec -- ocaml -version && opam --version" ::
+  run "opam option solver=builtin-0install && opam config report" ::
   env "OPAMDOWNLOADJOBS" "1" :: (* Try to avoid github spam detection *)
   env "OPAMERRLOGLEN" "0" :: (* Show the whole log if it fails *)
-  env "OPAMSOLVERTIMEOUT" "1000" :: (* Increase timeout. Poor mccs is doing its best *)
   env "OPAMPRECISETRACKING" "1" :: (* Mitigate https://github.com/ocaml/opam/issues/3997 *)
   env "CI" "true" :: env "OPAM_REPO_CI" "true" :: (* Advertise CI for test frameworks *)
   [
@@ -146,19 +138,19 @@ let spec ?(local=false) ~for_docker ~opam_version ~base ~variant ~revdep ~lower_
   let opam_install = opam_install ~variant ~opam_version in
   let revdep = match revdep with
     | None -> []
-    | Some revdep -> opam_install ~pin:false ~lower_bounds:false ~with_tests:false ~revdep:true ~pkg:revdep
+    | Some revdep -> opam_install ~pin:false ~lower_bounds:false ~with_tests:false ~pkg:revdep
   and tests = match with_tests, revdep with
-    | true, None -> opam_install ~pin:false ~lower_bounds:false ~with_tests:true ~revdep:false ~pkg
-    | true, Some revdep -> opam_install ~pin:false ~lower_bounds:false ~with_tests:true ~revdep:true ~pkg:revdep
+    | true, None -> opam_install ~pin:false ~lower_bounds:false ~with_tests:true ~pkg
+    | true, Some revdep -> opam_install ~pin:false ~lower_bounds:false ~with_tests:true ~pkg:revdep
     | false, _ -> []
   and lower_bounds = match lower_bounds with
-    | true -> opam_install ~pin:false ~lower_bounds:true ~with_tests:false ~revdep:false ~pkg
+    | true -> opam_install ~pin:false ~lower_bounds:true ~with_tests:false ~pkg
     | false -> []
   in
   Obuilder_spec.stage ~from:base (
     set_personality ~variant
     @ setup_repository ~local ~variant ~for_docker ~opam_version ()
-    @ opam_install ~pin:true ~lower_bounds:false ~with_tests:false ~revdep:false ~pkg
+    @ opam_install ~pin:true ~lower_bounds:false ~with_tests:false ~pkg
     @ lower_bounds
     @ revdep
     @ tests
