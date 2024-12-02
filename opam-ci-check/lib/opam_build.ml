@@ -115,7 +115,7 @@ let setup_repository ?(local=false) ~variant ~for_docker ~opam_version () =
      Otherwise the "opam pin" after the "opam repository set-url" will fail (cannot find the new package for some reason) *)
   run "%s -f %s/bin/opam-%s %s/bin/opam" ln prefix opam_version_str prefix ::
   run ~network "opam init --reinit%s -ni" opamrc :: (* TODO: Remove ~network when https://github.com/ocurrent/ocaml-dockerfile/pull/132 is merged *)
-  run "opam option solver=builtin-0install && opam config report" ::
+  run "%sopam config report" (match opam_version with `V2_1 | `V2_2 | `V2_3 | `Dev -> "opam option solver=builtin-0install && " | `V2_0 -> "") ::
   env "OPAMDOWNLOADJOBS" "1" :: (* Try to avoid github spam detection *)
   env "OPAMERRLOGLEN" "0" :: (* Show the whole log if it fails *)
   env "OPAMPRECISETRACKING" "1" :: (* Mitigate https://github.com/ocaml/opam/issues/3997 *)

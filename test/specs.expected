@@ -2618,7 +2618,7 @@ build: debian-12-ocaml-5.2/amd64 opam-2.0
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN opam option solver=builtin-0install && opam config report
+    RUN opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMPRECISETRACKING="1"
@@ -3049,7 +3049,7 @@ build: debian-12-ocaml-4.14/amd64 opam-2.0
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN opam option solver=builtin-0install && opam config report
+    RUN opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
     ENV OPAMPRECISETRACKING="1"
