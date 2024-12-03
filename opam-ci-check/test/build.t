@@ -6,10 +6,9 @@ Test the build command:
   WORKDIR /home/opam
   RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
   RUN opam init --reinit -ni
-  RUN uname -rs && opam exec -- ocaml -version && opam --version
+  RUN opam option solver=builtin-0install && opam config report
   ENV OPAMDOWNLOADJOBS="1"
   ENV OPAMERRLOGLEN="0"
-  ENV OPAMSOLVERTIMEOUT="1000"
   ENV OPAMPRECISETRACKING="1"
   ENV CI="true"
   ENV OPAM_REPO_CI="true"
@@ -57,10 +56,9 @@ Test the build command:
   WORKDIR /home/opam
   RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
   RUN opam init --reinit -ni
-  RUN uname -rs && opam exec -- ocaml -version && opam --version
+  RUN opam option solver=builtin-0install && opam config report
   ENV OPAMDOWNLOADJOBS="1"
   ENV OPAMERRLOGLEN="0"
-  ENV OPAMSOLVERTIMEOUT="1000"
   ENV OPAMPRECISETRACKING="1"
   ENV CI="true"
   ENV OPAM_REPO_CI="true"
@@ -92,10 +90,9 @@ Test the build command:
   WORKDIR /home/opam
   RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
   RUN opam init --reinit -ni
-  RUN uname -rs && opam exec -- ocaml -version && opam --version
+  RUN opam option solver=builtin-0install && opam config report
   ENV OPAMDOWNLOADJOBS="1"
   ENV OPAMERRLOGLEN="0"
-  ENV OPAMSOLVERTIMEOUT="1000"
   ENV OPAMPRECISETRACKING="1"
   ENV CI="true"
   ENV OPAM_REPO_CI="true"
@@ -122,7 +119,6 @@ Test the build command:
   ENV OPAMCRITERIA="+removed,+count[version-lag,solution]"
   ENV OPAMFIXUPCRITERIA="+removed,+count[version-lag,solution]"
   ENV OPAMUPGRADECRITERIA="+removed,+count[version-lag,solution]"
-  RUN opam option solver=builtin-0install
   RUN opam reinstall conf-pkg-config.4; \
       res=$?; \
       test "$res" != 31 && exit "$res"; \
@@ -146,10 +142,9 @@ Test the build command:
   WORKDIR /home/opam
   RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
   RUN opam init --reinit -ni
-  RUN uname -rs && opam exec -- ocaml -version && opam --version
+  RUN opam option solver=builtin-0install && opam config report
   ENV OPAMDOWNLOADJOBS="1"
   ENV OPAMERRLOGLEN="0"
-  ENV OPAMSOLVERTIMEOUT="1000"
   ENV OPAMPRECISETRACKING="1"
   ENV CI="true"
   ENV OPAM_REPO_CI="true"
