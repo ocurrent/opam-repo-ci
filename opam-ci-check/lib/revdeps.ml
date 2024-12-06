@@ -62,7 +62,6 @@ let list_revdeps ?(opam_repo = "https://opam.ocaml.org") ?(transitive = true)
     pkg =
   (* Create local opam root and switch *)
   Env.create_local_switch_maybe opam_repo;
-  OpamConsole.msg "Listing revdeps for %s\n" pkg;
   let package = OpamPackage.of_string pkg in
   let package_set = OpamPackage.Set.singleton package in
   Env.with_unlocked_switch () (fun st ->
@@ -89,7 +88,6 @@ let find_latest_versions packages =
 module Display = struct
   let packages packages =
     packages
-    |> List.iter (fun p -> OpamConsole.msg "%s\n" (OpamPackage.to_string p));
-    OpamConsole.msg "Number of reverse dependencies: %d\n"
-      (List.length packages)
+    |> List.sort_uniq OpamPackage.compare
+    |> List.iter (fun p -> OpamConsole.msg "%s\n" (OpamPackage.to_string p))
 end
