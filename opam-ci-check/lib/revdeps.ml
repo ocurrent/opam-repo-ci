@@ -46,7 +46,6 @@ let non_transitive_revdeps st package_set =
      not of random local things that a user may have installed in their system.
 
      See https://github.com/ocaml/opam/blob/b3d2f5c554e6ef3cc736a9f97e252486403e050f/src/client/opamCommands.ml#L729-L731 *)
-  let all_known_packages = st.OpamStateTypes.packages in
   let packages_depending_on_target_packages revdep_candidate_pkg =
     let dependancy_on =
       revdep_candidate_pkg |> opam_file_of_package st
@@ -55,8 +54,9 @@ let non_transitive_revdeps st package_set =
     in
     OpamPackage.Set.exists dependancy_on package_set
   in
+  let available_packages = Lazy.force st.OpamStateTypes.available_packages in
   OpamPackage.Set.filter packages_depending_on_target_packages
-    all_known_packages
+    available_packages
 
 let list_revdeps ?(opam_repo = "https://opam.ocaml.org") ?(transitive = true)
     ?(use_default_root = false) pkg =
