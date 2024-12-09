@@ -73,6 +73,11 @@ let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
       pkg_s
   ]
 
+let install_opam_ci_check ()  =
+  let open Obuilder_spec in
+  let url = "git+https://github.com/ocurrent/opam-repo-ci.git#live" in
+  [ run "opam pin add -k git -y opam-ci-check %s" url ]
+
 let setup_repository ?(local=false) ~variant ~for_docker ~opam_version () =
   let open Obuilder_spec in
   let home_dir = match Variant.os variant with
@@ -161,15 +166,9 @@ let revdeps ?(local=false) ~for_docker ~opam_version ~base ~variant ~pkg () =
   let pkg = Filename.quote (OpamPackage.to_string pkg) in
   Obuilder_spec.stage ~from:base (
     setup_repository ~local ~variant ~for_docker ~opam_version ()
+    @ install_opam_ci_check ()
     @ [
-      run "echo '@@@OUTPUT' && \
-           opam list -s --color=never --depends-on %s --coinstallable-with %s --all-versions --depopts && \
-           opam list -s --color=never --depends-on %s --coinstallable-with %s --all-versions --recursive && \
-           opam list -s --color=never --depends-on %s --coinstallable-with %s --all-versions --with-test --depopts && \
-           echo '@@@OUTPUT'"
-        pkg pkg
-        pkg pkg
-        pkg pkg
+      run "echo '@@@OUTPUT' && opam exec -- opam-ci-check list --use-default-root %s && echo '@@@OUTPUT'" pkg
     ]
   )
 

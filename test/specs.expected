@@ -1106,7 +1106,8 @@ list-revdeps: debian-12-ocaml-4.14/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    RUN echo '@@@OUTPUT' && opam list -s --color=never --depends-on 'a.0.0.1' --coinstallable-with 'a.0.0.1' --all-versions --depopts && opam list -s --color=never --depends-on 'a.0.0.1' --coinstallable-with 'a.0.0.1' --all-versions --recursive && opam list -s --color=never --depends-on 'a.0.0.1' --coinstallable-with 'a.0.0.1' --all-versions --with-test --depopts && echo '@@@OUTPUT'
+    RUN opam pin add -k git -y opam-ci-check git+https://github.com/ocurrent/opam-repo-ci.git#live
+    RUN echo '@@@OUTPUT' && opam exec -- opam-ci-check list --use-default-root 'a.0.0.1' && echo '@@@OUTPUT'
 
 build: debian-12-ocaml-4.14/amd64 opam-dev with-tests
     FROM BASE_IMAGE_TAG
@@ -1425,7 +1426,8 @@ list-revdeps: debian-12-ocaml-5.2/amd64 opam-dev
     COPY --chown=1000:1000 . opam-repository/
     RUN opam repository set-url --strict default opam-repository/
     RUN opam update --depexts || true
-    RUN echo '@@@OUTPUT' && opam list -s --color=never --depends-on 'a.0.0.1' --coinstallable-with 'a.0.0.1' --all-versions --depopts && opam list -s --color=never --depends-on 'a.0.0.1' --coinstallable-with 'a.0.0.1' --all-versions --recursive && opam list -s --color=never --depends-on 'a.0.0.1' --coinstallable-with 'a.0.0.1' --all-versions --with-test --depopts && echo '@@@OUTPUT'
+    RUN opam pin add -k git -y opam-ci-check git+https://github.com/ocurrent/opam-repo-ci.git#live
+    RUN echo '@@@OUTPUT' && opam exec -- opam-ci-check list --use-default-root 'a.0.0.1' && echo '@@@OUTPUT'
 
 build: debian-12-ocaml-5.2/amd64 opam-dev with-tests
     FROM BASE_IMAGE_TAG
