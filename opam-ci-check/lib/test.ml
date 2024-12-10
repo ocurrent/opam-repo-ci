@@ -32,7 +32,8 @@ let test_package_with_opam_in_state st revdep =
          But, we may be able to do better, since we are not a shell script? *)
       Some (revdep, e)
 
-let test_packages_with_opam target_pkg revdeps_list =
+let test_packages_with_opam ?(use_default_root = false) target_pkg revdeps_list
+    =
   let target = OpamPackage.of_string target_pkg in
   match
     OpamConsole.confirm "Do you want test %d revdeps?"
@@ -44,7 +45,7 @@ let test_packages_with_opam target_pkg revdeps_list =
         ~confirm_level:`unsafe_yes (* Don't prompt for install / remove *) ();
       OpamConsole.msg "Installing reverse dependencies with pinned %s\n"
         (OpamPackage.to_string target);
-      Env.with_locked_switch () @@ fun st ->
+      Env.with_locked_switch ~use_default_root () @@ fun st ->
       let st' = OpamClient.install st [ pkg_atom target ] in
       revdeps_list |> List.to_seq
       |> Seq.filter_map (test_package_with_opam_in_state st')

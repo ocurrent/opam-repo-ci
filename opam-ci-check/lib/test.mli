@@ -7,7 +7,8 @@ type error = OpamPackage.t * exn
 
 val error_to_string : error -> string
 
-val test_packages_with_opam : string -> OpamPackage.t list -> error Seq.t
+val test_packages_with_opam :
+  ?use_default_root:bool -> string -> OpamPackage.t list -> error Seq.t
 (** [test_packages_with_opam package revdeps] is the sequence of errors encountered
     while trying to install and test all the packages in [revdeps].
 
