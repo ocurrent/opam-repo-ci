@@ -51,8 +51,9 @@ let read_package_opam ~opam_repo_dir pkg =
   with
   | OpamPp.Bad_format ((_, msg) : OpamPp.bad_format)
   | OpamPp.Bad_version (((_, msg) : OpamPp.bad_format), _)
-    ->
-    Printf.eprintf "Error in %s: Failed to parse the opam file due to '%s'" opam_path msg;
+  ->
+    Printf.eprintf "Error in %s: Failed to parse the opam file due to '%s'"
+      opam_path msg;
     exit 1
 
 type package_spec = {
@@ -199,38 +200,45 @@ let pkg_term =
 
 let split_on_first c s =
   match String.split_on_char c s with
-  | [a] | [a; ""] -> Ok (a, None)
-  | [a; b] -> Ok (a, Some b)
-  | _      -> Error s
+  | [ a ] | [ a; "" ] -> Ok (a, None)
+  | [ a; b ] -> Ok (a, Some b)
+  | _ -> Error s
 
 let arg_with_optional_attrs_conv arg_conv attrs_conv =
-  let (let^) = Result.bind in
+  let ( let^ ) = Result.bind in
   let conv s =
     match split_on_first ':' s with
     | Ok (a, None) ->
-      let^ x = Arg.conv_parser arg_conv a in
-      Ok (x, [])
+        let^ x = Arg.conv_parser arg_conv a in
+        Ok (x, [])
     | Ok (a, Some attrs) ->
-      let^ x = Arg.conv_parser arg_conv a in
-      let^ attrs = Arg.(conv_parser (list attrs_conv)) attrs in
-      Ok (x, attrs)
+        let^ x = Arg.conv_parser arg_conv a in
+        let^ attrs = Arg.(conv_parser (list attrs_conv)) attrs in
+        Ok (x, attrs)
     | Error invalid ->
-      Fmt.error_msg
-        "Invalid argument spec %s. Argument specs should be of the form arg[:k1=v1[,k2=v2]]"
-        invalid
+        Fmt.error_msg
+          "Invalid argument spec %s. Argument specs should be of the form \
+           arg[:k1=v1[,k2=v2]]"
+          invalid
   in
   let pp fmt (x, attrs) =
     Fmt.pf fmt "%a[:%a]"
-      Arg.(conv_printer arg_conv) x
-      Arg.(conv_printer (list ~sep:',' attrs_conv)) attrs
+      Arg.(conv_printer arg_conv)
+      x
+      Arg.(conv_printer (list ~sep:',' attrs_conv))
+      attrs
   in
   Arg.conv ~docv:"ARG[:key=value[,key=value]]" (conv, pp)
 
 let package_specs_term =
   let opam_file_conv =
-      let conv = Arg.parser_of_kind_of_string ~kind:"opam package spec in the form <name.version>" OpamPackage.of_string_opt in
-      let pp = Fmt.of_to_string OpamPackage.to_string in
-      Arg.conv ~docv:"PACKAGE_SPEC" (conv, pp)
+    let conv =
+      Arg.parser_of_kind_of_string
+        ~kind:"opam package spec in the form <name.version>"
+        OpamPackage.of_string_opt
+    in
+    let pp = Fmt.of_to_string OpamPackage.to_string in
+    Arg.conv ~docv:"PACKAGE_SPEC" (conv, pp)
   in
   let attr_conv =
     let parser s =
@@ -238,14 +246,19 @@ let package_specs_term =
       | Ok ("new", Some b) -> (
           match bool_of_string_opt b with
           | Some bool -> Ok (`New bool)
-          | None   -> Error (`Msg (b ^ " must be [true] or [false]"))
-        )
-      | Ok ("src", Some dir)  -> (
+          | None -> Error (`Msg (b ^ " must be [true] or [false]")))
+      | Ok ("src", Some dir) -> (
           match Sys.is_directory dir with
           | true -> Ok (`Src dir)
           | false -> Error (`Msg (dir ^ " is not a directory"))
-          | exception (Sys_error msg) ->  Error (`Msg msg))
-      | _ -> Error (`Msg (Printf.sprintf "%s is an not a valid attribute. Only [src=<path>] or [new=<true|false>] allowed" s) )
+          | exception Sys_error msg -> Error (`Msg msg))
+      | _ ->
+          Error
+            (`Msg
+              (Printf.sprintf
+                 "%s is an not a valid attribute. Only [src=<path>] or \
+                  [new=<true|false>] allowed"
+                 s))
     in
     let pp fmt v =
       match v with
@@ -254,7 +267,8 @@ let package_specs_term =
     in
     Arg.conv ~docv:"ATTR" (parser, pp)
   in
-  let package_spec_conv = arg_with_optional_attrs_conv opam_file_conv attr_conv
+  let package_spec_conv =
+    arg_with_optional_attrs_conv opam_file_conv attr_conv
   in
   let info =
     Arg.info []
@@ -265,13 +279,15 @@ let package_specs_term =
          is not specified, it is inferred from the opam repository."
   in
   let+ pgk_spec_data = Arg.value (Arg.pos_all package_spec_conv [] info) in
-  pgk_spec_data |>
-  List.map (fun (pkg, specs) ->
-      let src = List.find_map (function `Src s -> Some s | _ -> None) specs in
-      let newly_published = List.find_map (function `New b -> Some b | _ -> None) specs in
-      {pkg; src; newly_published}
-    )
-
+  pgk_spec_data
+  |> List.map (fun (pkg, specs) ->
+         let src =
+           List.find_map (function `Src s -> Some s | _ -> None) specs
+         in
+         let newly_published =
+           List.find_map (function `New b -> Some b | _ -> None) specs
+         in
+         { pkg; src; newly_published })
 
 let lint_cmd =
   let doc = "Lint the opam repository directory" in
