@@ -7,12 +7,12 @@ let make_repo path =
   let repo_url = OpamUrl.parse path in
   { OpamTypes.repo_name; repo_url; repo_trust = None }
 
-let local_opam_root () =
-  let switch_dir = ".opam-revdeps" in
+let get_opam_root ?(use_default_root = false) () =
+  let switch_dir = if use_default_root then "~/.opam" else ".opam-revdeps" in
   OpamFilename.Dir.of_string switch_dir
 
-let create_local_switch_maybe repo_path =
-  let root_dir = local_opam_root () in
+let create_local_switch_maybe ?(use_default_root = false) repo_path =
+  let root_dir = get_opam_root ~use_default_root () in
   let create_switch_dir repo_path =
     OpamClientConfig.opam_init ~root_dir ();
     (* opam init*)
@@ -50,14 +50,14 @@ let create_local_switch_maybe repo_path =
     create_switch_dir repo_path)
   else ()
 
-let with_locked_switch () =
-  let root_dir = local_opam_root () in
+let with_locked_switch ?(use_default_root = false) () =
+  let root_dir = get_opam_root ~use_default_root () in
   OpamClientConfig.opam_init ~root_dir ();
   OpamGlobalState.with_ `Lock_none @@ fun gt ->
   OpamSwitchState.with_ `Lock_write gt
 
-let with_unlocked_switch () =
-  let root_dir = local_opam_root () in
+let with_unlocked_switch ?(use_default_root = false) () =
+  let root_dir = get_opam_root ~use_default_root () in
   OpamClientConfig.opam_init ~root_dir ();
   OpamGlobalState.with_ `Lock_none @@ fun gt ->
   OpamSwitchState.with_ `Lock_none gt

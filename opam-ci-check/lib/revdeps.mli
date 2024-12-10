@@ -5,7 +5,11 @@
 (** Analyze and test the reverse dependencies of a package. *)
 
 val list_revdeps :
-  ?opam_repo:string -> ?transitive:bool -> string -> OpamPackage.t list
+  ?opam_repo:string ->
+  ?transitive:bool ->
+  ?use_default_root:bool ->
+  string ->
+  OpamPackage.t list
 (** [list_revdeps pkg] is a list of the transitive reverse dependencies of [pkg].
 
     @param opam_repo The package repository to use when calculating
@@ -13,6 +17,9 @@ val list_revdeps :
 
     @param transitive Whether or to list all transitive reverse dependencies.
     Defaults to [true].
+
+    @param use_default_root Whether or to use the default root ~/.opam or
+    create a new one. Defaults to [false].
 
     @param pkg The package for which reverse dependencies will be listed, in a
     form like ["pkgname.0.0.1"].

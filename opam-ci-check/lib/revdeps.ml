@@ -59,12 +59,12 @@ let non_transitive_revdeps st package_set =
     all_known_packages
 
 let list_revdeps ?(opam_repo = "https://opam.ocaml.org") ?(transitive = true)
-    pkg =
-  (* Create local opam root and switch *)
-  Env.create_local_switch_maybe opam_repo;
+    ?(use_default_root = false) pkg =
+  (* Create local opam root and switch if required *)
+  if not use_default_root then Env.create_local_switch_maybe opam_repo;
   let package = OpamPackage.of_string pkg in
   let package_set = OpamPackage.Set.singleton package in
-  Env.with_unlocked_switch () (fun st ->
+  Env.with_unlocked_switch ~use_default_root () (fun st ->
       let transitive_deps =
         if transitive then transitive_revdeps st package_set
         else OpamPackage.Set.empty
