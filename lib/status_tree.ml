@@ -79,6 +79,7 @@ let status (s, elms1) elms2 =
 let tag_experimental b =
   (* TODO: Remove this *)
   if Astring.String.is_prefix ~affix:"macos-homebrew" b ||
+    Astring.String.is_prefix ~affix:"windows" b ||
     Astring.String.is_prefix ~affix:"freebsd" b
   then b ^ " (experimental)"
   else b
