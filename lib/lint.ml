@@ -49,7 +49,9 @@ module Check = struct
            let new_arg = match change with
              | Analyse.Analysis.(New Package) -> Some "true"
              | Analyse.Analysis.(New Release | Unavailable | SignificantlyChanged | InsignificantlyChanged ) -> Some "false"
-             | Deleted -> None
+             | Deleted ->
+                Current.Job.log job "Skipping deleted package: %s" (OpamPackage.to_string pkg);
+                None
            in
            Option.map (Printf.sprintf "%s:new=%s" pkg_str) new_arg)
     in

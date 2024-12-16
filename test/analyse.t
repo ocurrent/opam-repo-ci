@@ -109,7 +109,11 @@ Test deleting existing packages works
   * a-1.0.0.1 removed (HEAD -> new-branch-2)
   * a-1 (tag: initial-state, new-branch-1, master)
   $ opam-repo-ci-local --repo="." --branch=new-branch-2 --analyse-only --no-web-server
-  Error "impossible"
+  {
+    "packages": [
+      [ "a-1.0.0.1", { "kind": [ "Deleted" ], "has_tests": false } ]
+    ]
+  }
 
 Clean up the build cache
 
