@@ -93,6 +93,24 @@ Test adding new packages
     ]
   }
 
+Reset commits on [master] and [new-branch-2] and clear build cache
+
+  $ git reset -q --hard initial-state
+  $ git checkout -q master
+  $ git reset -q --hard initial-state
+  $ git checkout -q new-branch-2
+  $ rm -rf var
+
+Test deleting existing packages works
+
+  $ git rm packages/a-1/a-1.0.0.1/opam > /dev/null
+  $ git commit -qm "a-1.0.0.1 removed"
+  $ git log --graph --pretty=format:'%s%d'
+  * a-1.0.0.1 removed (HEAD -> new-branch-2)
+  * a-1 (tag: initial-state, new-branch-1, master)
+  $ opam-repo-ci-local --repo="." --branch=new-branch-2 --analyse-only --no-web-server
+  Error "impossible"
+
 Clean up the build cache
 
   $ rm -rf ./var
