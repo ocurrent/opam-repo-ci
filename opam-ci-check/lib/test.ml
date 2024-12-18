@@ -3,7 +3,6 @@
  *)
 
 module H = Dune_helpers
-module D = Dir_helpers
 
 type error = OpamPackage.t * exn
 
@@ -59,7 +58,7 @@ let test_packages_with_dune opam_repository target_pkg packages =
   OpamConsole.msg
     "Installing latest version of reverse dependencies with pinned %s\n"
     (OpamPackage.to_string target);
-  let parent = D.create_temp_dir "revdeps_" in
+  let parent = OpamFilename.mk_tmp_dir () |> OpamFilename.Dir.to_string in
   (* FIXME: there can be 1000s of revdeps?! *)
   let selected_packages = H.take 3 packages in
   (* Prompt before creating the projects *)

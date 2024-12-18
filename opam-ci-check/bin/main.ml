@@ -68,15 +68,16 @@ let lint package_specs local_repo_dir =
   | Some opam_repo_dir -> (
       print_endline
       @@ Printf.sprintf "Linting opam-repository at %s ..." opam_repo_dir;
-      Dir_helpers.with_temp_dir "opam-ci-check-lint-" @@ fun dir ->
+      OpamFilename.with_tmp_dir @@ fun dir ->
       let process_package { pkg; src; newly_published } =
         let opam = read_package_opam ~opam_repo_dir pkg in
         let pkg_src_dir =
           if Option.is_none src then
-            let dir = dir // OpamPackage.to_string pkg in
+            let dir =
+              OpamFilename.Dir.to_string dir // OpamPackage.to_string pkg
+            in
             fetch_package_src ~dir ~pkg opam
-          else
-            src
+          else src
         in
         Lint.v ~pkg ~newly_published ~pkg_src_dir opam
       in
