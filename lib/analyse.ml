@@ -245,9 +245,12 @@ module Analysis = struct
     Fpath.v "packages" // name // (name^"."^version) // "opam"
 
   let add_package_data ~dir (pkg, kind) packages =
-    match packages with
-    | Error _ as err -> Lwt.return err
-    | Ok packages ->
+    match (packages, kind) with
+    | Error _ as err, _ ->
+      Lwt.return err
+    | Ok packages, Deleted ->
+      Lwt.return_ok ((pkg, {kind; has_tests = false}) :: packages)
+    | Ok packages, _ ->
       let open Lwt_result.Syntax in
       let path = Fpath.to_string (package_to_path pkg) in
       let* content = get_opam ~cwd:dir path |> Lwt_result.map_error (fun _ -> `Msg "impossible") in
