@@ -2,7 +2,7 @@
 
 ## Operating Systems
 
-- alpine-3.20
+- alpine-3.21
 - archlinux
 - debian-11
 - debian-12
@@ -63,8 +63,8 @@
 
 |  OS | Arch | OCaml version |Opam version | Test lower-bounds | Test reverse dependencies |
 | --- | --- | --- | --- | --- | --- |
-| alpine-3.20 | amd64 | 4.14 | dev | No | No |
-| alpine-3.20 | amd64 | 5.2 | dev | No | No |
+| alpine-3.21 | amd64 | 4.14 | dev | No | No |
+| alpine-3.21 | amd64 | 5.2 | dev | No | No |
 | archlinux | amd64 | 4.14 | dev | No | No |
 | archlinux | amd64 | 5.2 | dev | No | No |
 | debian-11 | amd64 | 4.14 | dev | No | No |
