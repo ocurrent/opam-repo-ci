@@ -99,8 +99,13 @@ module Op = struct
       | [_; rest ] when Astring.String.is_prefix ~affix:"@@@OUTPUT\n" rest -> Lwt_result.return ""
       | _ -> Lwt_result.fail (`Msg "Missing output from command")
 
+
   let build { config; master; urgent; base } job
       { Key.pool; commit; variant; ty } =
+    let ci_check_ref =
+      (* For pinning the version of ocaml-ci-check in workers *)
+      Ci_check_ref.v
+    in
     let { connection; timeout } = config in
     let master = Current_git.Commit.hash master in
     let timeout = match Variant.arch variant with
@@ -123,8 +128,8 @@ module Op = struct
                 docker build -f ../Dockerfile .@.@."
          Current_git.Commit_id.pp_user_clone commit
          master
-         (Obuilder_spec.Docker.dockerfile_of_spec ~os ~buildkit:false (Opam_build.build_spec ~for_docker:true ~base build_config)));
-    let spec_str = Fmt.to_to_string Obuilder_spec.pp (Opam_build.build_spec ~for_docker:false ~base build_config) in
+         (Obuilder_spec.Docker.dockerfile_of_spec ~os ~buildkit:false (Opam_build.build_spec ~ci_check_ref ~for_docker:true ~base build_config)));
+    let spec_str = Fmt.to_to_string Obuilder_spec.pp (Opam_build.build_spec ~ci_check_ref ~for_docker:false ~base build_config) in
     let action = Cluster_api.Submission.obuilder_build spec_str in
     let src = (Git.Commit_id.repo commit, [master; Git.Commit_id.hash commit]) in
     let cache_hint =

@@ -81,6 +81,7 @@ let dump () =
     | `Opam (`List_revdeps lr, pkg) ->
       let spec_str =
         Opam_build.revdeps
+          ~ci_check_ref:Opam_repo_ci.Ci_check_ref.v
           ~for_docker:true
           ~opam_version:lr.opam_version
           ~base

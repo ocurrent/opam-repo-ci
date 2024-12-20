@@ -73,9 +73,9 @@ let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
       pkg_s
   ]
 
-let install_opam_ci_check ()  =
+let install_opam_ci_check ci_check_ref  =
   let open Obuilder_spec in
-  let url = "git+https://github.com/ocurrent/opam-repo-ci.git#live" in
+  let url = Printf.sprintf "git+https://github.com/ocurrent/opam-repo-ci.git#%s" ci_check_ref in
   [ run "opam pin add -k git -y opam-ci-check %s" url ]
 
 let setup_repository ?(local=false) ~variant ~for_docker ~opam_version () =
@@ -161,22 +161,22 @@ let spec ?(local=false) ~for_docker ~opam_version ~base ~variant ~revdep ~lower_
     @ tests
   )
 
-let revdeps ?(local=false) ~for_docker ~opam_version ~base ~variant ~pkg () =
+let revdeps ?(local=false) ?(ci_check_ref="live") ~for_docker ~opam_version ~base ~variant ~pkg () =
   let open Obuilder_spec in
   let pkg = Filename.quote (OpamPackage.to_string pkg) in
   Obuilder_spec.stage ~from:base (
     setup_repository ~local ~variant ~for_docker ~opam_version ()
-    @ install_opam_ci_check ()
+    @ install_opam_ci_check ci_check_ref
     @ [
       run "echo '@@@OUTPUT' && opam exec -- opam-ci-check list --use-default-root %s && echo '@@@OUTPUT'" pkg
     ]
   )
 
-let build_spec ?(local=false) ~for_docker ~base config =
+let build_spec ?(local=false) ?ci_check_ref ~for_docker ~base config =
   let {Spec.variant; ty} = config in
   let base = Spec.base_to_string base in
   match ty with
   | `Opam (`List_revdeps { opam_version }, pkg) ->
-    revdeps ~local ~for_docker ~opam_version ~base ~variant ~pkg ()
+    revdeps ~local ?ci_check_ref ~for_docker ~opam_version ~base ~variant ~pkg ()
   | `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) ->
     spec ~local ~for_docker ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_tests ~pkg ()
