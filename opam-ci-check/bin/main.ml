@@ -136,7 +136,7 @@ let test_revdeps pkg local_repo_dir use_dune no_transitive_revdeps
                num_failed_installs)
 
 let build_run_spec ~variant ~hash ~no_cache ~only_print ~with_tests
-    ~lower_bounds ~pkg ~opam_repository =
+    ~lower_bounds ~pkg ~opam_repository ~revdep =
   let pkg = OpamPackage.of_string pkg in
   let base =
     let hash =
@@ -147,8 +147,9 @@ let build_run_spec ~variant ~hash ~no_cache ~only_print ~with_tests
     in
     Spec.Docker image
   in
+  let revdep = Option.map OpamPackage.of_string revdep in
   let config =
-    Spec.opam ~variant ~lower_bounds ~with_tests ~opam_version:`Dev pkg
+    Spec.opam ?revdep ~variant ~lower_bounds ~with_tests ~opam_version:`Dev pkg
   in
   Test.build_run_spec ~use_cache:(not no_cache) ~only_print ?opam_repository
     ~base config
@@ -467,6 +468,12 @@ let only_print =
   in
   Arg.value (Arg.flag info)
 
+let revdep_term =
+  let info =
+    Arg.info [ "rev-dep" ] ~doc:"Reverse dependency package name + version"
+  in
+  Arg.value (Arg.(opt (some string) None) info)
+
 let build_cmd =
   let doc =
     "Build a package optionally with tests and/or using lower bounds packages"
@@ -481,9 +488,10 @@ let build_cmd =
     and+ lower_bounds = lower_bounds
     and+ with_tests = with_test
     and+ pkg = pkg_term
+    and+ revdep = revdep_term
     and+ opam_repository = local_opam_repo_term in
     build_run_spec ~variant ~hash ~no_cache ~only_print ~with_tests
-      ~lower_bounds ~pkg ~opam_repository
+      ~lower_bounds ~pkg ~opam_repository ~revdep
   in
   let info =
     Cmd.info "build" ~doc ~sdocs:"COMMON OPTIONS" ~exits:Cmd.Exit.defaults
