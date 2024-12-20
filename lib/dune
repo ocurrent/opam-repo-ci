@@ -1,3 +1,19 @@
+; TODO: comment explaining this workaround
+
+(rule
+ (deps %{bin:opam-ci-check})
+ (action
+  (progn
+   (with-stdout-to
+    ci_check_ref.ml.out
+    (pipe-stdout
+     (run git rev-parse HEAD)
+     (run
+      xargs
+      printf
+      "(* The commit hash of the opam-ci-check executable to use in pipelines *)\nlet v = \"%s\"\n")))
+   (diff ci_check_ref.ml ci_check_ref.ml.out))))
+
 (library
  (name opam_repo_ci)
  (package opam-repo-ci-api)
