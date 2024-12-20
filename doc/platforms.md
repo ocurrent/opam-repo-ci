@@ -57,7 +57,7 @@
 - 5.2-afl
 - 5.2-flambda
 - 5.2-no-flat-float-array
-- 5.3~beta1
+- 5.3~rc1
 
 ## Platforms Matrix
 
@@ -95,7 +95,7 @@
 | debian-12 | amd64 | 5.2-afl | dev | No | No |
 | debian-12 | amd64 | 5.2-flambda | dev | No | No |
 | debian-12 | amd64 | 5.2-no-flat-float-array | dev | No | No |
-| debian-12 | amd64 | 5.3~beta1 | dev | Yes | No |
+| debian-12 | amd64 | 5.3~rc1 | dev | Yes | No |
 | debian-12 | arm32v7 | 4.14 | dev | No | No |
 | debian-12 | arm32v7 | 5.2 | dev | No | No |
 | debian-12 | arm64 | 4.14 | dev | No | No |
