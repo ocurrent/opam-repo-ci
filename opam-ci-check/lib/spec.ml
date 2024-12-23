@@ -37,6 +37,10 @@ let opam ?revdep ~variant ~lower_bounds ~with_tests ~opam_version pkg =
   let ty = `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) in
   { variant; ty }
 
+let opam_list_revdeps ~variant ~opam_version pkg =
+  let ty = `Opam (`List_revdeps { opam_version }, pkg) in
+  { variant; ty }
+
 let pp_pkg ?revdep f pkg =
   match revdep with
   | Some revdep -> Fmt.pf f "%s with %s" (OpamPackage.to_string revdep) (OpamPackage.to_string pkg)
