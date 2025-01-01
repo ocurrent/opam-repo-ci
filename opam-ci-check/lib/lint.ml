@@ -378,9 +378,13 @@ module Checks = struct
       | List {pelem = (_::_ as reasons); _} when List.for_all is_valid_reason reasons -> []
       | _ -> [(pkg, InvalidReasonForArchiving)]
 
-
-  let x_opam_repository_commit_hash_at_time_of_archival ~pkg:_ _opam  =
-    [] (* TODO *)
+  let x_opam_repository_commit_hash_at_time_of_archival ~pkg  opam  =
+    opam
+    |> OpamFile.OPAM.extensions
+    |> OpamStd.String.Map.find_opt x_opam_repository_commit_hash_at_time_of_archiving_field
+    |> function
+    | Some {pelem = String _; _} -> []
+    | _ -> [(pkg, InvalidOpamRepositoryCommitHash)]
 
   let checks kinds ~newly_published ~opam_repo_dir ~pkg_src_dir repo_package_names =
     let general_opam_file_checks () =

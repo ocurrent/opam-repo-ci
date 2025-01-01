@@ -363,7 +363,10 @@ https://github.com/ocaml/opam-repository/blob/master/governance/policies/archivi
 
 Test that we do not report an error on a minimal well-formed package:
 
-  $ echo 'x-reason-for-archiving: [ "source-unavailable" ]' >> packages/a-1/a-1.0.0.1/opam
+  $ echo 'x-reason-for-archiving: [ "source-unavailable" ]' \
+  > >> packages/a-1/a-1.0.0.1/opam
+  $ echo 'x-opam-repository-commit-hash-at-time-of-archiving: "de786e28dbea73843ad5e5f0290a4e81fba39370"' \
+  > >> packages/a-1/a-1.0.0.1/opam
   $ cat packages/a-1/a-1.0.0.1/opam
   opam-version: "2.0"
   synopsis: "Synopsis"
@@ -378,6 +381,7 @@ Test that we do not report an error on a minimal well-formed package:
   build: []
   depends: []
   x-reason-for-archiving: [ "source-unavailable" ]
+  x-opam-repository-commit-hash-at-time-of-archiving: "de786e28dbea73843ad5e5f0290a4e81fba39370"
   $ opam-ci-check lint -r . --check=archive-repo a-1.0.0.1
   Linting opam-repository at $TESTCASE_ROOT/. ...
   No errors
@@ -460,4 +464,38 @@ Test we report an error when the x-reason-for-archiving has an invalid reason:
   $ opam-ci-check lint -r . --check=archive-repo a-1.0.0.1
   Linting opam-repository at $TESTCASE_ROOT/. ...
   Error in a-1.0.0.1: The field 'x-reason-for-archiving' must be present and hold a nonempty list of one or more of the valid reasons ocaml-version, source-unavailable, maintenance-intent, uninstallable
+  [1]
+
+Test we do NOT report an error when the x-reason-for-archiving has multiple invalid reasons:
+
+  $ sed \
+  > -e 's/x-reason-for-archiving:.*/x-reason-for-archiving: ["source-unavailable" "maintenance-intent"]/' \
+  > packages/a-1/a-1.0.0.1/opam > opam.new
+  $ mv opam.new packages/a-1/a-1.0.0.1/opam
+  $ opam-ci-check lint -r . --check=archive-repo a-1.0.0.1
+  Linting opam-repository at $TESTCASE_ROOT/. ...
+  No errors
+
+# x-opam-repository-commit-hash-at-time-of-archiving checks
+
+Test we report an error when the x-opam-repository-commit-hash-at-time-of-archiving
+is missing:
+
+  $ sed \
+  > -e '/x-opam-repository-commit-hash-at-time-of-archiving/d' \
+  > packages/a-1/a-1.0.0.1/opam > opam.new
+  $ mv opam.new packages/a-1/a-1.0.0.1/opam
+  $ opam-ci-check lint -r . --check=archive-repo a-1.0.0.1
+  Linting opam-repository at $TESTCASE_ROOT/. ...
+  Error in a-1.0.0.1: The field 'x-opam-repository-commit-hash-at-time-of-archiving' must be present and hold a string recording the commit hash of the primary repo at the time the package version is archived.
+  [1]
+
+Test we report an error when the x-opam-repository-commit-hash-at-time-of-archiving
+has an invald value:
+
+  $ echo 'x-opam-repository-commit-hash-at-time-of-archiving: false' \
+  > >> packages/a-1/a-1.0.0.1/opam
+  $ opam-ci-check lint -r . --check=archive-repo a-1.0.0.1
+  Linting opam-repository at $TESTCASE_ROOT/. ...
+  Error in a-1.0.0.1: The field 'x-opam-repository-commit-hash-at-time-of-archiving' must be present and hold a string recording the commit hash of the primary repo at the time the package version is archived.
   [1]
