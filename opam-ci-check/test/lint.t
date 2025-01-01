@@ -353,3 +353,46 @@ passes linting:
   Linting opam-repository at $TESTCASE_ROOT/. ...
   Error in a-1.0.0.1: No package source directory provided.
   [1]
+
+# Opam Archive linting tests
+
+  $ git reset -q --hard initial-state
+
+Test that we do not report an error when a wellformed package has no deps:
+
+  $ opam-ci-check lint -r . --check=archive-repo a-1.0.0.1
+  Linting opam-repository at $TESTCASE_ROOT/. ...
+  No errors
+
+Test that we report errors when a package has dependandies without an upper bound:
+
+  $ sed \
+  > -e 's/depends.*/depends: [ "foo" {with-test} "bar" {>= "0.0.1"} "baz" ]/' \
+  > packages/a-1/a-1.0.0.1/opam > opam.new
+  $ mv opam.new packages/a-1/a-1.0.0.1/opam
+  $ opam-ci-check lint -r . --check=archive-repo a-1.0.0.1
+  Linting opam-repository at $TESTCASE_ROOT/. ...
+  Error in a-1.0.0.1: An upper bound constraint is missing on dependency 'baz'
+  Error in a-1.0.0.1: An upper bound constraint is missing on dependency 'bar'
+  Error in a-1.0.0.1: An upper bound constraint is missing on dependency 'foo'
+  [1]
+
+Test that we do NOT report errors when all a packages dependandies have an upper bound:
+
+  $ sed \
+  > -e 's/depends.*/depends: ["foo" {with-test \& <= "0.1.0"} "bar" {>= "0.0.1" \& = "0.1.0"} "baz" {< "0.0.1"}]/' \
+  > packages/a-1/a-1.0.0.1/opam > opam.new
+  $ mv opam.new packages/a-1/a-1.0.0.1/opam
+  $ opam-ci-check lint -r . --check=archive-repo a-1.0.0.1
+  Linting opam-repository at $TESTCASE_ROOT/. ...
+  No errors
+
+Test that we do NOT report errors when the ocaml dependency has no upper bound:
+
+  $ sed \
+  > -e 's/depends.*/depends: ["ocaml"]/' \
+  > packages/a-1/a-1.0.0.1/opam > opam.new
+  $ mv opam.new packages/a-1/a-1.0.0.1/opam
+  $ opam-ci-check lint -r . --check=archive-repo a-1.0.0.1
+  Linting opam-repository at $TESTCASE_ROOT/. ...
+  No errors

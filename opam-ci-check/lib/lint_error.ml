@@ -36,6 +36,7 @@ type error =
   | RestrictedPrefix of string
   | PrefixConflictClassMismatch of prefix_conflict_class_mismatch
   | DefaultTagsPresent of string list
+  | MissingUpperBound of string
 
 (**/**)
 
@@ -163,3 +164,7 @@ let msg_of_error (package, (err : error)) =
         "Warning in %s: The package has not replaced the following default, \
          example tags: %s"
         pkg (String.concat ", " tags)
+  | MissingUpperBound dep_name ->
+      Printf.sprintf
+        "Error in %s: An upper bound constraint is missing on dependency '%s'"
+        pkg dep_name

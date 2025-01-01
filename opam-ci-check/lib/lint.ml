@@ -341,8 +341,24 @@ module Checks = struct
         else None)
       other_pkgs
 
-  let check_deps_have_upper_bounds ~pkg:_ _opam =
-    []
+  let check_deps_have_upper_bounds ~pkg opam =
+    (* See https://github.com/ocaml/opam-repository/blob/master/governance/policies/archiving.md#archiving-a-package *)
+    let is_upper_bound_constraint
+      : OpamTypes.filter OpamTypes.filter_or_constraint -> bool
+      = function
+        | Constraint ((`Eq | `Leq | `Lt), _) -> true
+        | _ -> false
+    in
+    OpamFile.OPAM.depends opam
+    |> OpamFormula.fold_left (fun acc ((name, condition) : OpamTypes.name * OpamTypes.condition) ->
+        if OpamPackage.Name.to_string name = "ocaml" (* The compiler is special *)
+        || OpamFormula.exists is_upper_bound_constraint condition
+        then
+          acc
+        else
+          (pkg, MissingUpperBound (OpamPackage.Name.to_string name)) :: acc
+      )
+      []
 
   let check_x_reason_for_archival ~pkg:_ _opam =
     [] (* TODO *)
