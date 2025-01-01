@@ -189,6 +189,15 @@ Test the following:
   Error in b.0.0.7: No package source directory provided.
   [1]
 
+Test that we can run just the opam-file tests (i.e., the checks for maintainer
+and authors fields are not run):
+
+  $ opam-ci-check lint -r . --checks=opam-file b.0.0.7:new=false
+  Linting opam-repository at $TESTCASE_ROOT/. ...
+  Error in b.0.0.7:              error 23: Missing field 'maintainer'
+  Error in b.0.0.7:            warning 25: Missing field 'authors'
+  [1]
+
 Setup repo for name collision tests
 
   $ git reset -q --hard initial-state
