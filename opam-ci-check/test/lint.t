@@ -356,13 +356,35 @@ passes linting:
 
 # Opam Archive linting tests
 
+These linting checks automate enforcement of the opam archiving policy found at
+https://github.com/ocaml/opam-repository/blob/master/governance/policies/archiving.md#archiving-a-package
+
   $ git reset -q --hard initial-state
 
-Test that we do not report an error when a wellformed package has no deps:
+Test that we do not report an error on a minimal well-formed package:
 
+  $ echo 'x-reason-for-archiving: [ "source-unavailable" ]' >> packages/a-1/a-1.0.0.1/opam
+  $ cat packages/a-1/a-1.0.0.1/opam
+  opam-version: "2.0"
+  synopsis: "Synopsis"
+  description: "Description"
+  maintainer: "Maintainer <me@example.com>"
+  author: "Author"
+  license: "Apache-2.0"
+  homepage: "https://github.com/ocurrent/opam-repo-ci"
+  bug-reports: "https://github.com/ocurrent/opam-repo-ci/issues"
+  dev-repo: "git+https://github.com/ocurrent/opam-repo-ci.git"
+  doc: "https://ocurrent.github.io/ocurrent/"
+  build: []
+  depends: []
+  x-reason-for-archiving: [ "source-unavailable" ]
   $ opam-ci-check lint -r . --check=archive-repo a-1.0.0.1
   Linting opam-repository at $TESTCASE_ROOT/. ...
   No errors
+
+## Upper bounds checks
+
+All dependencies
 
 Test that we report errors when a package has dependandies without an upper bound:
 
@@ -387,7 +409,7 @@ Test that we do NOT report errors when all a packages dependandies have an upper
   Linting opam-repository at $TESTCASE_ROOT/. ...
   No errors
 
-Test that we do NOT report errors when the ocaml dependency has no upper bound:
+Test that we do NOT report errors when the compiler dependency has no upper bound:
 
   $ sed \
   > -e 's/depends.*/depends: ["ocaml"]/' \
@@ -396,3 +418,46 @@ Test that we do NOT report errors when the ocaml dependency has no upper bound:
   $ opam-ci-check lint -r . --check=archive-repo a-1.0.0.1
   Linting opam-repository at $TESTCASE_ROOT/. ...
   No errors
+
+## x-reason-for-archiving checks
+
+Test we report an error when the x-reason-for-archiving is missing:
+
+  $ sed \
+  > -e '/x-reason-for-archiving/d' \
+  > packages/a-1/a-1.0.0.1/opam > opam.new
+  $ mv opam.new packages/a-1/a-1.0.0.1/opam
+  $ opam-ci-check lint -r . --check=archive-repo a-1.0.0.1
+  Linting opam-repository at $TESTCASE_ROOT/. ...
+  Error in a-1.0.0.1: The field 'x-reason-for-archiving' must be present and hold a nonempty list of one or more of the valid reasons ocaml-version, source-unavailable, maintenance-intent, uninstallable
+  [1]
+
+Test we report an error when the x-reason-for-archiving has an invalid value:
+
+  $ echo 'x-reason-for-archiving: "not a list"' >> packages/a-1/a-1.0.0.1/opam
+  $ opam-ci-check lint -r . --check=archive-repo a-1.0.0.1
+  Linting opam-repository at $TESTCASE_ROOT/. ...
+  Error in a-1.0.0.1: The field 'x-reason-for-archiving' must be present and hold a nonempty list of one or more of the valid reasons ocaml-version, source-unavailable, maintenance-intent, uninstallable
+  [1]
+
+Test we report an error when the x-reason-for-archiving has an empty list:
+
+  $ sed \
+  > -e 's/x-reason-for-archiving:.*/x-reason-for-archiving: []/' \
+  > packages/a-1/a-1.0.0.1/opam > opam.new
+  $ mv opam.new packages/a-1/a-1.0.0.1/opam
+  $ opam-ci-check lint -r . --check=archive-repo a-1.0.0.1
+  Linting opam-repository at $TESTCASE_ROOT/. ...
+  Error in a-1.0.0.1: The field 'x-reason-for-archiving' must be present and hold a nonempty list of one or more of the valid reasons ocaml-version, source-unavailable, maintenance-intent, uninstallable
+  [1]
+
+Test we report an error when the x-reason-for-archiving has an invalid reason:
+
+  $ sed \
+  > -e 's/x-reason-for-archiving:.*/x-reason-for-archiving: ["an indalid reason"]/' \
+  > packages/a-1/a-1.0.0.1/opam > opam.new
+  $ mv opam.new packages/a-1/a-1.0.0.1/opam
+  $ opam-ci-check lint -r . --check=archive-repo a-1.0.0.1
+  Linting opam-repository at $TESTCASE_ROOT/. ...
+  Error in a-1.0.0.1: The field 'x-reason-for-archiving' must be present and hold a nonempty list of one or more of the valid reasons ocaml-version, source-unavailable, maintenance-intent, uninstallable
+  [1]

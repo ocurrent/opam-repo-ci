@@ -37,8 +37,14 @@ type error =
   | PrefixConflictClassMismatch of prefix_conflict_class_mismatch
   | DefaultTagsPresent of string list
   | MissingUpperBound of string
+  | InvalidReasonForArchiving
 
 (**/**)
+
+let x_reason_for_archiving_field = "x-reason-for-archiving"
+(* Used in the opam repo archive *)
+let x_reason_for_archiving_valid_reasons =
+  ["ocaml-version"; "source-unavailable"; "maintenance-intent"; "uninstallable" ]
 
 let msg_of_prefix_conflict_class_mismatch ~pkg = function
   | WrongPrefix { conflict_class; required_prefix } ->
@@ -168,3 +174,9 @@ let msg_of_error (package, (err : error)) =
       Printf.sprintf
         "Error in %s: An upper bound constraint is missing on dependency '%s'"
         pkg dep_name
+  | InvalidReasonForArchiving ->
+      Printf.sprintf
+        "Error in %s: The field '%s' must be present and hold a nonempty list \
+         of one or more of the valid reasons %s"
+        pkg x_reason_for_archiving_field
+        (String.concat ", " x_reason_for_archiving_valid_reasons)

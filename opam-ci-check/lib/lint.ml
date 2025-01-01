@@ -360,8 +360,25 @@ module Checks = struct
       )
       []
 
-  let check_x_reason_for_archival ~pkg:_ _opam =
-    [] (* TODO *)
+  let check_x_reason_for_archival ~pkg opam =
+    let is_valid_reason (item : OpamParserTypes.FullPos.value) =
+      match item.pelem with
+      | String reason -> List.mem reason x_reason_for_archiving_valid_reasons
+      | _ -> false (* Must be a string *)
+    in
+    opam
+    |> OpamFile.OPAM.extensions
+    |> OpamStd.String.Map.find_opt x_reason_for_archiving_field
+    |> function
+    | None ->
+      [(pkg, InvalidReasonForArchiving)] (* Field must be present *)
+    | Some field ->
+      match field.pelem with
+      (* Must be a non-empty list of valid reasons *)
+      | List {pelem = (_::_ as reasons); _} when List.for_all is_valid_reason reasons -> []
+      | _ -> [(pkg, InvalidReasonForArchiving)]
+
+
   let x_opam_repository_commit_hash_at_time_of_archival ~pkg:_ _opam  =
     [] (* TODO *)
 
