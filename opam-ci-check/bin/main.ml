@@ -72,12 +72,11 @@ let lint checks package_specs local_repo_dir =
       let process_package { pkg; src; newly_published } =
         let opam = read_package_opam ~opam_repo_dir pkg in
         let pkg_src_dir =
-          if Option.is_none src then
-            let dir =
-              OpamFilename.Dir.to_string dir // OpamPackage.to_string pkg
-            in
+          if Option.is_none src && Lint.Checks.wants_source checks then
+            let dir = OpamFilename.Dir.to_string dir // OpamPackage.to_string pkg in
             fetch_package_src ~dir ~pkg opam
-          else src
+          else
+            src
         in
         Lint.v ~pkg ~newly_published ~pkg_src_dir opam
       in

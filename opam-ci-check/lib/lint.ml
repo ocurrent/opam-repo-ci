@@ -15,6 +15,15 @@ module Checks = struct
     | Opam_repo_publication
     | Opam_repo_archive
 
+  (* The kinds of checks that need to take account of whether a package is newly published *)
+  let needs_newness : kind list -> bool
+    = List.mem Opam_repo_publication
+
+  (* The kinds of checks that want to inspect package source (tho it may not be available) *)
+  let wants_source : kind list -> bool
+    = List.mem Opam_repo_publication
+
+
   module Prefix = struct
     (* For context, see https://github.com/ocurrent/opam-repo-ci/pull/316#issuecomment-2160069803 *)
     let prefix_conflict_class_map =
@@ -432,7 +441,7 @@ module Checks = struct
 
 
   let lint_package
-      ?(kinds=[General_opam_file; Opam_repo_publication])
+      ~kinds
       ~opam_repo_dir ~pkg ~pkg_src_dir ~repo_package_names
       ~newly_published opam =
     checks kinds ~newly_published ~opam_repo_dir ~pkg_src_dir repo_package_names
@@ -466,7 +475,11 @@ let is_newly_published ~opam_repo_dir pkg =
 let get_package_names repo_dir =
   get_files (repo_dir // "packages") |> List.sort String.compare
 
-let lint_packages ?checks ~opam_repo_dir metas =
+let lint_packages
+    ?(checks=Checks.[General_opam_file; Opam_repo_publication])
+    ~opam_repo_dir
+    metas
+  =
   if Sys.file_exists (opam_repo_dir // "packages") then
     let repo_package_names = get_package_names opam_repo_dir in
     metas
@@ -474,9 +487,13 @@ let lint_packages ?checks ~opam_repo_dir metas =
            let newly_published =
              match newly_published with
              | Some v -> v
-             | None -> is_newly_published ~opam_repo_dir pkg
+             | None ->
+               if Checks.needs_newness checks then
+                 is_newly_published ~opam_repo_dir pkg
+               else
+                 false
            in
-           Checks.lint_package ?kinds:checks ~opam_repo_dir ~pkg ~pkg_src_dir
+           Checks.lint_package ~kinds:checks ~opam_repo_dir ~pkg ~pkg_src_dir
              ~repo_package_names ~newly_published opam)
     |> List.concat |> Result.ok
   else Error (Printf.sprintf "Invalid opam repository: %s" opam_repo_dir)

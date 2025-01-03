@@ -10,6 +10,10 @@ module Checks : sig
     | Opam_repo_publication (** Linting checks run on the primary opam repo *)
     | Opam_repo_archive (** Linting checks run on the opam archive repo *)
 
+  val wants_source : kind list -> bool
+  (** [wants_source checks] is [true] iff the kinds of [checks] want to inspect the
+      package's source code *)
+
   val package_name_collision : string -> string -> bool
   (** [package_name_collision p0 p1] returns true if [p0] is similar to [p1].
     Similarity is defined to be:
