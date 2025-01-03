@@ -62,12 +62,13 @@ type package_spec = {
   newly_published : bool option;
 }
 
-let lint checks package_specs local_repo_dir =
+let lint quiet checks package_specs local_repo_dir =
   match local_repo_dir with
   | None -> failwith "TODO: default to using the opam repository"
   | Some opam_repo_dir -> (
-      print_endline
-      @@ Printf.sprintf "Linting opam-repository at %s ..." opam_repo_dir;
+      if not quiet then
+        print_endline
+        @@ Printf.sprintf "Linting opam-repository at %s ..." opam_repo_dir;
       OpamFilename.with_tmp_dir @@ fun dir ->
       let process_package { pkg; src; newly_published } =
         let opam = read_package_opam ~opam_repo_dir pkg in
@@ -84,7 +85,7 @@ let lint checks package_specs local_repo_dir =
       let errors = Lint.lint_packages ~checks:checks ~opam_repo_dir all_lint_packages in
       match errors with
       | Ok [] ->
-          print_endline "No errors";
+          if not quiet then print_endline "No errors";
           Ok ()
       | Ok errors ->
           errors |> List.map Lint.msg_of_error |> String.concat "\n"
@@ -303,6 +304,10 @@ let package_specs_term =
 
 let lint_cmd =
   let doc = "Lint the opam repository directory" in
+  let quiet =
+    Arg.(value @@ flag @@
+         info ["q"; "quiet"] ~doc:"Run without any extraneous output.")
+  in
   let check_kinds : Lint.Checks.kind list Term.t =
     let info = Arg.info [ "checks" ]
         ~doc:"The kinds of lint checks to run. $(b,opam-file) for checks that \
@@ -320,7 +325,7 @@ let lint_cmd =
     Arg.value (Arg.opt options defaults info)
   in
   let term =
-    Term.(const lint $ check_kinds $ package_specs_term $ local_opam_repo_term)
+    Term.(const lint $ quiet $ check_kinds $ package_specs_term $ local_opam_repo_term)
     |> to_exit_code
   in
   let info =

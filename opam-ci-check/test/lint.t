@@ -5,7 +5,7 @@ Test for an invalid package spec
   $ opam-ci-check lint -r . '=-~!:new=true'
   opam-ci-check: invalid value '=-~!', expected opam package spec in the form
                  <name.version>
-  Usage: opam-ci-check lint [--checks=VAL] [--opam-repository=VAL] [OPTION]… [ARG]…
+  Usage: opam-ci-check lint [--checks=VAL] [--quiet] [--opam-repository=VAL] [OPTION]… [ARG]…
   Try 'opam-ci-check lint --help' or 'opam-ci-check --help' for more information.
   [124]
 
@@ -16,7 +16,7 @@ Test for invalid attributes that are properly formed
   $ opam-ci-check lint -r . 'foo.0.1.0:bar=baz'
   opam-ci-check: invalid element in list ('bar=baz'): bar=baz is an not a valid
                  attribute. Only [src=<path>] or [new=<true|false>] allowed
-  Usage: opam-ci-check lint [--checks=VAL] [--opam-repository=VAL] [OPTION]… [ARG]…
+  Usage: opam-ci-check lint [--checks=VAL] [--quiet] [--opam-repository=VAL] [OPTION]… [ARG]…
   Try 'opam-ci-check lint --help' or 'opam-ci-check --help' for more information.
   [124]
 
@@ -25,7 +25,7 @@ Test for an invalid values to a valid key
   $ opam-ci-check lint -r . 'foo.0.1.0:new=invalid'
   opam-ci-check: invalid element in list ('new=invalid'): invalid must be
                  [true] or [false]
-  Usage: opam-ci-check lint [--checks=VAL] [--opam-repository=VAL] [OPTION]… [ARG]…
+  Usage: opam-ci-check lint [--checks=VAL] [--quiet] [--opam-repository=VAL] [OPTION]… [ARG]…
   Try 'opam-ci-check lint --help' or 'opam-ci-check --help' for more information.
   [124]
 
@@ -34,7 +34,7 @@ Test for a missing value
   $ opam-ci-check lint -r . 'foo.0.1.0:src='
   opam-ci-check: invalid element in list ('src='): src= is an not a valid
                  attribute. Only [src=<path>] or [new=<true|false>] allowed
-  Usage: opam-ci-check lint [--checks=VAL] [--opam-repository=VAL] [OPTION]… [ARG]…
+  Usage: opam-ci-check lint [--checks=VAL] [--quiet] [--opam-repository=VAL] [OPTION]… [ARG]…
   Try 'opam-ci-check lint --help' or 'opam-ci-check --help' for more information.
   [124]
 
@@ -43,7 +43,7 @@ Test for a valid key with no value
   $ opam-ci-check lint -r . 'foo.0.1.0:src'
   opam-ci-check: invalid element in list ('src'): src is an not a valid
                  attribute. Only [src=<path>] or [new=<true|false>] allowed
-  Usage: opam-ci-check lint [--checks=VAL] [--opam-repository=VAL] [OPTION]… [ARG]…
+  Usage: opam-ci-check lint [--checks=VAL] [--quiet] [--opam-repository=VAL] [OPTION]… [ARG]…
   Try 'opam-ci-check lint --help' or 'opam-ci-check --help' for more information.
   [124]
 
@@ -52,7 +52,7 @@ Test for `src` with a non-existent directory
   $ opam-ci-check lint -r . 'foo.0.1.0:src=./not/a/dir'
   opam-ci-check: invalid element in list ('src=./not/a/dir'): ./not/a/dir: No
                  such file or directory
-  Usage: opam-ci-check lint [--checks=VAL] [--opam-repository=VAL] [OPTION]… [ARG]…
+  Usage: opam-ci-check lint [--checks=VAL] [--quiet] [--opam-repository=VAL] [OPTION]… [ARG]…
   Try 'opam-ci-check lint --help' or 'opam-ci-check --help' for more information.
   [124]
 
@@ -61,7 +61,7 @@ Test for invalid extra colons
   $ opam-ci-check lint -r . 'foo.0.1.0:bing-bong:bang'
   opam-ci-check: Invalid argument spec foo.0.1.0:bing-bong:bang. Argument specs
                  should be of the form arg[:k1=v1[,k2=v2]]
-  Usage: opam-ci-check lint [--checks=VAL] [--opam-repository=VAL] [OPTION]… [ARG]…
+  Usage: opam-ci-check lint [--checks=VAL] [--quiet] [--opam-repository=VAL] [OPTION]… [ARG]…
   Try 'opam-ci-check lint --help' or 'opam-ci-check --help' for more information.
   [124]
 
