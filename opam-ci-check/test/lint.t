@@ -105,6 +105,10 @@ Tests linting of correctly formatted opam packages
   Linting opam-repository at $TESTCASE_ROOT/. ...
   No errors
 
+The quiet flag suppresses noisy output when everything is correct:
+
+  $ opam-ci-check lint -r . --quiet b.0.0.3:new=false
+
 Setup repo for incorrect b package tests
 
   $ git reset -q --hard initial-state
@@ -187,6 +191,12 @@ Test the following:
   Error in b.0.0.7:              error 23: Missing field 'maintainer'
   Error in b.0.0.7:            warning 25: Missing field 'authors'
   Error in b.0.0.7: No package source directory provided.
+  [1]
+
+The quiet flag still allows output when there is an error:
+
+  $ opam-ci-check lint -r . --quiet b.0.0.6:new=false
+  Error in $TESTCASE_ROOT/./packages/b/b.0.0.6/opam: Failed to parse the opam file due to 'Parse error'
   [1]
 
 Test that we can run just the opam-file tests (i.e., the checks for maintainer
