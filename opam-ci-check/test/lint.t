@@ -400,7 +400,7 @@ Test that we do not report an error on a minimal well-formed package:
 
 All dependencies
 
-Test that we report errors when a package has dependandies without an upper bound:
+Test that we report errors when a package has dependencies without an upper bound:
 
   $ sed \
   > -e 's/depends.*/depends: [ "foo" {with-test} "bar" {>= "0.0.1"} "baz" ]/' \
