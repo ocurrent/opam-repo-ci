@@ -413,7 +413,7 @@ Test that we report errors when a package has dependandies without an upper boun
   Error in a-1.0.0.1: An upper bound constraint is missing on dependency 'foo'
   [1]
 
-Test that we do NOT report errors when all a packages dependandies have an upper bound:
+Test that we do NOT report errors when all a packages dependencies have an upper bound:
 
   $ sed \
   > -e 's/depends.*/depends: ["foo" {with-test \& <= "0.1.0"} "bar" {>= "0.0.1" \& = "0.1.0"} "baz" {< "0.0.1"}]/' \
