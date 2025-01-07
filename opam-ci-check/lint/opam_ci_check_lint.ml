@@ -10,6 +10,20 @@ let get_files dir = dir |> Sys.readdir |> Array.to_list
 include Lint_error
 
 module Checks = struct
+  type kind =
+    | General_opam_file
+    | Opam_repo_publication
+    | Opam_repo_archive
+
+  (* The kinds of checks that need to take account of whether a package is newly published *)
+  let needs_newness : kind list -> bool
+    = List.mem Opam_repo_publication
+
+  (* The kinds of checks that want to inspect package source (tho it may not be available) *)
+  let wants_source : kind list -> bool
+    = List.mem Opam_repo_publication
+
+
   module Prefix = struct
     (* For context, see https://github.com/ocurrent/opam-repo-ci/pull/316#issuecomment-2160069803 *)
     let prefix_conflict_class_map =
@@ -336,36 +350,102 @@ module Checks = struct
         else None)
       other_pkgs
 
-  let checks ~newly_published ~opam_repo_dir ~pkg_src_dir repo_package_names =
-    let newly_published_checks =
-      [
-        check_name_collisions repo_package_names;
-        Prefix.check_name_restricted_prefix;
-      ]
+  let check_deps_have_upper_bounds ~pkg opam =
+    (* See https://github.com/ocaml/opam-repository/blob/master/governance/policies/archiving.md#archiving-a-package *)
+    let is_upper_bound_constraint
+      : OpamTypes.filter OpamTypes.filter_or_constraint -> bool
+      = function
+        | Constraint ((`Eq | `Leq | `Lt), _) -> true
+        | _ -> false
     in
-    let checks =
-      [
-        check_name_field;
-        check_version_field;
-        check_dune_subst;
-        check_dune_constraints ~pkg_src_dir;
-        check_checksums;
-        check_package_dir ~opam_repo_dir;
-        opam_lint;
-        check_maintainer_contact;
-        check_tags;
-        check_no_pin_depends;
-        check_no_extra_files;
-        Prefix.check_prefix_conflict_class_mismatch;
-      ]
-    in
-    if newly_published then checks @ newly_published_checks else checks
+    OpamFile.OPAM.depends opam
+    |> OpamFormula.fold_left (fun acc ((name, condition) : OpamTypes.name * OpamTypes.condition) ->
+        if OpamPackage.Name.to_string name = "ocaml" (* The compiler is special *)
+        || OpamFormula.exists is_upper_bound_constraint condition
+        then
+          acc
+        else
+          (pkg, MissingUpperBound (OpamPackage.Name.to_string name)) :: acc
+      )
+      []
 
-  let lint_package ~opam_repo_dir ~pkg ~pkg_src_dir ~repo_package_names
+  let check_x_reason_for_archival ~pkg opam =
+    let is_valid_reason (item : OpamParserTypes.FullPos.value) =
+      match item.pelem with
+      | String reason -> List.mem reason x_reason_for_archiving_valid_reasons
+      | _ -> false (* Must be a string *)
+    in
+    opam
+    |> OpamFile.OPAM.extensions
+    |> OpamStd.String.Map.find_opt x_reason_for_archiving_field
+    |> function
+    | None ->
+      [(pkg, InvalidReasonForArchiving)] (* Field must be present *)
+    | Some field ->
+      match field.pelem with
+      (* Must be a non-empty list of valid reasons *)
+      | List {pelem = (_::_ as reasons); _} when List.for_all is_valid_reason reasons -> []
+      | _ -> [(pkg, InvalidReasonForArchiving)]
+
+  let x_opam_repository_commit_hash_at_time_of_archival ~pkg  opam  =
+    opam
+    |> OpamFile.OPAM.extensions
+    |> OpamStd.String.Map.find_opt x_opam_repository_commit_hash_at_time_of_archiving_field
+    |> function
+    | Some {pelem = String _; _} -> []
+    | _ -> [(pkg, InvalidOpamRepositoryCommitHash)]
+
+  let checks kinds ~newly_published ~opam_repo_dir ~pkg_src_dir repo_package_names =
+    let general_opam_file_checks () =
+      [
+        opam_lint;
+      ]
+    in
+    let opam_repo_publication_checks () =
+      let newly_published_checks =
+        [
+          check_name_collisions repo_package_names;
+          Prefix.check_name_restricted_prefix;
+        ]
+      in
+      let checks =
+        [
+          check_dune_subst;
+          check_name_field;
+          check_version_field;
+          check_dune_constraints ~pkg_src_dir;
+          check_checksums;
+          check_package_dir ~opam_repo_dir;
+          check_maintainer_contact;
+          check_tags;
+          check_no_pin_depends;
+          check_no_extra_files;
+          Prefix.check_prefix_conflict_class_mismatch;
+        ]
+      in
+      if newly_published then checks @ newly_published_checks else checks
+    in
+    let opam_repo_archive_checks () =
+      [
+        check_deps_have_upper_bounds;
+        check_x_reason_for_archival;
+        x_opam_repository_commit_hash_at_time_of_archival;
+      ]
+    in
+    List.concat_map
+      (function
+        | General_opam_file -> general_opam_file_checks ()
+        | Opam_repo_publication -> opam_repo_publication_checks ()
+        | Opam_repo_archive -> opam_repo_archive_checks ())
+      kinds
+
+
+  let lint_package
+      ~kinds
+      ~opam_repo_dir ~pkg ~pkg_src_dir ~repo_package_names
       ~newly_published opam =
-    checks ~newly_published ~opam_repo_dir ~pkg_src_dir repo_package_names
-    |> List.map (fun f -> f ~pkg opam)
-    |> List.concat
+    checks kinds ~newly_published ~opam_repo_dir ~pkg_src_dir repo_package_names
+    |> List.concat_map (fun f -> f ~pkg opam)
 end
 
 type t = {
@@ -395,7 +475,11 @@ let is_newly_published ~opam_repo_dir pkg =
 let get_package_names repo_dir =
   get_files (repo_dir // "packages") |> List.sort String.compare
 
-let lint_packages ~opam_repo_dir metas =
+let lint_packages
+    ?(checks=Checks.[General_opam_file; Opam_repo_publication])
+    ~opam_repo_dir
+    metas
+  =
   if Sys.file_exists (opam_repo_dir // "packages") then
     let repo_package_names = get_package_names opam_repo_dir in
     metas
@@ -403,9 +487,13 @@ let lint_packages ~opam_repo_dir metas =
            let newly_published =
              match newly_published with
              | Some v -> v
-             | None -> is_newly_published ~opam_repo_dir pkg
+             | None ->
+               if Checks.needs_newness checks then
+                 is_newly_published ~opam_repo_dir pkg
+               else
+                 false
            in
-           Checks.lint_package ~opam_repo_dir ~pkg ~pkg_src_dir
+           Checks.lint_package ~kinds:checks ~opam_repo_dir ~pkg ~pkg_src_dir
              ~repo_package_names ~newly_published opam)
     |> List.concat |> Result.ok
   else Error (Printf.sprintf "Invalid opam repository: %s" opam_repo_dir)
