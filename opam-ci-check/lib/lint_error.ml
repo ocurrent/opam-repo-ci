@@ -36,8 +36,18 @@ type error =
   | RestrictedPrefix of string
   | PrefixConflictClassMismatch of prefix_conflict_class_mismatch
   | DefaultTagsPresent of string list
+  | MissingUpperBound of string
+  | InvalidReasonForArchiving
+  | InvalidOpamRepositoryCommitHash
 
 (**/**)
+
+(* These x_ fields are used in the opam repo archive *)
+let x_reason_for_archiving_field = "x-reason-for-archiving"
+let x_reason_for_archiving_valid_reasons =
+  ["ocaml-version"; "source-unavailable"; "maintenance-intent"; "uninstallable" ]
+let x_opam_repository_commit_hash_at_time_of_archiving_field =
+  "x-opam-repository-commit-hash-at-time-of-archiving"
 
 let msg_of_prefix_conflict_class_mismatch ~pkg = function
   | WrongPrefix { conflict_class; required_prefix } ->
@@ -163,3 +173,19 @@ let msg_of_error (package, (err : error)) =
         "Warning in %s: The package has not replaced the following default, \
          example tags: %s"
         pkg (String.concat ", " tags)
+  | MissingUpperBound dep_name ->
+      Printf.sprintf
+        "Error in %s: An upper bound constraint is missing on dependency '%s'"
+        pkg dep_name
+  | InvalidReasonForArchiving ->
+      Printf.sprintf
+        "Error in %s: The field '%s' must be present and hold a nonempty list \
+         of one or more of the valid reasons %s"
+        pkg x_reason_for_archiving_field
+        (String.concat ", " x_reason_for_archiving_valid_reasons)
+  | InvalidOpamRepositoryCommitHash ->
+      Printf.sprintf
+        "Error in %s: The field '%s' must be present and hold a string \
+         recording the commit hash of the primary repo at the time the package \
+         version is archived."
+        pkg x_opam_repository_commit_hash_at_time_of_archiving_field

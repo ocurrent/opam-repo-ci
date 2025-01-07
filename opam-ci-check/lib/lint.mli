@@ -5,6 +5,15 @@
 include module type of Lint_error
 
 module Checks : sig
+  type kind =
+    | General_opam_file (** Linting checks run for all opam files in general *)
+    | Opam_repo_publication (** Linting checks run on the primary opam repo *)
+    | Opam_repo_archive (** Linting checks run on the opam archive repo *)
+
+  val wants_source : kind list -> bool
+  (** [wants_source checks] is [true] iff the kinds of [checks] want to inspect the
+      package's source code *)
+
   val package_name_collision : string -> string -> bool
   (** [package_name_collision p0 p1] returns true if [p0] is similar to [p1].
     Similarity is defined to be:
@@ -14,6 +23,7 @@ module Checks : sig
 end
 
 type t
+(** The data describing a package that is needed for linting it. *)
 
 val v :
   pkg:OpamPackage.t ->
@@ -31,6 +41,7 @@ val v :
  *)
 
 val lint_packages :
+  ?checks: Checks.kind list ->
   opam_repo_dir:string ->
   t list ->
   ((OpamPackage.t * error) list, string) result

@@ -37,7 +37,7 @@ Tests the following:
   Error in b.0.0.3: package with conflict class 'ocaml-host-arch' requires name prefix 'host-arch-'
   Error in b.0.0.3: pin-depends present. This is not allowed in the opam-repository.
   Error in b.0.0.3: No package source directory provided.
-  Error in b.0.0.2:              error  3: File format error in 'unknown-field' at line 11, column 0: Invalid field unknown-field
   Error in b.0.0.2: No package source directory provided.
-  Error in b.0.0.1:            warning 25: Missing field 'authors'
-  Error in b.0.0.1: No package source directory provided."
+  Error in b.0.0.2:              error  3: File format error in 'unknown-field' at line 11, column 0: Invalid field unknown-field
+  Error in b.0.0.1: No package source directory provided.
+  Error in b.0.0.1:            warning 25: Missing field 'authors'"

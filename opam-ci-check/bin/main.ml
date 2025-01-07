@@ -62,30 +62,30 @@ type package_spec = {
   newly_published : bool option;
 }
 
-let lint package_specs local_repo_dir =
+let lint quiet checks package_specs local_repo_dir =
   match local_repo_dir with
   | None -> failwith "TODO: default to using the opam repository"
   | Some opam_repo_dir -> (
-      print_endline
-      @@ Printf.sprintf "Linting opam-repository at %s ..." opam_repo_dir;
+      if not quiet then
+        print_endline
+        @@ Printf.sprintf "Linting opam-repository at %s ..." opam_repo_dir;
       OpamFilename.with_tmp_dir @@ fun dir ->
       let process_package { pkg; src; newly_published } =
         let opam = read_package_opam ~opam_repo_dir pkg in
         let pkg_src_dir =
-          if Option.is_none src then
-            let dir =
-              OpamFilename.Dir.to_string dir // OpamPackage.to_string pkg
-            in
+          if Option.is_none src && Lint.Checks.wants_source checks then
+            let dir = OpamFilename.Dir.to_string dir // OpamPackage.to_string pkg in
             fetch_package_src ~dir ~pkg opam
-          else src
+          else
+            src
         in
         Lint.v ~pkg ~newly_published ~pkg_src_dir opam
       in
       let all_lint_packages = List.map process_package package_specs in
-      let errors = Lint.lint_packages ~opam_repo_dir all_lint_packages in
+      let errors = Lint.lint_packages ~checks:checks ~opam_repo_dir all_lint_packages in
       match errors with
       | Ok [] ->
-          print_endline "No errors";
+          if not quiet then print_endline "No errors";
           Ok ()
       | Ok errors ->
           errors |> List.map Lint.msg_of_error |> String.concat "\n"
@@ -304,8 +304,28 @@ let package_specs_term =
 
 let lint_cmd =
   let doc = "Lint the opam repository directory" in
+  let quiet =
+    Arg.(value @@ flag @@
+         info ["q"; "quiet"] ~doc:"Run without any extraneous output.")
+  in
+  let check_kinds : Lint.Checks.kind list Term.t =
+    let info = Arg.info [ "checks" ]
+        ~doc:"The kinds of lint checks to run. $(b,opam-file) for checks that \
+              should hold for any opam file. $(b,primary-repo) for the additional \
+              checks run on packages published on the primary opam repostory. \
+              $(b,archive-repo) for additional checks run on the opam archive \
+              repository."
+    in
+    let options = Arg.list (Arg.enum Lint.Checks.[
+        "opam-file", General_opam_file;
+        "primary-repo", Opam_repo_publication;
+        "archive-repo", Opam_repo_archive])
+    in
+    let defaults = Lint.Checks.[General_opam_file; Opam_repo_publication] in
+    Arg.value (Arg.opt options defaults info)
+  in
   let term =
-    Term.(const lint $ package_specs_term $ local_opam_repo_term)
+    Term.(const lint $ quiet $ check_kinds $ package_specs_term $ local_opam_repo_term)
     |> to_exit_code
   in
   let info =
