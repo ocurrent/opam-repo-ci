@@ -54,21 +54,21 @@
 - 5.0
 - 5.1
 - 5.2
-- 5.2-afl
-- 5.2-flambda
-- 5.2-no-flat-float-array
-- 5.3~rc1
+- 5.3
+- 5.3-afl
+- 5.3-flambda
+- 5.3-no-flat-float-array
 
 ## Platforms Matrix
 
 |  OS | Arch | OCaml version |Opam version | Test lower-bounds | Test reverse dependencies |
 | --- | --- | --- | --- | --- | --- |
 | alpine-3.21 | amd64 | 4.14 | dev | No | No |
-| alpine-3.21 | amd64 | 5.2 | dev | No | No |
+| alpine-3.21 | amd64 | 5.3 | dev | No | No |
 | archlinux | amd64 | 4.14 | dev | No | No |
-| archlinux | amd64 | 5.2 | dev | No | No |
+| archlinux | amd64 | 5.3 | dev | No | No |
 | debian-11 | amd64 | 4.14 | dev | No | No |
-| debian-11 | amd64 | 5.2 | dev | No | No |
+| debian-11 | amd64 | 5.3 | dev | No | No |
 | debian-12 | amd64 | 4.02 | dev | Yes | No |
 | debian-12 | amd64 | 4.03 | dev | Yes | No |
 | debian-12 | amd64 | 4.04 | dev | Yes | No |
@@ -91,46 +91,46 @@
 | debian-12 | amd64 | 4.14-no-flat-float-array | dev | No | No |
 | debian-12 | amd64 | 5.0 | dev | Yes | No |
 | debian-12 | amd64 | 5.1 | dev | Yes | No |
-| debian-12 | amd64 | 5.2 | dev | Yes | Yes |
-| debian-12 | amd64 | 5.2-afl | dev | No | No |
-| debian-12 | amd64 | 5.2-flambda | dev | No | No |
-| debian-12 | amd64 | 5.2-no-flat-float-array | dev | No | No |
-| debian-12 | amd64 | 5.3~rc1 | dev | Yes | No |
+| debian-12 | amd64 | 5.2 | dev | Yes | No |
+| debian-12 | amd64 | 5.3 | dev | Yes | Yes |
+| debian-12 | amd64 | 5.3-afl | dev | No | No |
+| debian-12 | amd64 | 5.3-flambda | dev | No | No |
+| debian-12 | amd64 | 5.3-no-flat-float-array | dev | No | No |
 | debian-12 | arm32v7 | 4.14 | dev | No | No |
-| debian-12 | arm32v7 | 5.2 | dev | No | No |
+| debian-12 | arm32v7 | 5.3 | dev | No | No |
 | debian-12 | arm64 | 4.14 | dev | No | No |
-| debian-12 | arm64 | 5.2 | dev | No | No |
+| debian-12 | arm64 | 5.3 | dev | No | No |
 | debian-12 | i386 | 4.14 | dev | No | No |
-| debian-12 | i386 | 5.2 | dev | No | No |
+| debian-12 | i386 | 5.3 | dev | No | No |
 | debian-12 | ppc64le | 4.14 | dev | No | No |
-| debian-12 | ppc64le | 5.2 | dev | No | No |
+| debian-12 | ppc64le | 5.3 | dev | No | No |
 | debian-12 | s390x | 4.14 | dev | No | No |
-| debian-12 | s390x | 5.2 | dev | No | No |
+| debian-12 | s390x | 5.3 | dev | No | No |
 | debian-testing | amd64 | 4.14 | dev | No | No |
-| debian-testing | amd64 | 5.2 | dev | No | No |
+| debian-testing | amd64 | 5.3 | dev | No | No |
 | debian-unstable | amd64 | 4.14 | dev | No | No |
-| debian-unstable | amd64 | 5.2 | dev | No | No |
+| debian-unstable | amd64 | 5.3 | dev | No | No |
 | fedora-40 | amd64 | 4.14 | dev | No | No |
-| fedora-40 | amd64 | 5.2 | dev | No | No |
+| fedora-40 | amd64 | 5.3 | dev | No | No |
 | fedora-41 | amd64 | 4.14 | dev | No | No |
-| fedora-41 | amd64 | 5.2 | dev | No | No |
+| fedora-41 | amd64 | 5.3 | dev | No | No |
 | freebsd | amd64 | 4.14 | dev | No | No |
-| freebsd | amd64 | 5.2 | dev | No | No |
+| freebsd | amd64 | 5.3 | dev | No | No |
 | macos-homebrew | amd64 | 4.14 | dev | No | No |
-| macos-homebrew | amd64 | 5.2 | dev | No | No |
+| macos-homebrew | amd64 | 5.3 | dev | No | No |
 | macos-homebrew | arm64 | 4.14 | dev | No | No |
-| macos-homebrew | arm64 | 5.2 | dev | No | No |
+| macos-homebrew | arm64 | 5.3 | dev | No | No |
 | opensuse-15.6 | amd64 | 4.14 | dev | No | No |
-| opensuse-15.6 | amd64 | 5.2 | dev | No | No |
+| opensuse-15.6 | amd64 | 5.3 | dev | No | No |
 | opensuse-tumbleweed | amd64 | 4.14 | dev | No | No |
-| opensuse-tumbleweed | amd64 | 5.2 | dev | No | No |
+| opensuse-tumbleweed | amd64 | 5.3 | dev | No | No |
 | ubuntu-20.04 | amd64 | 4.14 | dev | No | No |
-| ubuntu-20.04 | amd64 | 5.2 | dev | No | No |
+| ubuntu-20.04 | amd64 | 5.3 | dev | No | No |
 | ubuntu-22.04 | amd64 | 4.14 | dev | No | No |
-| ubuntu-22.04 | amd64 | 5.2 | dev | No | No |
+| ubuntu-22.04 | amd64 | 5.3 | dev | No | No |
 | ubuntu-24.04 | amd64 | 4.14 | dev | No | No |
-| ubuntu-24.04 | amd64 | 5.2 | dev | No | No |
+| ubuntu-24.04 | amd64 | 5.3 | dev | No | No |
 | ubuntu-24.04 | riscv64 | 4.14 | dev | No | No |
-| ubuntu-24.04 | riscv64 | 5.2 | dev | No | No |
+| ubuntu-24.04 | riscv64 | 5.3 | dev | No | No |
 | ubuntu-24.10 | amd64 | 4.14 | dev | No | No |
-| ubuntu-24.10 | amd64 | 5.2 | dev | No | No |
+| ubuntu-24.10 | amd64 | 5.3 | dev | No | No |
