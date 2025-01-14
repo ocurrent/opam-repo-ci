@@ -51,7 +51,7 @@ Test the build command:
   
 
   $ opam-ci-check build lwt.5.7.0 --only-print
-  FROM ocaml/opam:debian-12-ocaml-5.2
+  FROM ocaml/opam:debian-12-ocaml-5.3
   USER 1000:1000
   WORKDIR /home/opam
   RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
