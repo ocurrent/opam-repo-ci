@@ -39,6 +39,11 @@ val opam :
   lower_bounds:bool ->
   with_tests:bool -> opam_version:Opam_version.t -> package -> t
 
+(** Generate configuration for a [list_revdeps] job *)
+val opam_list_revdeps :
+  variant:Variant.t ->
+  opam_version:Opam_version.t -> package -> t
+
 val pp_ty :
   Format.formatter ->
   [< `Opam of

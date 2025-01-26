@@ -155,6 +155,23 @@ let build_run_spec ~variant ~hash ~no_cache ~only_print ~with_tests
     ~base config
   |> Result.map_error (fun _ -> "Failed to build and test the package")
 
+let list_revdep_spec ~variant ~hash ~no_cache ~only_print ~pkg ~opam_repository
+    =
+  let pkg = OpamPackage.of_string pkg in
+  let base =
+    let hash =
+      Stdlib.Option.(hash |> map (fun h -> "@" ^ h) |> value ~default:"")
+    in
+    let image =
+      Printf.sprintf "ocaml/opam:%s%s" (Variant.docker_tag variant) hash
+    in
+    Spec.Docker image
+  in
+  let config = Spec.opam_list_revdeps ~variant ~opam_version:`Dev pkg in
+  Test.build_run_spec ~use_cache:(not no_cache) ~only_print ?opam_repository
+    ~base config
+  |> Result.map_error (fun _ -> "Failed to list revdeps for the package")
+
 let make_abs_path s =
   if Filename.is_relative s then Filename.concat (Sys.getcwd ()) s else s
 
@@ -498,11 +515,34 @@ let build_cmd =
   in
   Cmd.v info term
 
+let list_revdeps_cmd =
+  let doc =
+    "List reverse dependencies for a package using the [opam-ci-check] [list] \
+     command inside a Docker image."
+  in
+  let term =
+    to_exit_code
+    @@
+    let+ variant = variant
+    and+ hash = hash
+    and+ no_cache = no_cache
+    and+ only_print = only_print
+    and+ pkg = pkg_term
+    and+ opam_repository = local_opam_repo_term in
+    list_revdep_spec ~variant ~hash ~no_cache ~only_print ~pkg ~opam_repository
+  in
+  let info =
+    Cmd.info "list-revdeps" ~doc ~sdocs:"COMMON OPTIONS"
+      ~exits:Cmd.Exit.defaults
+  in
+  Cmd.v info term
+
 let cmd : Cmd.Exit.code Cmd.t =
   let doc = "A tool to list revdeps and test the revdeps locally" in
   let exits = Cmd.Exit.defaults in
   let default = Term.(ret (const (fun _ -> `Help (`Pager, None)) $ const ())) in
   let info = Cmd.info "opam-ci-check" ~doc ~sdocs:"COMMON OPTIONS" ~exits in
-  Cmd.group ~default info [ lint_cmd; list_cmd; test_cmd; build_cmd ]
+  Cmd.group ~default info
+    [ lint_cmd; list_cmd; test_cmd; build_cmd; list_revdeps_cmd ]
 
 let () = exit (Cmd.eval' cmd)
