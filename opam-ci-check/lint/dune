@@ -1,0 +1,4 @@
+(library
+ (name opam_ci_check_lint)
+ (public_name opam-ci-check-lint)
+ (libraries opam-state opam-format sexplib str))
