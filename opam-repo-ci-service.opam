@@ -42,7 +42,7 @@ depends: [
   "conf-libev"
   "dockerfile" {>= "8.2.3"}
   "dockerfile-opam" {>= "8.2.3"}
-  "ocaml-version" {>= "3.6.9"}
+  "ocaml-version" {>= "3.7.3"}
   "mula" {>= "0.1.2"}
   "alcotest" {>= "1.0.0" & with-test}
   "alcotest-lwt" {>= "1.0.1" & with-test}
