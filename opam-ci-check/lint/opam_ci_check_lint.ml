@@ -24,6 +24,9 @@ module Checks = struct
   let wants_source : kind list -> bool
     = List.mem Opam_repo_publication
 
+  (* A lint check takes an opam package (given by its parsed name and package data) to a
+     list of linting errors. An empty list of errors signals a passing check. *)
+  type lint_check = pkg:OpamPackage.t -> OpamFile.OPAM.t -> (OpamPackage.t * error) list
 
   module Prefix = struct
     (* For context, see https://github.com/ocurrent/opam-repo-ci/pull/316#issuecomment-2160069803 *)
@@ -245,26 +248,23 @@ module Checks = struct
     in
     (!is_build, aux opam.OpamFile.OPAM.depends)
 
-  let check_dune_constraints ~pkg ~pkg_src_dir opam =
-    match pkg_src_dir with
-    | Some pkg_src_dir ->
-        let dune_version = get_dune_project_version ~pkg_src_dir in
-        let is_build, dune_constraint = get_dune_constraint opam in
-        let errors =
-          match (dune_constraint, dune_version) with
-          | _, Error msg -> [ (pkg, DuneProjectParseError msg) ]
-          | None, Ok None -> []
-          | Some "", _ -> [ (pkg, DuneLowerBoundMissing) ]
-          | Some _, Ok None -> [ (pkg, DuneProjectMissing) ]
-          | None, Ok (Some _) ->
-              if is_dune (OpamPackage.name pkg) then []
-              else [ (pkg, DuneDependencyMissing) ]
-          | Some dep, Ok (Some ver) ->
-              if OpamVersionCompare.compare dep ver >= 0 then []
-              else [ (pkg, BadDuneConstraint (dep, ver)) ]
-        in
-        if is_build then (pkg, DuneIsBuild) :: errors else errors
-    | None -> [ (pkg, NoPackageSources) ]
+  let check_dune_constraints ~pkg_src_dir ~pkg opam =
+    let dune_version = get_dune_project_version ~pkg_src_dir in
+    let is_build, dune_constraint = get_dune_constraint opam in
+    let errors =
+      match (dune_constraint, dune_version) with
+      | _, Error msg -> [ (pkg, DuneProjectParseError msg) ]
+      | None, Ok None -> []
+      | Some "", _ -> [ (pkg, DuneLowerBoundMissing) ]
+      | Some _, Ok None -> [ (pkg, DuneProjectMissing) ]
+      | None, Ok (Some _) ->
+        if is_dune (OpamPackage.name pkg) then []
+        else [ (pkg, DuneDependencyMissing) ]
+      | Some dep, Ok (Some ver) ->
+        if OpamVersionCompare.compare dep ver >= 0 then []
+        else [ (pkg, BadDuneConstraint (dep, ver)) ]
+    in
+    if is_build then (pkg, DuneIsBuild) :: errors else errors
 
   let check_maintainer_contact ~pkg opam =
     let is_present bug_reports = bug_reports <> [] in
@@ -320,6 +320,16 @@ module Checks = struct
            "Skipped check_package_dir since package dir %s doesn't exist" dir;
       [])
 
+  let check_package_source ~pkg_src_dir : lint_check =
+    fun ~pkg _opam ->
+    let is_conf_package = OpamPackage.Name.to_string pkg.name |> String.starts_with ~prefix:"conf-" in
+    (* conf- packages generally don't have sources.
+       See https://opam.ocaml.org/doc/Manual.html#opamflag-conf *)
+    if is_conf_package || Option.is_some pkg_src_dir then
+      []
+    else
+      [ (pkg, NoPackageSources) ]
+
   (** [package_name_collision p0 p1] returns true if [p0] is similar to [p1].
     Similarity is defined to be:
 
@@ -370,6 +380,7 @@ module Checks = struct
       )
       []
 
+
   let check_x_reason_for_archival ~pkg opam =
     let is_valid_reason (item : OpamParserTypes.FullPos.value) =
       match item.pelem with
@@ -396,6 +407,14 @@ module Checks = struct
     | Some {pelem = String _; _} -> []
     | _ -> [(pkg, InvalidOpamRepositoryCommitHash)]
 
+  (* Add the dependent checks if the dependency is present *)
+  let with_dependent_checks
+    : dependency:'dep option -> ('dep -> lint_check list) -> lint_check list -> lint_check list
+    = fun ~dependency dependent_checks checks ->
+      match dependency with
+      | Some d -> checks @ dependent_checks d
+      | None -> checks
+
   let checks kinds ~newly_published ~opam_repo_dir ~pkg_src_dir repo_package_names =
     let general_opam_file_checks () =
       [
@@ -403,28 +422,30 @@ module Checks = struct
       ]
     in
     let opam_repo_publication_checks () =
-      let newly_published_checks =
-        [
-          check_name_collisions repo_package_names;
-          Prefix.check_name_restricted_prefix;
-        ]
-      in
-      let checks =
-        [
-          check_dune_subst;
-          check_name_field;
-          check_version_field;
-          check_dune_constraints ~pkg_src_dir;
-          check_checksums;
-          check_package_dir ~opam_repo_dir;
-          check_maintainer_contact;
-          check_tags;
-          check_no_pin_depends;
-          check_no_extra_files;
-          Prefix.check_prefix_conflict_class_mismatch;
-        ]
-      in
-      if newly_published then checks @ newly_published_checks else checks
+      [
+        check_dune_subst;
+        check_name_field;
+        check_version_field;
+        check_checksums;
+        check_package_dir ~opam_repo_dir;
+        check_package_source ~pkg_src_dir;
+        check_maintainer_contact;
+        check_tags;
+        check_no_pin_depends;
+        check_no_extra_files;
+        Prefix.check_prefix_conflict_class_mismatch;
+      ]
+      |> with_dependent_checks
+        ~dependency:pkg_src_dir
+        (fun pkg_src_dir -> [
+             check_dune_constraints ~pkg_src_dir
+           ])
+      |> with_dependent_checks
+        ~dependency:(if newly_published then Some () else None)
+        (fun () -> [
+             check_name_collisions repo_package_names;
+             Prefix.check_name_restricted_prefix;
+           ])
     in
     let opam_repo_archive_checks () =
       [
