@@ -163,11 +163,11 @@ Test the following:
   [1]
   $ opam-ci-check lint -r . b.0.0.3:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
-  Error in b.0.0.3: Your dune-project file indicates that this package requires at least dune 3.16 but your opam file only requires dune >= 3.15.0. Please check which requirement is the right one, and fix the other.
   Error in b.0.0.3: Weak checksum algorithm(s) provided. Please use SHA-256 or SHA-512. Details: opam field extra-files contains only MD5 as checksum for 0install.install
   Error in b.0.0.3: pin-depends present. This is not allowed in the opam-repository.
   Error in b.0.0.3: extra-files present. This is not allowed in the opam-repository. Please use extra-source instead.
   Error in b.0.0.3: package with conflict class 'ocaml-host-arch' requires name prefix 'host-arch-'
+  Error in b.0.0.3: Your dune-project file indicates that this package requires at least dune 3.16 but your opam file only requires dune >= 3.15.0. Please check which requirement is the right one, and fix the other.
   [1]
   $ opam-ci-check lint -r . system-b.0.0.1:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
@@ -279,8 +279,8 @@ Test presence of unexpected files in a-1.0.0.2 package
 
   $ opam-ci-check lint -r . a-1.0.0.2:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
-  Error in a-1.0.0.2: No package source directory provided.
   Error in a-1.0.0.2: Unexpected file in packages/a-1/a-1.0.0.2/files
+  Error in a-1.0.0.2: No package source directory provided.
   [1]
 
 Setup repo for Forbidden perm file
@@ -297,8 +297,8 @@ Test presence of unexpected files in a-1.0.0.2 package
 
   $ opam-ci-check lint -r . a-1.0.0.2:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
-  Error in a-1.0.0.2: No package source directory provided.
   Error in a-1.0.0.2: Forbidden permission for file packages/a-1/a-1.0.0.2/opam. All files should have permissions 644.
+  Error in a-1.0.0.2: No package source directory provided.
   [1]
 
 # Maintainer contact lint
