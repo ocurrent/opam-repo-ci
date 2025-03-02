@@ -509,3 +509,88 @@ has an invald value:
   Linting opam-repository at $TESTCASE_ROOT/. ...
   Error in a-1.0.0.1: The field 'x-opam-repository-commit-hash-at-time-of-archiving' must be present and hold a string recording the commit hash of the primary repo at the time the package version is archived.
   [1]
+
+## conf- package checks
+
+Reset the project repo
+
+  $ git reset -q --hard initial-state
+
+Test that a package with a conf- prefix but missing the `conf` flag and `depext`
+field triggers the expected lint errors:
+
+  $ export INVALID_CONF_DIR=packages/conf-invalid/conf-invalid.0.0.1/
+  $ mkdir -p $INVALID_CONF_DIR
+  $ cat > $INVALID_CONF_DIR/opam <<EOF
+  > opam-version: "2.0"
+  > synopsis: "Synopsis"
+  > description: "Description"
+  > maintainer: "Maintainer <me@example.com>"
+  > author: "Author"
+  > license: "Apache-2.0"
+  > homepage: "https://github.com/ocurrent/opam-repo-ci"
+  > bug-reports: "https://github.com/ocurrent/opam-repo-ci/issues"
+  > dev-repo: "git+https://github.com/ocurrent/opam-repo-ci.git"
+  > doc: "https://ocurrent.github.io/ocurrent/"
+  > build: []
+  > depends: []
+  > EOF
+  $ opam-ci-check lint -r . conf-invalid.0.0.1
+  Linting opam-repository at $TESTCASE_ROOT/. ...
+  Error in conf-invalid.0.0.1: No package source directory provided.
+  Error in conf-invalid.0.0.1: conf packages should always use the 'conf-' name prefix, the 'conf' flag, and the 'depext' field all together, but this package only has the 'conf-' name prefix
+  [1]
+  $ git reset -q --hard initial-state
+
+Test that a package with a conf- prefix and `depext` feild, but missing the
+`conf` flag, triggers the expected lint errors:
+
+  $ export INVALID_CONF_DIR=packages/conf-invalid/conf-invalid.0.0.2/
+  $ mkdir -p $INVALID_CONF_DIR
+  $ cat > $INVALID_CONF_DIR/opam <<EOF
+  > opam-version: "2.0"
+  > synopsis: "Synopsis"
+  > description: "Description"
+  > maintainer: "Maintainer <me@example.com>"
+  > author: "Author"
+  > license: "Apache-2.0"
+  > homepage: "https://github.com/ocurrent/opam-repo-ci"
+  > bug-reports: "https://github.com/ocurrent/opam-repo-ci/issues"
+  > dev-repo: "git+https://github.com/ocurrent/opam-repo-ci.git"
+  > doc: "https://ocurrent.github.io/ocurrent/"
+  > build: []
+  > depends: []
+  > depexts: [ "curl" ]
+  > EOF
+  $ opam-ci-check lint -r . conf-invalid.0.0.2
+  Linting opam-repository at $TESTCASE_ROOT/. ...
+  Error in conf-invalid.0.0.2: No package source directory provided.
+  Error in conf-invalid.0.0.2: conf packages should always use the 'conf-' name prefix, the 'conf' flag, and the 'depext' field all together, but this package only has the 'conf-' name prefix and a non-empty 'depext' field
+  [1]
+  $ git reset -q --hard initial-state
+
+Test that a valid conf- package triggers no linting errors (in particular, a
+valid conf package should not trigger 'No package source directory provided'):
+
+  $ export VALID_CONF_DIR=packages/conf-valid/conf-valid.0.0.1/
+  $ mkdir -p $VALID_CONF_DIR
+  $ cat > $VALID_CONF_DIR/opam <<EOF
+  > opam-version: "2.0"
+  > synopsis: "Synopsis"
+  > description: "Description"
+  > maintainer: "Maintainer <me@example.com>"
+  > author: "Author"
+  > license: "Apache-2.0"
+  > homepage: "https://github.com/ocurrent/opam-repo-ci"
+  > bug-reports: "https://github.com/ocurrent/opam-repo-ci/issues"
+  > dev-repo: "git+https://github.com/ocurrent/opam-repo-ci.git"
+  > doc: "https://ocurrent.github.io/ocurrent/"
+  > build: []
+  > depends: []
+  > depexts: [ "curl" ]
+  > flags: [ conf ]
+  > EOF
+  $ opam-ci-check lint -r . conf-valid.0.0.1
+  Linting opam-repository at $TESTCASE_ROOT/. ...
+  No errors
+  $ git reset -q --hard initial-state
