@@ -26,7 +26,7 @@ depends: [
   "opam-client" {>= "2.3.0~alpha1"}
   "ocaml-version" {>= "3.7.3"}
   "dockerfile-opam" {>= "6.3.0"}
-  "obuilder-spec"
+  "obuilder-spec" {>= "0.2"}
   "odoc" {with-doc}
   "ppx_deriving" {>= "5.2.1"}
   "ppx_deriving_yojson"
