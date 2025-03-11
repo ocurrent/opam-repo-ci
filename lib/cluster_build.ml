@@ -43,9 +43,10 @@ let pool_of_variant v =
     | `Macos -> "macos"
     | `Freebsd -> "freebsd"
     | `Linux -> "linux"
+    | `Windows -> "windows"
   in
   let arch = match Variant.arch v with
-    | `X86_64 | `I386 -> "x86_64"
+    | `X86_64 | `I386 -> if os = "windows" then "amd64" else "x86_64"
     | `Aarch32 | `Aarch64 -> "arm64"
     | `Ppc64le -> "ppc64"
     | `S390x -> "s390x"
@@ -107,7 +108,7 @@ module Op = struct
       | `Riscv64 -> Int64.mul timeout 2L
       | _ -> timeout in
     let os = match Variant.os variant with
-      | `Macos | `Linux | `Freebsd -> `Unix
+      | `Macos | `Linux | `Freebsd | `Windows -> `Unix
     in
     let build_config = {Spec.variant; ty} in
     Current.Job.write job
