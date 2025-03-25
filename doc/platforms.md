@@ -31,12 +31,6 @@
 
 ## OCaml Versions
 
-- 4.02
-- 4.03
-- 4.04
-- 4.05
-- 4.06
-- 4.07
 - 4.08
 - 4.09
 - 4.10
@@ -69,12 +63,6 @@
 | archlinux | amd64 | 5.3 | dev | No | No |
 | debian-11 | amd64 | 4.14 | dev | No | No |
 | debian-11 | amd64 | 5.3 | dev | No | No |
-| debian-12 | amd64 | 4.02 | dev | Yes | No |
-| debian-12 | amd64 | 4.03 | dev | Yes | No |
-| debian-12 | amd64 | 4.04 | dev | Yes | No |
-| debian-12 | amd64 | 4.05 | dev | Yes | No |
-| debian-12 | amd64 | 4.06 | dev | Yes | No |
-| debian-12 | amd64 | 4.07 | dev | Yes | No |
 | debian-12 | amd64 | 4.08 | dev | Yes | No |
 | debian-12 | amd64 | 4.09 | dev | Yes | No |
 | debian-12 | amd64 | 4.10 | dev | Yes | No |
