@@ -1,9 +1,10 @@
 FROM ocaml/opam:debian-12-ocaml-4.14 AS build
-RUN sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam && opam init --reinit -ni
+RUN sudo ln -f /usr/bin/opam-2.3 /usr/bin/opam && opam init --reinit -ni
 RUN sudo apt-get update && sudo apt-get install libev-dev capnproto graphviz m4 pkg-config libsqlite3-dev libgmp-dev libffi-dev -y --no-install-recommends
 RUN cd ~/opam-repository && git fetch origin master && git reset --hard d7624eae68058be71701657e00ba2d124e55daaa && opam update
 COPY --chown=opam opam-repo-ci-service.opam opam-repo-ci-api.opam opam-ci-check.opam /src/
 WORKDIR /src
+ENV OPAMSOLVERTIMEOUT=900
 RUN opam install -y --deps-only .
 ADD --chown=opam . .
 RUN opam exec -- dune build ./_build/install/default/bin/opam-repo-ci-service ./_build/install/default/bin/opam-ci-check
