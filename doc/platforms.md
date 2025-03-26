@@ -10,7 +10,7 @@
 - debian-unstable
 - fedora-40
 - fedora-41
-- freebsd-14.1
+- freebsd-14.2
 - macos-homebrew
 - opensuse-15.6
 - opensuse-tumbleweed
@@ -102,8 +102,8 @@
 | fedora-40 | amd64 | 5.3 | dev | No | No |
 | fedora-41 | amd64 | 4.14 | dev | No | No |
 | fedora-41 | amd64 | 5.3 | dev | No | No |
-| freebsd-14.1 | amd64 | 4.14 | dev | No | No |
-| freebsd-14.1 | amd64 | 5.3 | dev | No | No |
+| freebsd-14.2 | amd64 | 4.14 | dev | No | No |
+| freebsd-14.2 | amd64 | 5.3 | dev | No | No |
 | macos-homebrew | amd64 | 4.14 | dev | No | No |
 | macos-homebrew | amd64 | 5.3 | dev | No | No |
 | macos-homebrew | arm64 | 4.14 | dev | No | No |
