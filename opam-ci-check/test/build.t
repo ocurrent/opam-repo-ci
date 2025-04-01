@@ -4,7 +4,7 @@ Test the build command:
   FROM ocaml/opam:debian-12-ocaml-5.2
   USER 1000:1000
   WORKDIR /home/opam
-  RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+  RUN sudo ln -f /usr/bin/opam-2.3 /usr/bin/opam
   RUN opam init --reinit -ni
   RUN opam option solver=builtin-0install && opam config report
   ENV OPAMDOWNLOADJOBS="1"
@@ -54,7 +54,7 @@ Test the build command:
   FROM ocaml/opam:debian-12-ocaml-5.3
   USER 1000:1000
   WORKDIR /home/opam
-  RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+  RUN sudo ln -f /usr/bin/opam-2.3 /usr/bin/opam
   RUN opam init --reinit -ni
   RUN opam option solver=builtin-0install && opam config report
   ENV OPAMDOWNLOADJOBS="1"
@@ -88,7 +88,7 @@ Test the build command:
   FROM ocaml/opam:debian-12-ocaml-4.14@sha256:03931233593b8433100f023bc0a49467bfcf5f4d74310a7b3f4504b32db4ddc3
   USER 1000:1000
   WORKDIR /home/opam
-  RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+  RUN sudo ln -f /usr/bin/opam-2.3 /usr/bin/opam
   RUN opam init --reinit -ni
   RUN opam option solver=builtin-0install && opam config report
   ENV OPAMDOWNLOADJOBS="1"
@@ -140,7 +140,7 @@ Test the build command:
   FROM ocaml/opam:debian-12-ocaml-4.14-flambda@sha256:4d8b208fb0017792b379e59d3fbae4be866c38af4bcbc2d1f348e4d249e6546f
   USER 1000:1000
   WORKDIR /home/opam
-  RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+  RUN sudo ln -f /usr/bin/opam-2.3 /usr/bin/opam
   RUN opam init --reinit -ni
   RUN opam option solver=builtin-0install && opam config report
   ENV OPAMDOWNLOADJOBS="1"
