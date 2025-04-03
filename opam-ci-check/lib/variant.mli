@@ -13,7 +13,7 @@ val ocaml_version_to_string : t -> string
 val arch : t -> arch
 val docker_tag : t -> string
 val distribution : t -> string
-val os : t -> [ `Linux | `Macos | `Freebsd ]
+val os : t -> [ `Linux | `Macos | `Freebsd | `Windows ]
 
 val pp : t Fmt.t
 
@@ -22,3 +22,6 @@ val macos_homebrew : string
 
 (** The FreeBSD distribution *)
 val freebsd : string
+
+(** The Windows Server distribution *)
+val windows_server : string
