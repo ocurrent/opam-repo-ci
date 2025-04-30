@@ -1,4 +1,4 @@
-version: '3.1'
+version: "3.7"
 volumes:
   data:
   capnp-secrets:
@@ -7,37 +7,46 @@ secrets:
     external: true
   opam-repo-ci-oauth:
     external: true
+  opam-repo-ci-submission-cap:
+    external: true
   opam-repo-ci-webhook-secret:
     external: true
 services:
-  ci:
-    image: opam-repo-ci-service
-    command: --github-app-id 52344 --github-private-key-file /run/secrets/opam-repo-ci-github-key --github-account-whitelist "kit-ty-kate" --confirm above-average --confirm-auto-release 120 --capnp-address=tcp:ci:9000 --github-oauth /run/secrets/opam-repo-ci-oauth --github-webhook-secret-file /run/secrets/opam-repo-ci-webhook-secret
+  opam-repo-ci:
+    image: ocurrent/opam-repo-ci:live
+    command: >
+      --github-app-id=85861
+      --github-private-key-file=/run/secrets/opam-repo-ci-github-key
+      --github-account-allowlist="ocaml"
+      --confirm=above-average
+      --confirm-auto-release=120
+      --capnp-address=tcp:opam-repo.ci.ocaml.org:9000
+      --github-oauth=/run/secrets/opam-repo-ci-oauth
+      --submission-service=/run/secrets/opam-repo-ci-submission-cap
+      --github-webhook-secret-file=/run/secrets/opam-repo-ci-webhook-secret
+      --verbosity=info
+    ports:
+      - '9000:9000'
     environment:
       - "CI_PROFILE=production"
-      - "PROGRESS_NO_TRUNC=1"
-    ports:
-      - '8080:8080'
+      - "DOCKER_CLI_EXPERIMENTAL=enabled"
     volumes:
       - 'data:/var/lib/ocurrent'
-      - '/var/run/docker.sock:/var/run/docker.sock'
       - 'capnp-secrets:/capnp-secrets'
     secrets:
       - 'opam-repo-ci-oauth'
       - 'opam-repo-ci-github-key'
+      - 'opam-repo-ci-submission-cap'
       - 'opam-repo-ci-webhook-secret'
     sysctls:
       - 'net.ipv4.tcp_keepalive_time=60'
-    networks:
-      - default
-  web:
-    image: opam-repo-ci-web
-    command: --backend /capnp-secrets/opam-repo-ci-admin.cap --listen-prometheus=9090
-    ports:
-      - '80:8090'
+  opam-repo-ci-web:
+    image: ocurrent/opam-repo-ci-web:live
+    command: >
+      --backend=/capnp-secrets/opam-repo-ci-admin.cap
+      --verbosity=info
     volumes:
       - 'capnp-secrets:/capnp-secrets:ro'
     sysctls:
       - 'net.ipv4.tcp_keepalive_time=60'
-    networks:
-      - default
+
