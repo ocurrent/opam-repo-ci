@@ -184,7 +184,9 @@ Test the following:
   [1]
   $ opam-ci-check lint -r . b.0.0.6:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
-  Error in $TESTCASE_ROOT/./packages/b/b.0.0.6/opam: Failed to parse the opam file due to 'Parse error'
+  Error in $TESTCASE_ROOT/./packages/b/b.0.0.6/opam: failed to parse opam file:
+  'At ./<none>:13:12-13:13::
+  Parse error'
   [1]
   $ opam-ci-check lint -r . b.0.0.7:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
@@ -196,7 +198,9 @@ Test the following:
 The quiet flag still allows output when there is an error:
 
   $ opam-ci-check lint -r . --quiet b.0.0.6:new=false
-  Error in $TESTCASE_ROOT/./packages/b/b.0.0.6/opam: Failed to parse the opam file due to 'Parse error'
+  Error in $TESTCASE_ROOT/./packages/b/b.0.0.6/opam: failed to parse opam file:
+  'At ./<none>:13:12-13:13::
+  Parse error'
   [1]
 
 Test that we can run just the opam-file tests (i.e., the checks for maintainer

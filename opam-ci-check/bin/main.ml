@@ -49,12 +49,11 @@ let read_package_opam ~opam_repo_dir pkg =
   In_channel.with_open_text opam_path @@ fun ic ->
   try OpamFile.OPAM.read_from_channel ic
   with
-  | OpamPp.Bad_format ((_, msg) : OpamPp.bad_format)
-  | OpamPp.Bad_version (((_, msg) : OpamPp.bad_format), _)
-  ->
-    Printf.eprintf "Error in %s: Failed to parse the opam file due to '%s'"
-      opam_path msg;
-    exit 1
+  | exn ->
+    (Printf.eprintf "Error in %s: failed to parse opam file:\n'%s'\n"
+      opam_path
+      (OpamPp.string_of_bad_format ~file:opam_path exn);
+    exit 1)
 
 type package_spec = {
   pkg : OpamPackage.t;
