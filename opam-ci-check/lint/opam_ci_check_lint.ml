@@ -271,7 +271,6 @@ module Checks = struct
         match (dune_constraint, dune_version) with
         | _, Error msg -> [ (pkg, DuneProjectParseError msg) ]
         | None, Ok None -> []
-        | Some "", _ -> [ (pkg, DuneLowerBoundMissing) ]
         | Some _, Ok None -> [ (pkg, DuneProjectMissing) ]
         | None, Ok (Some _) ->
           if is_dune (OpamPackage.name pkg) then []
