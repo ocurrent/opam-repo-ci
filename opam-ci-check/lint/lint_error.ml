@@ -21,7 +21,6 @@ type error =
   | DuneProjectMissing
   | DuneProjectParseError of string
   | DuneDependencyMissing
-  | DuneLowerBoundMissing
   | DuneIsBuild
   | BadDuneConstraint of string * string
   | NoPackageSources
@@ -121,11 +120,6 @@ let msg_of_error (package, (err : error)) =
       Printf.sprintf
         "Warning in %s: The package has a dune-project file but no explicit \
          dependency on dune was found."
-        pkg
-  | DuneLowerBoundMissing ->
-      Printf.sprintf
-        "Warning in %s: The package has a dune dependency without a lower \
-         bound."
         pkg
   | BadDuneConstraint (dep, ver) ->
       Printf.sprintf
