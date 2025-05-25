@@ -614,4 +614,3 @@ valid conf package should not trigger 'No package source directory provided'):
   Linting opam-repository at $TESTCASE_ROOT/. ...
   No errors
   $ git reset -q --hard initial-state
-  
