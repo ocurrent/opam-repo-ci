@@ -221,7 +221,7 @@ passes linting when in has (lang dune 1.0) in its dune-project:
   $ echo "(lang dune 1.0)" > dune-project
   $ sh "scripts/setup_sources.sh" b 0.0.1 dune-project
   Created tarball b.0.0.1.tgz
-  Updated checksum for b.0.0.1.tgz in b.0.0.1's opam file 
+  Updated checksum for b.0.0.1.tgz in b.0.0.1's opam file
   $ git add .
   $ git commit -qm b.0.0.1-no-dune-lower-bound
   $ opam-ci-check lint -r . b.0.0.1 # Lint b.0.0.1 (new package) with inference
