@@ -212,6 +212,23 @@ and authors fields are not run):
   Error in b.0.0.7:            warning 25: Missing field 'authors'
   [1]
 
+
+Test that a package with no constraint on the dune version in the opam file
+passes linting when in has (lang dune 1.0) in its dune-project:
+
+  $ git reset -q --hard initial-state
+  $ git apply "patches/b.0.0.1-no-dune-lower-bound.patch"
+  $ echo "(lang dune 1.0)" > dune-project
+  $ sh "scripts/setup_sources.sh" b 0.0.1 dune-project
+  Created tarball b.0.0.1.tgz
+  Updated checksum for b.0.0.1.tgz in b.0.0.1's opam file 
+  $ git add .
+  $ git commit -qm b.0.0.1-no-dune-lower-bound
+  $ opam-ci-check lint -r . b.0.0.1 # Lint b.0.0.1 (new package) with inference
+  Linting opam-repository at $TESTCASE_ROOT/. ...
+  No errors
+  $ git reset -q --hard initial-state
+
 Setup repo for name collision tests
 
   $ git reset -q --hard initial-state
@@ -598,3 +615,4 @@ valid conf package should not trigger 'No package source directory provided'):
   Linting opam-repository at $TESTCASE_ROOT/. ...
   No errors
   $ git reset -q --hard initial-state
+  
