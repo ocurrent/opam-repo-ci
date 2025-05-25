@@ -227,7 +227,6 @@ passes linting when in has (lang dune 1.0) in its dune-project:
   $ opam-ci-check lint -r . b.0.0.1 # Lint b.0.0.1 (new package) with inference
   Linting opam-repository at $TESTCASE_ROOT/. ...
   No errors
-  $ git reset -q --hard initial-state
 
 Setup repo for name collision tests
 
