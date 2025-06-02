@@ -14,7 +14,6 @@
 - macos-homebrew
 - opensuse-15.6
 - opensuse-tumbleweed
-- ubuntu-20.04
 - ubuntu-22.04
 - ubuntu-24.04
 - ubuntu-24.10
@@ -52,6 +51,7 @@
 - 5.3-afl
 - 5.3-flambda
 - 5.3-no-flat-float-array
+- 5.4~alpha1
 
 ## Platforms Matrix
 
@@ -84,6 +84,7 @@
 | debian-12 | amd64 | 5.3-afl | dev | No | No |
 | debian-12 | amd64 | 5.3-flambda | dev | No | No |
 | debian-12 | amd64 | 5.3-no-flat-float-array | dev | No | No |
+| debian-12 | amd64 | 5.4~alpha1 | dev | Yes | No |
 | debian-12 | arm32v7 | 4.14 | dev | No | No |
 | debian-12 | arm32v7 | 5.3 | dev | No | No |
 | debian-12 | arm64 | 4.14 | dev | No | No |
@@ -112,8 +113,6 @@
 | opensuse-15.6 | amd64 | 5.3 | dev | No | No |
 | opensuse-tumbleweed | amd64 | 4.14 | dev | No | No |
 | opensuse-tumbleweed | amd64 | 5.3 | dev | No | No |
-| ubuntu-20.04 | amd64 | 4.14 | dev | No | No |
-| ubuntu-20.04 | amd64 | 5.3 | dev | No | No |
 | ubuntu-22.04 | amd64 | 4.14 | dev | No | No |
 | ubuntu-22.04 | amd64 | 5.3 | dev | No | No |
 | ubuntu-24.04 | amd64 | 4.14 | dev | No | No |
