@@ -131,7 +131,6 @@ let msg_of_error (package, (err : error)) =
          requires at least dune %s but your opam file %s. Please check which requirement \
          is the right one, and fix the other."
          pkg ver opam_requires
-        pkg ver dep
   | DuneIsBuild ->
       Printf.sprintf
         "Warning in %s: The package tagged dune as a build dependency. Due to \
