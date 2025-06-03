@@ -122,13 +122,15 @@ let msg_of_error (package, (err : error)) =
          dependency on dune was found."
         pkg
   | BadDuneConstraint (dep, ver) ->
-      if dep = "" then
-        Printf.sprintf "Error in %s: opam file has no lower bound on the dune version." pkg
-      else 
+        let opam_requires = if dep = "" then
+            "has no lower bound on its dune dependency"
+          else
+            Printf.sprintf "only requires dune >= %s" dep
+        in
         Printf.sprintf "Error in %s: Your dune-project file indicates that this package \
-         requires at least dune %s but your opam file only requires dune >= \
-         %s. Please check which requirement is the right one, and fix the \
-         other."
+         requires at least dune %s but your opam file %s. Please check which requirement \
+         is the right one, and fix the other."
+         pkg ver opam_requires
         pkg ver dep
   | DuneIsBuild ->
       Printf.sprintf
