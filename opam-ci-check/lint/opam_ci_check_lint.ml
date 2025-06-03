@@ -276,8 +276,8 @@ module Checks = struct
           if is_dune (OpamPackage.name pkg) then []
           else [ (pkg, DuneDependencyMissing) ]
         | Some dep, Ok (Some ver) ->
-          if dep = "" && ver = "1.0" then []
-          else if OpamVersionCompare.compare dep ver >= 0 then []
+          let dune_dep_lower_bound = if dep = "" then "1.0" else dep in
+          if OpamVersionCompare.compare dune_dep_lower_bound ver >= 0 then []
           else [ (pkg, BadDuneConstraint (dep, ver)) ]
       in
       if is_build then (pkg, DuneIsBuild) :: errors else errors
