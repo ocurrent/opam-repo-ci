@@ -221,7 +221,7 @@ Test the build command:
   RUN opam repository set-url --strict default opam-repository/
   RUN opam update --depexts || true
   RUN opam pin add -k version -yn ocaml-compiler.5.4.0 5.4.0
-  RUN opam reinstall ocaml-compiler.5.4.0; \
+  RUN opam reinstall --update-invariant ocaml-compiler.5.4.0; \
       res=$?; \
       test "$res" != 31 && exit "$res"; \
       export OPAMCLI=2.0; \
@@ -255,7 +255,7 @@ Test the build command:
   RUN opam repository set-url --strict default opam-repository/
   RUN opam update --depexts || true
   RUN opam pin add -k version -yn ocaml-base-compiler.5.3.0 5.3.0
-  RUN opam reinstall ocaml-base-compiler.5.3.0; \
+  RUN opam reinstall --update-invariant ocaml-base-compiler.5.3.0; \
       res=$?; \
       test "$res" != 31 && exit "$res"; \
       export OPAMCLI=2.0; \
