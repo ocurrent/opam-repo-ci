@@ -48,7 +48,9 @@ let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
     in
     let verbose = if with_tests then " --verbose" else "" in
     let update_invariant =
-      if String.equal (OpamPackage.name_to_string pkg) "ocaml-variants" then
+      if List.mem (OpamPackage.name_to_string pkg)
+          ["ocaml-variants"; "ocaml-base-compiler"; "ocaml-compiler"]
+      then
         " --update-invariant"
       else ""
     in
