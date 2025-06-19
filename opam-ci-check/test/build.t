@@ -169,3 +169,105 @@ Test the build command:
       test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
       exit 1
   
+
+  $ opam-ci-check build ocaml-variants.5.3.1+trunk --only-print
+  FROM ocaml/opam:debian-12-ocaml-5.3
+  USER 1000:1000
+  WORKDIR /home/opam
+  RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+  RUN opam init --reinit -ni
+  RUN opam option solver=builtin-0install && opam config report
+  ENV OPAMDOWNLOADJOBS="1"
+  ENV OPAMERRLOGLEN="0"
+  ENV OPAMPRECISETRACKING="1"
+  ENV CI="true"
+  ENV OPAM_REPO_CI="true"
+  RUN rm -rf opam-repository/
+  COPY --chown=1000:1000 . opam-repository/
+  RUN opam repository set-url --strict default opam-repository/
+  RUN opam update --depexts || true
+  RUN opam pin add -k version -yn ocaml-variants.5.3.1+trunk 5.3.1+trunk
+  RUN opam reinstall --update-invariant ocaml-variants.5.3.1+trunk; \
+      res=$?; \
+      test "$res" != 31 && exit "$res"; \
+      export OPAMCLI=2.0; \
+      build_dir=$(opam var prefix)/.opam-switch/build; \
+      failed=$(ls "$build_dir"); \
+      partial_fails=""; \
+      for pkg in $failed; do \
+      if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+      echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+      fi; \
+      test "$pkg" != 'ocaml-variants.5.3.1+trunk' && partial_fails="$partial_fails $pkg"; \
+      done; \
+      test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+      exit 1
+  
+
+  $ opam-ci-check build ocaml-compiler.5.4.0 --only-print
+  FROM ocaml/opam:debian-12-ocaml-5.3
+  USER 1000:1000
+  WORKDIR /home/opam
+  RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+  RUN opam init --reinit -ni
+  RUN opam option solver=builtin-0install && opam config report
+  ENV OPAMDOWNLOADJOBS="1"
+  ENV OPAMERRLOGLEN="0"
+  ENV OPAMPRECISETRACKING="1"
+  ENV CI="true"
+  ENV OPAM_REPO_CI="true"
+  RUN rm -rf opam-repository/
+  COPY --chown=1000:1000 . opam-repository/
+  RUN opam repository set-url --strict default opam-repository/
+  RUN opam update --depexts || true
+  RUN opam pin add -k version -yn ocaml-compiler.5.4.0 5.4.0
+  RUN opam reinstall ocaml-compiler.5.4.0; \
+      res=$?; \
+      test "$res" != 31 && exit "$res"; \
+      export OPAMCLI=2.0; \
+      build_dir=$(opam var prefix)/.opam-switch/build; \
+      failed=$(ls "$build_dir"); \
+      partial_fails=""; \
+      for pkg in $failed; do \
+      if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+      echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+      fi; \
+      test "$pkg" != 'ocaml-compiler.5.4.0' && partial_fails="$partial_fails $pkg"; \
+      done; \
+      test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+      exit 1
+  
+
+  $ opam-ci-check build ocaml-base-compiler.5.3.0 --only-print
+  FROM ocaml/opam:debian-12-ocaml-5.3
+  USER 1000:1000
+  WORKDIR /home/opam
+  RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+  RUN opam init --reinit -ni
+  RUN opam option solver=builtin-0install && opam config report
+  ENV OPAMDOWNLOADJOBS="1"
+  ENV OPAMERRLOGLEN="0"
+  ENV OPAMPRECISETRACKING="1"
+  ENV CI="true"
+  ENV OPAM_REPO_CI="true"
+  RUN rm -rf opam-repository/
+  COPY --chown=1000:1000 . opam-repository/
+  RUN opam repository set-url --strict default opam-repository/
+  RUN opam update --depexts || true
+  RUN opam pin add -k version -yn ocaml-base-compiler.5.3.0 5.3.0
+  RUN opam reinstall ocaml-base-compiler.5.3.0; \
+      res=$?; \
+      test "$res" != 31 && exit "$res"; \
+      export OPAMCLI=2.0; \
+      build_dir=$(opam var prefix)/.opam-switch/build; \
+      failed=$(ls "$build_dir"); \
+      partial_fails=""; \
+      for pkg in $failed; do \
+      if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+      echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+      fi; \
+      test "$pkg" != 'ocaml-base-compiler.5.3.0' && partial_fails="$partial_fails $pkg"; \
+      done; \
+      test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+      exit 1
+  
