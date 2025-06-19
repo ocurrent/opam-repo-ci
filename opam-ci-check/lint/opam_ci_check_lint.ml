@@ -309,8 +309,8 @@ module Checks = struct
     | [] -> []
     | _ -> [ (pkg, DefaultTagsPresent default_tags_present) ]
 
-  let opam_lint ~pkg opam =
-    OpamFileTools.lint ~check_upstream:true opam
+  let opam_lint ~check_upstream ~pkg opam =
+    OpamFileTools.lint ~check_upstream opam
     |> List.map (fun x -> (pkg, OpamLint x))
 
   let is_perm_correct file =
@@ -453,9 +453,9 @@ module Checks = struct
     | _ -> [(pkg, InvalidOpamRepositoryCommitHash)]
 
   let checks kinds ~newly_published ~opam_repo_dir ~pkg_src_dir repo_package_names =
-    let general_opam_file_checks () =
+    let general_opam_file_checks ?(check_upstream=true) () =
       [
-        opam_lint;
+        opam_lint ~check_upstream;
       ]
     in
     let opam_repo_publication_checks () =
@@ -492,7 +492,9 @@ module Checks = struct
     List.concat_map
       (function
         | General_opam_file -> general_opam_file_checks ()
-        | Opam_repo_publication -> opam_repo_publication_checks ()
+        | Opam_repo_publication ->
+            general_opam_file_checks ~check_upstream:false () @
+            opam_repo_publication_checks ()
         | Opam_repo_archive -> opam_repo_archive_checks ())
       kinds
 
