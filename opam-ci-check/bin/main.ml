@@ -338,7 +338,7 @@ let lint_cmd =
         "primary-repo", Opam_repo_publication;
         "archive-repo", Opam_repo_archive])
     in
-    let defaults = Lint.Checks.[General_opam_file; Opam_repo_publication] in
+    let defaults = Lint.Checks.[Opam_repo_publication] in
     Arg.value (Arg.opt options defaults info)
   in
   let term =
