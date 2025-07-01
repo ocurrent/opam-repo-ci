@@ -19,7 +19,6 @@ bug-reports: "https://github.com/ocurrent/opam-repo-ci/issues"
 depends: [
   "ocaml" {>= "4.14.0"}
   "dune" {>= "3.16"}
-  "sexplib"
   "opam-state" {>= "2.3.0~alpha1"}
   "opam-format" {>= "2.3.0~alpha1"}
   "odoc" {with-doc}
