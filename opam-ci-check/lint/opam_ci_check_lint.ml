@@ -202,85 +202,29 @@ module Checks = struct
     | None | Some [] -> []
     | Some _ -> [ (pkg, ExtraFiles) ]
 
-  let get_dune_project_version ~pkg_src_dir =
-    let dune_project = Filename.concat pkg_src_dir "dune-project" in
-    match
-      In_channel.input_all
-      |> In_channel.with_open_text dune_project
-      |> Sexplib.Sexp.parse
-    with
-    | exception Sys_error _ -> Ok None
-    | Sexplib.Sexp.Done (List [ Atom "lang"; Atom "dune"; Atom version ], _) ->
-        Ok (Some version)
-    | Done _ -> Error "(lang dune ...) is not the first construct"
-    | Cont _ -> Error "Failed to parse the dune-project file"
-
   let is_dune name =
     OpamPackage.Name.equal name (OpamPackage.Name.of_string "dune")
 
-  let get_dune_constraint opam =
-    let get_max = function
-      | None, None -> None
-      | Some x, None -> Some x
-      | None, Some x -> Some x
-      | Some x, Some y when OpamVersionCompare.compare x y >= 0 -> Some x
-      | Some _, Some y -> Some y
-    in
-    let get_min = function
-      | None, None | Some _, None | None, Some _ -> None
-      | Some x, Some y when OpamVersionCompare.compare x y >= 0 -> Some y
-      | Some x, Some _ -> Some x
-    in
-    let is_build = ref false in
-    let rec get_lower_bound = function
-      | OpamFormula.Atom
-          (OpamTypes.Constraint ((`Gt | `Geq | `Eq), OpamTypes.FString version))
-        ->
-          Some version
-      | Atom (Filter (FIdent (_, var, _)))
-        when String.equal (OpamVariable.to_string var) "build" ->
-          (* TODO: remove this hack-ish side-effect change setting is_build, in
-             function to get version lower bound *)
-          is_build := true;
-          None
-      | Empty | Atom (Filter _) | Atom (Constraint _) -> None
-      | Block x -> get_lower_bound x
-      | And (x, y) -> get_max (get_lower_bound x, get_lower_bound y)
-      | Or (x, y) -> get_min (get_lower_bound x, get_lower_bound y)
+  let is_dune_build opam =
+    let rec is_build_constraint = function
+      | OpamFormula.Atom (OpamTypes.Filter (FIdent (_, var, _)))
+        when String.equal (OpamVariable.to_string var) "build" -> true
+      | Empty | Atom (Filter _) | Atom (Constraint _) -> false
+      | Block x -> is_build_constraint x
+      | And (x, y) | Or (x, y) -> is_build_constraint x || is_build_constraint y
     in
     let rec aux = function
       | OpamFormula.Atom (pkg, constr) ->
-          if is_dune pkg then
-            let v = get_lower_bound constr in
-            Some (Stdlib.Option.value ~default:"" v)
-          else None
-      | Empty -> None
+          if is_dune pkg then is_build_constraint constr else false
+      | Empty -> false
       | Block x -> aux x
-      | And (x, y) -> get_max (aux x, aux y)
-      | Or (x, y) -> get_min (aux x, aux y)
+      | And (x, y) | Or (x, y) -> aux x || aux y
     in
-    (!is_build, aux opam.OpamFile.OPAM.depends)
+    aux opam.OpamFile.OPAM.depends
 
-  let check_dune_constraints ~pkg_src_dir ~pkg opam =
-    match pkg_src_dir with
-    | None -> []
-    | Some pkg_src_dir ->
-      let dune_version = get_dune_project_version ~pkg_src_dir in
-      let is_build, dune_constraint = get_dune_constraint opam in
-      let errors =
-        match (dune_constraint, dune_version) with
-        | _, Error msg -> [ (pkg, DuneProjectParseError msg) ]
-        | None, Ok None -> []
-        | Some _, Ok None -> [ (pkg, DuneProjectMissing) ]
-        | None, Ok (Some _) ->
-          if is_dune (OpamPackage.name pkg) then []
-          else [ (pkg, DuneDependencyMissing) ]
-        | Some dep, Ok (Some ver) ->
-          let dune_dep_lower_bound = if dep = "" then "1.0" else dep in
-          if OpamVersionCompare.compare dune_dep_lower_bound ver >= 0 then []
-          else [ (pkg, BadDuneConstraint (dep, ver)) ]
-      in
-      if is_build then (pkg, DuneIsBuild) :: errors else errors
+  let check_dune_build_dep ~pkg opam =
+    let is_build = is_dune_build opam in
+    if is_build then [(pkg, DuneIsBuild)] else []
 
   let check_maintainer_contact ~pkg opam =
     let is_present bug_reports = bug_reports <> [] in
@@ -472,7 +416,7 @@ module Checks = struct
         check_no_extra_files;
         check_conf_flag;
         Prefix.check_prefix_conflict_class_mismatch;
-        check_dune_constraints ~pkg_src_dir
+        check_dune_build_dep;
       ] @
       if newly_published then
         [
