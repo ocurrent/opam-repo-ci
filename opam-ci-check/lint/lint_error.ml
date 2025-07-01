@@ -18,11 +18,7 @@ type error =
   | UnmatchedName of OpamPackage.Name.t
   | UnmatchedVersion of OpamPackage.Version.t
   | DubiousDuneSubst
-  | DuneProjectMissing
-  | DuneProjectParseError of string
-  | DuneDependencyMissing
   | DuneIsBuild
-  | BadDuneConstraint of string * string
   | NoPackageSources
   | UnexpectedFile of string
   | ForbiddenPerm of string
@@ -108,29 +104,6 @@ let msg_of_error (package, (err : error)) =
         pkg
   | NoPackageSources ->
       Printf.sprintf "Error in %s: No package source directory provided." pkg
-  | DuneProjectParseError msg ->
-      Printf.sprintf "Error in %s: Failed to parse dune-project file with: '%s'"
-        pkg msg
-  | DuneProjectMissing ->
-      Printf.sprintf
-        "Warning in %s: The package seems to use dune but the dune-project \
-         file is missing."
-        pkg
-  | DuneDependencyMissing ->
-      Printf.sprintf
-        "Warning in %s: The package has a dune-project file but no explicit \
-         dependency on dune was found."
-        pkg
-  | BadDuneConstraint (dep, ver) ->
-        let opam_requires = if dep = "" then
-            "has no lower bound on its dune dependency"
-          else
-            Printf.sprintf "only requires dune >= %s" dep
-        in
-        Printf.sprintf "Error in %s: Your dune-project file indicates that this package \
-         requires at least dune %s but your opam file %s. Please check which requirement \
-         is the right one, and fix the other."
-         pkg ver opam_requires
   | DuneIsBuild ->
       Printf.sprintf
         "Warning in %s: The package tagged dune as a build dependency. Due to \
