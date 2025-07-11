@@ -19,6 +19,7 @@ let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
        env "OPAMCRITERIA"        "+removed,+count[version-lag,solution]";
        env "OPAMFIXUPCRITERIA"   "+removed,+count[version-lag,solution]";
        env "OPAMUPGRADECRITERIA" "+removed,+count[version-lag,solution]";
+       run "opam repository add archive https://github.com/ocaml/opam-repository-archive";
      ]
    else
      []
