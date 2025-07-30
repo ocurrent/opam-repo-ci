@@ -154,6 +154,7 @@ Test the following:
   [1]
   $ opam-ci-check lint -r . b.0.0.3:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
+  Error in b.0.0.3:            warning 74: Field 'pin-depends' contains packages that are neither in 'depends' nor in 'depopts': "foo"
   Error in b.0.0.3: Weak checksum algorithm(s) provided. Please use SHA-256 or SHA-512. Details: opam field extra-files contains only MD5 as checksum for 0install.install
   Error in b.0.0.3: pin-depends present. This is not allowed in the opam-repository.
   Error in b.0.0.3: extra-files present. This is not allowed in the opam-repository. Please use extra-source instead.
