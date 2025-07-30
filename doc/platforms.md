@@ -17,6 +17,7 @@
 - ubuntu-22.04
 - ubuntu-24.04
 - ubuntu-24.10
+- ubuntu-25.04
 
 ## Architectures
 
@@ -121,3 +122,5 @@
 | ubuntu-24.04 | riscv64 | 5.3 | dev | No | No |
 | ubuntu-24.10 | amd64 | 4.14 | dev | No | No |
 | ubuntu-24.10 | amd64 | 5.3 | dev | No | No |
+| ubuntu-25.04 | amd64 | 4.14 | dev | No | No |
+| ubuntu-25.04 | amd64 | 5.3 | dev | No | No |
