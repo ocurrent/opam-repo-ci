@@ -22,7 +22,7 @@ type opam_build = {
 
 (** Configuration for a [list_revdeps] job *)
 type list_revdeps = {
-  opam_version : [ `Dev | `V2_0 | `V2_1 | `V2_2 | `V2_3 ];
+  opam_version : [ `Dev | `V2_0 | `V2_1 | `V2_2 | `V2_3 | `V2_4 ];
 }
 
 (** Configuration for any job along with the package to build *)
