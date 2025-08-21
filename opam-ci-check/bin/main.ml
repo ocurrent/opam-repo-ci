@@ -309,8 +309,8 @@ let package_specs_term =
          specified, the sources are downloaded from the source URL. If [new] \
          is not specified, it is inferred from the opam repository."
   in
-  let+ pgk_spec_data = Arg.value (Arg.pos_all package_spec_conv [] info) in
-  pgk_spec_data
+  let+ pkg_spec_data = Arg.value (Arg.pos_all package_spec_conv [] info) in
+  pkg_spec_data
   |> List.map (fun (pkg, specs) ->
          let src =
            List.find_map (function `Src s -> Some s | _ -> None) specs
