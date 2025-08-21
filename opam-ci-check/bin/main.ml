@@ -225,7 +225,7 @@ let use_dune_term =
   Arg.value (Arg.flag info)
 
 let pkg_term =
-  let info = Arg.info [] ~doc:"Package name + version" in
+  let info = Arg.info [] ~doc:"Package <name.version>" ~docv:"pkg" in
   Arg.required (Arg.pos 0 (Arg.some Arg.string) None info)
 
 let split_on_first c s =
@@ -302,14 +302,15 @@ let package_specs_term =
   in
   let info =
     Arg.info []
+      ~docv:"pkg_spec"
       ~doc:
         "List of package specifications (format: \
          <name.version>[:src=<path>][,new=<true|false>]). If [src] is not \
          specified, the sources are downloaded from the source URL. If [new] \
          is not specified, it is inferred from the opam repository."
   in
-  let+ pgk_spec_data = Arg.value (Arg.pos_all package_spec_conv [] info) in
-  pgk_spec_data
+  let+ pkg_spec_data = Arg.value (Arg.pos_all package_spec_conv [] info) in
+  pkg_spec_data
   |> List.map (fun (pkg, specs) ->
          let src =
            List.find_map (function `Src s -> Some s | _ -> None) specs

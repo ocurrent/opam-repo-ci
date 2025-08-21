@@ -51,7 +51,7 @@ Test the build command:
   
 
   $ opam-ci-check build lwt.5.7.0 --only-print
-  FROM ocaml/opam:debian-12-ocaml-5.3
+  FROM ocaml/opam:debian-13-ocaml-5.3
   USER 1000:1000
   WORKDIR /home/opam
   RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
@@ -75,7 +75,7 @@ Test the build command:
       failed=$(ls "$build_dir"); \
       partial_fails=""; \
       for pkg in $failed; do \
-      if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+      if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
       echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
       fi; \
       test "$pkg" != 'lwt.5.7.0' && partial_fails="$partial_fails $pkg"; \
@@ -171,7 +171,7 @@ Test the build command:
   
 
   $ opam-ci-check build ocaml-variants.5.3.1+trunk --only-print
-  FROM ocaml/opam:debian-12-ocaml-5.3
+  FROM ocaml/opam:debian-13-ocaml-5.3
   USER 1000:1000
   WORKDIR /home/opam
   RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
@@ -195,7 +195,7 @@ Test the build command:
       failed=$(ls "$build_dir"); \
       partial_fails=""; \
       for pkg in $failed; do \
-      if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+      if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
       echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
       fi; \
       test "$pkg" != 'ocaml-variants.5.3.1+trunk' && partial_fails="$partial_fails $pkg"; \
@@ -205,7 +205,7 @@ Test the build command:
   
 
   $ opam-ci-check build ocaml-compiler.5.4.0 --only-print
-  FROM ocaml/opam:debian-12-ocaml-5.3
+  FROM ocaml/opam:debian-13-ocaml-5.3
   USER 1000:1000
   WORKDIR /home/opam
   RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
@@ -229,7 +229,7 @@ Test the build command:
       failed=$(ls "$build_dir"); \
       partial_fails=""; \
       for pkg in $failed; do \
-      if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+      if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
       echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
       fi; \
       test "$pkg" != 'ocaml-compiler.5.4.0' && partial_fails="$partial_fails $pkg"; \
@@ -239,7 +239,7 @@ Test the build command:
   
 
   $ opam-ci-check build ocaml-base-compiler.5.3.0 --only-print
-  FROM ocaml/opam:debian-12-ocaml-5.3
+  FROM ocaml/opam:debian-13-ocaml-5.3
   USER 1000:1000
   WORKDIR /home/opam
   RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
@@ -263,7 +263,7 @@ Test the build command:
       failed=$(ls "$build_dir"); \
       partial_fails=""; \
       for pkg in $failed; do \
-      if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+      if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
       echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
       fi; \
       test "$pkg" != 'ocaml-base-compiler.5.3.0' && partial_fails="$partial_fails $pkg"; \
