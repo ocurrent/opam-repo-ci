@@ -282,8 +282,8 @@ Test presence of unexpected files in a-1.0.0.2 package
 
   $ opam-ci-check lint -r . a-1.0.0.2:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
-  Error in a-1.0.0.2: Unexpected file in packages/a-1/a-1.0.0.2/files
   Error in a-1.0.0.2: No package source directory provided.
+  Error in a-1.0.0.2: Unexpected file in packages/a-1/a-1.0.0.2/files
   [1]
 
 Setup repo for Forbidden perm file
@@ -300,8 +300,8 @@ Test presence of unexpected files in a-1.0.0.2 package
 
   $ opam-ci-check lint -r . a-1.0.0.2:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
-  Error in a-1.0.0.2: Forbidden permission for file packages/a-1/a-1.0.0.2/opam. All files should have permissions 644.
   Error in a-1.0.0.2: No package source directory provided.
+  Error in a-1.0.0.2: Forbidden permission for file packages/a-1/a-1.0.0.2/opam. All files should have permissions 644.
   [1]
 
 # Maintainer contact lint

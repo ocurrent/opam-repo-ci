@@ -61,16 +61,16 @@ type package_spec = {
   newly_published : bool option;
 }
 
-let lint quiet checks package_specs local_repo_dir =
-  match local_repo_dir with
+let lint quiet checks package_specs opam_repo_dir =
+  match opam_repo_dir with
   | None -> failwith "TODO: default to using the opam repository"
-  | Some opam_repo_dir -> (
+  | Some repo_dir -> (
       if not quiet then
         print_endline
-        @@ Printf.sprintf "Linting opam-repository at %s ..." opam_repo_dir;
+        @@ Printf.sprintf "Linting opam-repository at %s ..." repo_dir;
       OpamFilename.with_tmp_dir @@ fun dir ->
       let process_package { pkg; src; newly_published } =
-        let opam = read_package_opam ~opam_repo_dir pkg in
+        let opam = read_package_opam ~opam_repo_dir:repo_dir pkg in
         let pkg_src_dir =
           if Option.is_none src && Lint.Checks.wants_source checks then
             let dir = OpamFilename.Dir.to_string dir // OpamPackage.to_string pkg in
