@@ -225,7 +225,7 @@ let use_dune_term =
   Arg.value (Arg.flag info)
 
 let pkg_term =
-  let info = Arg.info [] ~doc:"Package name + version" in
+  let info = Arg.info [] ~doc:"Package <name.version>" ~docv:"pkg" in
   Arg.required (Arg.pos 0 (Arg.some Arg.string) None info)
 
 let split_on_first c s =
@@ -302,6 +302,7 @@ let package_specs_term =
   in
   let info =
     Arg.info []
+      ~docv:"pkg_spec"
       ~doc:
         "List of package specifications (format: \
          <name.version>[:src=<path>][,new=<true|false>]). If [src] is not \
