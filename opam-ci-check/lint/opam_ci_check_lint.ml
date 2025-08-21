@@ -14,6 +14,9 @@ let list_is_empty = function
   | [] -> true
   | _ :: _ -> false
 
+let get_package_names repo_dir =
+  get_files (repo_dir // "packages") |> List.sort String.compare
+
 include Lint_error
 
 module Checks = struct
@@ -337,7 +340,8 @@ module Checks = struct
     in
     dash_underscore p0 p1
 
-  let check_name_collisions ~pkg package_names _opam =
+  let check_name_collisions ~pkg ~opam_repo_dir _opam =
+    let package_names = get_package_names opam_repo_dir in
     let pkg_name = pkg.OpamPackage.name |> OpamPackage.Name.to_string in
     let pkg_name_lower = String.lowercase_ascii pkg_name in
     let other_pkgs =
@@ -396,7 +400,7 @@ module Checks = struct
     | Some {pelem = String _; _} -> []
     | _ -> [(pkg, InvalidOpamRepositoryCommitHash)]
 
-  let checks kinds ~newly_published ~opam_repo_dir ~pkg_src_dir repo_package_names =
+  let checks kinds ~newly_published ~opam_repo_dir ~pkg_src_dir () =
     let general_opam_file_checks () =
       [
         opam_lint;
@@ -420,7 +424,7 @@ module Checks = struct
       ] @
       if newly_published then
         [
-          check_name_collisions repo_package_names;
+          check_name_collisions ~opam_repo_dir;
           Prefix.check_name_restricted_prefix;
         ]
       else
@@ -442,10 +446,9 @@ module Checks = struct
 
 
   let lint_package
-      ~kinds
-      ~opam_repo_dir ~pkg ~pkg_src_dir ~repo_package_names
+      ~kinds ~opam_repo_dir ~pkg ~pkg_src_dir
       ~newly_published opam =
-    checks kinds ~newly_published ~opam_repo_dir ~pkg_src_dir repo_package_names
+    checks kinds ~newly_published ~opam_repo_dir ~pkg_src_dir ()
     |> List.concat_map (fun f -> f ~pkg opam)
 end
 
@@ -473,16 +476,12 @@ let is_newly_published ~opam_repo_dir pkg =
   | [ v ] -> v = pkg_str
   | _ -> false
 
-let get_package_names repo_dir =
-  get_files (repo_dir // "packages") |> List.sort String.compare
-
 let lint_packages
     ?(checks=Checks.[General_opam_file; Opam_repo_publication])
     ~opam_repo_dir
     metas
   =
   if Sys.file_exists (opam_repo_dir // "packages") then
-    let repo_package_names = get_package_names opam_repo_dir in
     metas
     |> List.map (fun { pkg; newly_published; pkg_src_dir; opam } ->
            let newly_published =
@@ -495,6 +494,6 @@ let lint_packages
                  false
            in
            Checks.lint_package ~kinds:checks ~opam_repo_dir ~pkg ~pkg_src_dir
-             ~repo_package_names ~newly_published opam)
+             ~newly_published opam)
     |> List.concat |> Result.ok
   else Error (Printf.sprintf "Invalid opam repository: %s" opam_repo_dir)
