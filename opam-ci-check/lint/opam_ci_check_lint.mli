@@ -45,8 +45,8 @@ val v :
  *)
 
 val lint_packages :
-  ?checks: Checks.kind list ->
-  opam_repo_dir:string ->
+  ?checks:Checks.kind list ->
+  ?opam_repo_dir:string option ->
   t list ->
   ((OpamPackage.t * error) list, string) result
 (** [lint_packages ~opam_repo_dir metas] is a list of all the
