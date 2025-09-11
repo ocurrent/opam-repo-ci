@@ -2,10 +2,11 @@
 
 ## Operating Systems
 
-- alpine-3.21
+- alpine-3.22
 - archlinux
 - debian-11
 - debian-12
+- debian-13
 - debian-testing
 - debian-unstable
 - fedora-41
@@ -58,44 +59,46 @@
 
 |  OS | Arch | OCaml version |Opam version | Test lower-bounds | Test reverse dependencies |
 | --- | --- | --- | --- | --- | --- |
-| alpine-3.21 | amd64 | 4.14 | dev | No | No |
-| alpine-3.21 | amd64 | 5.3 | dev | No | No |
+| alpine-3.22 | amd64 | 4.14 | dev | No | No |
+| alpine-3.22 | amd64 | 5.3 | dev | No | No |
 | archlinux | amd64 | 4.14 | dev | No | No |
 | archlinux | amd64 | 5.3 | dev | No | No |
 | debian-11 | amd64 | 4.14 | dev | No | No |
 | debian-11 | amd64 | 5.3 | dev | No | No |
-| debian-12 | amd64 | 4.08 | dev | Yes | No |
-| debian-12 | amd64 | 4.09 | dev | Yes | No |
-| debian-12 | amd64 | 4.10 | dev | Yes | No |
-| debian-12 | amd64 | 4.11 | dev | Yes | No |
-| debian-12 | amd64 | 4.12 | dev | Yes | No |
-| debian-12 | amd64 | 4.13 | dev | Yes | No |
-| debian-12 | amd64 | 4.14 | dev | Yes | Yes |
-| debian-12 | amd64 | 4.14-afl | dev | No | No |
-| debian-12 | amd64 | 4.14-flambda | dev | No | No |
-| debian-12 | amd64 | 4.14-flambda-fp | dev | No | No |
-| debian-12 | amd64 | 4.14-fp | dev | No | No |
-| debian-12 | amd64 | 4.14-nnp | dev | No | No |
-| debian-12 | amd64 | 4.14-nnpchecker | dev | No | No |
-| debian-12 | amd64 | 4.14-no-flat-float-array | dev | No | No |
-| debian-12 | amd64 | 5.0 | dev | Yes | No |
-| debian-12 | amd64 | 5.1 | dev | Yes | No |
-| debian-12 | amd64 | 5.2 | dev | Yes | No |
-| debian-12 | amd64 | 5.3 | dev | Yes | Yes |
-| debian-12 | amd64 | 5.3-afl | dev | No | No |
-| debian-12 | amd64 | 5.3-flambda | dev | No | No |
-| debian-12 | amd64 | 5.3-no-flat-float-array | dev | No | No |
-| debian-12 | amd64 | 5.4~alpha1 | dev | Yes | No |
-| debian-12 | arm32v7 | 4.14 | dev | No | No |
-| debian-12 | arm32v7 | 5.3 | dev | No | No |
-| debian-12 | arm64 | 4.14 | dev | No | No |
-| debian-12 | arm64 | 5.3 | dev | No | No |
-| debian-12 | i386 | 4.14 | dev | No | No |
-| debian-12 | i386 | 5.3 | dev | No | No |
-| debian-12 | ppc64le | 4.14 | dev | No | No |
-| debian-12 | ppc64le | 5.3 | dev | No | No |
-| debian-12 | s390x | 4.14 | dev | No | No |
-| debian-12 | s390x | 5.3 | dev | No | No |
+| debian-12 | amd64 | 4.14 | dev | No | No |
+| debian-12 | amd64 | 5.3 | dev | No | No |
+| debian-13 | amd64 | 4.08 | dev | Yes | No |
+| debian-13 | amd64 | 4.09 | dev | Yes | No |
+| debian-13 | amd64 | 4.10 | dev | Yes | No |
+| debian-13 | amd64 | 4.11 | dev | Yes | No |
+| debian-13 | amd64 | 4.12 | dev | Yes | No |
+| debian-13 | amd64 | 4.13 | dev | Yes | No |
+| debian-13 | amd64 | 4.14 | dev | Yes | Yes |
+| debian-13 | amd64 | 4.14-afl | dev | No | No |
+| debian-13 | amd64 | 4.14-flambda | dev | No | No |
+| debian-13 | amd64 | 4.14-flambda-fp | dev | No | No |
+| debian-13 | amd64 | 4.14-fp | dev | No | No |
+| debian-13 | amd64 | 4.14-nnp | dev | No | No |
+| debian-13 | amd64 | 4.14-nnpchecker | dev | No | No |
+| debian-13 | amd64 | 4.14-no-flat-float-array | dev | No | No |
+| debian-13 | amd64 | 5.0 | dev | Yes | No |
+| debian-13 | amd64 | 5.1 | dev | Yes | No |
+| debian-13 | amd64 | 5.2 | dev | Yes | No |
+| debian-13 | amd64 | 5.3 | dev | Yes | Yes |
+| debian-13 | amd64 | 5.3-afl | dev | No | No |
+| debian-13 | amd64 | 5.3-flambda | dev | No | No |
+| debian-13 | amd64 | 5.3-no-flat-float-array | dev | No | No |
+| debian-13 | amd64 | 5.4~alpha1 | dev | Yes | No |
+| debian-13 | arm32v7 | 4.14 | dev | No | No |
+| debian-13 | arm32v7 | 5.3 | dev | No | No |
+| debian-13 | arm64 | 4.14 | dev | No | No |
+| debian-13 | arm64 | 5.3 | dev | No | No |
+| debian-13 | i386 | 4.14 | dev | No | No |
+| debian-13 | i386 | 5.3 | dev | No | No |
+| debian-13 | ppc64le | 4.14 | dev | No | No |
+| debian-13 | ppc64le | 5.3 | dev | No | No |
+| debian-13 | s390x | 4.14 | dev | No | No |
+| debian-13 | s390x | 5.3 | dev | No | No |
 | debian-testing | amd64 | 4.14 | dev | No | No |
 | debian-testing | amd64 | 5.3 | dev | No | No |
 | debian-unstable | amd64 | 4.14 | dev | No | No |
