@@ -10,7 +10,7 @@ ADD --chown=opam . .
 RUN opam exec -- dune build ./_build/install/default/bin/opam-repo-ci-service ./_build/install/default/bin/opam-ci-check
 
 FROM debian:13
-RUN apt-get update && apt-get install libev4 openssh-client curl gnupg2 dumb-init git graphviz libsqlite3-dev ca-certificates netbase gzip bzip2 xz-utils unzip tar docker.io -y --no-install-recommends
+RUN apt-get update && apt-get install libev4 openssh-client curl gnupg2 dumb-init git graphviz libsqlite3-dev ca-certificates netbase gzip bzip2 xz-utils unzip tar docker-cli -y --no-install-recommends
 RUN git config --global user.name "ocaml" && git config --global user.email "ci"
 WORKDIR /var/lib/ocurrent
 ENTRYPOINT ["dumb-init", "/usr/local/bin/opam-repo-ci-service"]
