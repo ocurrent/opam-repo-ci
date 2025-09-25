@@ -7,6 +7,7 @@ type base =
   | Docker of string
   | Macos of string
   | Freebsd of string
+  | Windows of string
 
 val base_to_string : base -> string
 
