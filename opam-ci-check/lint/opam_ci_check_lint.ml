@@ -265,11 +265,16 @@ module Checks = struct
 
   let check_package_dir ~opam_repo_dir ~pkg _opam =
     let dir = Opam_helpers.path_from_pkg ~opam_repo_dir pkg in
+    let relative_dir = Opam_helpers.path_from_pkg ~opam_repo_dir:"" pkg in
     let check_file = function
       | "opam" ->
           let path = dir // "opam" in
-          if is_perm_correct path then [] else [ (pkg, ForbiddenPerm path) ]
-      | file -> [ (pkg, UnexpectedFile file) ]
+          let relative_path = relative_dir // "opam" in
+          if is_perm_correct path then []
+          else [ (pkg, ForbiddenPerm relative_path) ]
+      | file ->
+          let relative_path = relative_dir // file in
+          [ (pkg, UnexpectedFile relative_path) ]
     in
     (* FIXME: Would it be better to make skipping this check more explicit? *)
     if Sys.file_exists dir then
