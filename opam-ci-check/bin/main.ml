@@ -286,7 +286,7 @@ let package_specs_term =
           Error
             (`Msg
               (Printf.sprintf
-                 "%s is an not a valid attribute. Only [src=<path>] or \
+                 "%s is not a valid attribute. Only [src=<path>] or \
                   [new=<true|false>] allowed"
                  s))
     in
