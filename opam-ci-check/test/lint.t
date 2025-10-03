@@ -5,7 +5,7 @@ Test for an invalid package spec
   $ opam-ci-check lint -r . '=-~!:new=true'
   opam-ci-check: pkg_spec… arguments: invalid value '=-~!', expected opam
                  package spec in the form <name.version>
-  Usage: opam-ci-check lint [--checks=VAL] [--quiet] [--opam-repository=VAL] [OPTION]… [pkg_spec]…
+  Usage: opam-ci-check lint [OPTION]… [pkg_spec]…
   Try 'opam-ci-check lint --help' or 'opam-ci-check --help' for more information.
   [124]
 
@@ -17,7 +17,7 @@ Test for invalid attributes that are properly formed
   opam-ci-check: pkg_spec… arguments: invalid element in list ('bar=baz'):
                  bar=baz is not a valid attribute. Only [src=<path>] or
                  [new=<true|false>] allowed
-  Usage: opam-ci-check lint [--checks=VAL] [--quiet] [--opam-repository=VAL] [OPTION]… [pkg_spec]…
+  Usage: opam-ci-check lint [OPTION]… [pkg_spec]…
   Try 'opam-ci-check lint --help' or 'opam-ci-check --help' for more information.
   [124]
 
@@ -30,7 +30,7 @@ Test for an invalid values to a valid key
 # https://github.com/ocaml/ocaml/commit/d643794245c17e87bda08924e19a680673de7429
 
   $ opam-ci-check lint -r . 'foo.0.1.0:new=invalid' 2>&1 | tr '\n' ' ' | sed -E 's/[[:space:]]+/ /g'
-  opam-ci-check: pkg_spec… arguments: invalid element in list ('new=invalid'): invalid must be [true] or [false] Usage: opam-ci-check lint [--checks=VAL] [--quiet] [--opam-repository=VAL] [OPTION]… [pkg_spec]… Try 'opam-ci-check lint --help' or 'opam-ci-check --help' for more information. 
+  opam-ci-check: pkg_spec… arguments: invalid element in list ('new=invalid'): invalid must be [true] or [false] Usage: opam-ci-check lint [OPTION]… [pkg_spec]… Try 'opam-ci-check lint --help' or 'opam-ci-check --help' for more information. 
 
 Test for a missing value
 
@@ -39,7 +39,7 @@ Test for a missing value
 # versions of OCaml.
 
   $ opam-ci-check lint -r . 'foo.0.1.0:src=' 2>&1 | tr '\n' ' ' | sed -E 's/[[:space:]]+/ /g'
-  opam-ci-check: pkg_spec… arguments: invalid element in list ('src='): src= is not a valid attribute. Only [src=<path>] or [new=<true|false>] allowed Usage: opam-ci-check lint [--checks=VAL] [--quiet] [--opam-repository=VAL] [OPTION]… [pkg_spec]… Try 'opam-ci-check lint --help' or 'opam-ci-check --help' for more information. 
+  opam-ci-check: pkg_spec… arguments: invalid element in list ('src='): src= is not a valid attribute. Only [src=<path>] or [new=<true|false>] allowed Usage: opam-ci-check lint [OPTION]… [pkg_spec]… Try 'opam-ci-check lint --help' or 'opam-ci-check --help' for more information. 
 
 Test for a valid key with no value
 
@@ -47,7 +47,7 @@ Test for a valid key with no value
   opam-ci-check: pkg_spec… arguments: invalid element in list ('src'): src is
                  not a valid attribute. Only [src=<path>] or [new=<true|false>]
                  allowed
-  Usage: opam-ci-check lint [--checks=VAL] [--quiet] [--opam-repository=VAL] [OPTION]… [pkg_spec]…
+  Usage: opam-ci-check lint [OPTION]… [pkg_spec]…
   Try 'opam-ci-check lint --help' or 'opam-ci-check --help' for more information.
   [124]
 
@@ -56,7 +56,7 @@ Test for `src` with a non-existent directory
   $ opam-ci-check lint -r . 'foo.0.1.0:src=./not/a/dir'
   opam-ci-check: pkg_spec… arguments: invalid element in list
                  ('src=./not/a/dir'): ./not/a/dir: No such file or directory
-  Usage: opam-ci-check lint [--checks=VAL] [--quiet] [--opam-repository=VAL] [OPTION]… [pkg_spec]…
+  Usage: opam-ci-check lint [OPTION]… [pkg_spec]…
   Try 'opam-ci-check lint --help' or 'opam-ci-check --help' for more information.
   [124]
 
@@ -66,7 +66,7 @@ Test for invalid extra colons
   opam-ci-check: pkg_spec… arguments: Invalid argument spec
                  foo.0.1.0:bing-bong:bang. Argument specs should be of the form
                  arg[:k1=v1[,k2=v2]]
-  Usage: opam-ci-check lint [--checks=VAL] [--quiet] [--opam-repository=VAL] [OPTION]… [pkg_spec]…
+  Usage: opam-ci-check lint [OPTION]… [pkg_spec]…
   Try 'opam-ci-check lint --help' or 'opam-ci-check --help' for more information.
   [124]
 
@@ -104,7 +104,8 @@ Tests linting of correctly formatted opam packages
   * a-1 (tag: initial-state, master)
   $ opam-ci-check lint -r . a-1.0.0.2:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
-  Error in a-1.0.0.2: No package source directory provided.
+  Errors in a-1.0.0.2:
+    - No package source directory provided.
   [1]
   $ opam-ci-check lint -r . b.0.0.3:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
@@ -147,19 +148,26 @@ Test the following:
 
   $ opam-ci-check lint -r . b.0.0.1:new=false b.0.0.2:new=false b.0.0.3:new=false system-b.0.0.1:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
-  Error in b.0.0.1: Opam lint warning 25: Missing field 'authors'
-  Error in b.0.0.1: No package source directory provided.
-  Warning in b.0.0.1: The package has not replaced the following default, example tags: topics, project
-  Error in b.0.0.2: Opam lint error  3: File format error in 'unknown-field' at line 11, column 0: Invalid field unknown-field
-  Warning in b.0.0.2: Dubious use of 'dune subst'. 'dune subst' should always only be called with {dev} (i.e. ["dune" "subst"] {dev}) If your opam file has been autogenerated by dune, you need to upgrade your dune-project to at least (lang dune 2.7).
-  Warning in b.0.0.2: The package tagged dune as a build dependency. Due to a bug in dune (https://github.com/ocaml/dune/issues/2147) this should never be the case. Please remove the {build} tag from its filter.
-  Error in b.0.0.3: Opam lint warning 74: Field 'pin-depends' contains packages that are neither in 'depends' nor in 'depopts': "foo"
-  Error in b.0.0.3: Weak checksum algorithm(s) provided. Please use SHA-256 or SHA-512. Details: opam field extra-files contains only MD5 as checksum for 0install.install
-  Error in b.0.0.3: pin-depends present. This is not allowed in the opam-repository.
-  Error in b.0.0.3: extra-files present. This is not allowed in the opam-repository. Please use extra-source instead.
-  Error in b.0.0.3: package with conflict class 'ocaml-host-arch' requires name prefix 'host-arch-'
-  Error in system-b.0.0.1: No package source directory provided.
-  Error in system-b.0.0.1: package with prefix 'system-' requires conflict class 'ocaml-system'
+  Errors in b.0.0.1:
+    - Opam lint warning 25: Missing field 'authors'
+    - No package source directory provided.
+    - The package has not replaced the following default, example tags: topics, project
+  
+  Errors in b.0.0.2:
+    - Opam lint error  3: File format error in 'unknown-field' at line 11, column 0: Invalid field unknown-field
+    - Dubious use of 'dune subst'. 'dune subst' should always only be called with {dev} (i.e. ["dune" "subst"] {dev}) If your opam file has been autogenerated by dune, you need to upgrade your dune-project to at least (lang dune 2.7).
+    - The package tagged dune as a build dependency. Due to a bug in dune (https://github.com/ocaml/dune/issues/2147) this should never be the case. Please remove the {build} tag from its filter.
+  
+  Errors in b.0.0.3:
+    - Opam lint warning 74: Field 'pin-depends' contains packages that are neither in 'depends' nor in 'depopts': "foo"
+    - Weak checksum algorithm(s) provided. Please use SHA-256 or SHA-512. Details: opam field extra-files contains only MD5 as checksum for 0install.install
+    - pin-depends present. This is not allowed in the opam-repository.
+    - extra-files present. This is not allowed in the opam-repository. Please use extra-source instead.
+    - package with conflict class 'ocaml-host-arch' requires name prefix 'host-arch-'
+  
+  Errors in system-b.0.0.1:
+    - No package source directory provided.
+    - package with prefix 'system-' requires conflict class 'ocaml-system'
   [1]
   $ opam-ci-check lint -r . b.0.0.6:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
@@ -169,9 +177,10 @@ Test the following:
   [1]
   $ opam-ci-check lint -r . b.0.0.7:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
-  Error in b.0.0.7: Opam lint error 23: Missing field 'maintainer'
-  Error in b.0.0.7: Opam lint warning 25: Missing field 'authors'
-  Error in b.0.0.7: No package source directory provided.
+  Errors in b.0.0.7:
+    - Opam lint error 23: Missing field 'maintainer'
+    - Opam lint warning 25: Missing field 'authors'
+    - No package source directory provided.
   [1]
 
 The quiet flag still allows output when there is an error:
@@ -187,8 +196,9 @@ and authors fields are not run):
 
   $ opam-ci-check lint -r . --checks=opam-file b.0.0.7:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
-  Error in b.0.0.7: Opam lint error 23: Missing field 'maintainer'
-  Error in b.0.0.7: Opam lint warning 25: Missing field 'authors'
+  Errors in b.0.0.7:
+    - Opam lint error 23: Missing field 'maintainer'
+    - Opam lint warning 25: Missing field 'authors'
   [1]
 
 
@@ -222,8 +232,9 @@ Tests the package name collision detection by adding a version of a package
 
   $ opam-ci-check lint -r . a_1.0.0.1   # inferring that the package is new
   Linting opam-repository at $TESTCASE_ROOT/. ...
-  Error in a_1.0.0.1: No package source directory provided.
-  Warning in a_1.0.0.1: Possible name collision with package 'a-1'
+  Errors in a_1.0.0.1:
+    - No package source directory provided.
+    - Possible name collision with package 'a-1'
   [1]
 
 Setup repo for unnecessary fields tests
@@ -240,9 +251,10 @@ Test presence of unnecessary fields in a-1.0.0.2 package
 
   $ opam-ci-check lint -r . a-1.0.0.2:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
-  Warning in a-1.0.0.2: Unnecessary field 'name'. It is suggested to remove it.
-  Warning in a-1.0.0.2: Unnecessary field 'version'. It is suggested to remove it.
-  Error in a-1.0.0.2: No package source directory provided.
+  Errors in a-1.0.0.2:
+    - Unnecessary field 'name'. It is suggested to remove it.
+    - Unnecessary field 'version'. It is suggested to remove it.
+    - No package source directory provided.
   [1]
 
 Setup repo for unmatched name and version test
@@ -259,9 +271,10 @@ Test presence of unnecessary fields in a-1.0.0.2 package
 
   $ opam-ci-check lint -r . a-1.0.0.2:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
-  Error in a-1.0.0.2: The field 'name' that doesn't match its context. Field 'name' has value 'b-1' but was expected of value 'a-1'.
-  Error in a-1.0.0.2: The field 'version' that doesn't match its context. Field 'version' has value '0.0.1' but was expected of value '0.0.2'.
-  Error in a-1.0.0.2: No package source directory provided.
+  Errors in a-1.0.0.2:
+    - The field 'name' that doesn't match its context. Field 'name' has value 'b-1' but was expected of value 'a-1'.
+    - The field 'version' that doesn't match its context. Field 'version' has value '0.0.1' but was expected of value '0.0.2'.
+    - No package source directory provided.
   [1]
 
 Setup repo for unexpected file
@@ -278,8 +291,9 @@ Test presence of unexpected files in a-1.0.0.2 package
 
   $ opam-ci-check lint -r . a-1.0.0.2:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
-  Error in a-1.0.0.2: Unexpected file in packages/a-1/a-1.0.0.2/files
-  Error in a-1.0.0.2: No package source directory provided.
+  Errors in a-1.0.0.2:
+    - Unexpected file in packages/a-1/a-1.0.0.2/files
+    - No package source directory provided.
   [1]
 
 Setup repo for Forbidden perm file
@@ -296,8 +310,9 @@ Test presence of unexpected files in a-1.0.0.2 package
 
   $ opam-ci-check lint -r . a-1.0.0.2:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
-  Error in a-1.0.0.2: Forbidden permission for file packages/a-1/a-1.0.0.2/opam. All files should have permissions 644.
-  Error in a-1.0.0.2: No package source directory provided.
+  Errors in a-1.0.0.2:
+    - Forbidden permission for file packages/a-1/a-1.0.0.2/opam. All files should have permissions 644.
+    - No package source directory provided.
   [1]
 
 # Maintainer contact lint
@@ -325,9 +340,10 @@ Test that we report the expected linting error:
 
   $ opam-ci-check lint -r . a-1.0.0.1:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
-  Error in a-1.0.0.1: Opam lint warning 36: Missing field 'bug-reports'
-  Error in a-1.0.0.1: No package source directory provided.
-  Error in a-1.0.0.1: There is no way to contact the maintainer(s) 'Maintainer1, Maintaner2'. A package must either specify a url for 'bug-reports' or provide an email address in the 'maintainer' field.
+  Errors in a-1.0.0.1:
+    - Opam lint warning 36: Missing field 'bug-reports'
+    - No package source directory provided.
+    - There is no way to contact the maintainer(s) 'Maintainer1, Maintaner2'. A package must either specify a url for 'bug-reports' or provide an email address in the 'maintainer' field.
   [1]
 
 Add one email to the maintainers, and ensure it now passes the maintainer
@@ -343,8 +359,9 @@ contact lint:
   -bug-reports: "https://github.com/ocurrent/opam-repo-ci/issues"
   $ opam-ci-check lint -r . a-1.0.0.1:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
-  Error in a-1.0.0.1: Opam lint warning 36: Missing field 'bug-reports'
-  Error in a-1.0.0.1: No package source directory provided.
+  Errors in a-1.0.0.1:
+    - Opam lint warning 36: Missing field 'bug-reports'
+    - No package source directory provided.
   [1]
 
 Just remove the email address, leaving the bug-reports and ensure that it now
@@ -360,7 +377,8 @@ passes linting:
   +maintainer: ["Maintainer1" "Maintaner2"]
   $ opam-ci-check lint -r . a-1.0.0.1:new=false
   Linting opam-repository at $TESTCASE_ROOT/. ...
-  Error in a-1.0.0.1: No package source directory provided.
+  Errors in a-1.0.0.1:
+    - No package source directory provided.
   [1]
 
 # Opam Archive linting tests
@@ -407,9 +425,10 @@ Test that we report errors when a package has dependencies without an upper boun
   $ mv opam.new packages/a-1/a-1.0.0.1/opam
   $ opam-ci-check lint -r . --check=archive-repo a-1.0.0.1
   Linting opam-repository at $TESTCASE_ROOT/. ...
-  Error in a-1.0.0.1: An upper bound constraint is missing on dependency 'baz'
-  Error in a-1.0.0.1: An upper bound constraint is missing on dependency 'bar'
-  Error in a-1.0.0.1: An upper bound constraint is missing on dependency 'foo'
+  Errors in a-1.0.0.1:
+    - An upper bound constraint is missing on dependency 'baz'
+    - An upper bound constraint is missing on dependency 'bar'
+    - An upper bound constraint is missing on dependency 'foo'
   [1]
 
 Test that we do NOT report errors when all a packages dependencies have an upper bound:
@@ -442,7 +461,8 @@ Test we report an error when the x-reason-for-archiving is missing:
   $ mv opam.new packages/a-1/a-1.0.0.1/opam
   $ opam-ci-check lint -r . --check=archive-repo a-1.0.0.1
   Linting opam-repository at $TESTCASE_ROOT/. ...
-  Error in a-1.0.0.1: The field 'x-reason-for-archiving' must be present and hold a nonempty list of one or more of the valid reasons ocaml-version, source-unavailable, maintenance-intent, uninstallable
+  Errors in a-1.0.0.1:
+    - The field 'x-reason-for-archiving' must be present and hold a nonempty list of one or more of the valid reasons ocaml-version, source-unavailable, maintenance-intent, uninstallable
   [1]
 
 Test we report an error when the x-reason-for-archiving has an invalid value:
@@ -450,7 +470,8 @@ Test we report an error when the x-reason-for-archiving has an invalid value:
   $ echo 'x-reason-for-archiving: "not a list"' >> packages/a-1/a-1.0.0.1/opam
   $ opam-ci-check lint -r . --check=archive-repo a-1.0.0.1
   Linting opam-repository at $TESTCASE_ROOT/. ...
-  Error in a-1.0.0.1: The field 'x-reason-for-archiving' must be present and hold a nonempty list of one or more of the valid reasons ocaml-version, source-unavailable, maintenance-intent, uninstallable
+  Errors in a-1.0.0.1:
+    - The field 'x-reason-for-archiving' must be present and hold a nonempty list of one or more of the valid reasons ocaml-version, source-unavailable, maintenance-intent, uninstallable
   [1]
 
 Test we report an error when the x-reason-for-archiving has an empty list:
@@ -461,7 +482,8 @@ Test we report an error when the x-reason-for-archiving has an empty list:
   $ mv opam.new packages/a-1/a-1.0.0.1/opam
   $ opam-ci-check lint -r . --check=archive-repo a-1.0.0.1
   Linting opam-repository at $TESTCASE_ROOT/. ...
-  Error in a-1.0.0.1: The field 'x-reason-for-archiving' must be present and hold a nonempty list of one or more of the valid reasons ocaml-version, source-unavailable, maintenance-intent, uninstallable
+  Errors in a-1.0.0.1:
+    - The field 'x-reason-for-archiving' must be present and hold a nonempty list of one or more of the valid reasons ocaml-version, source-unavailable, maintenance-intent, uninstallable
   [1]
 
 Test we report an error when the x-reason-for-archiving has an invalid reason:
@@ -472,7 +494,8 @@ Test we report an error when the x-reason-for-archiving has an invalid reason:
   $ mv opam.new packages/a-1/a-1.0.0.1/opam
   $ opam-ci-check lint -r . --check=archive-repo a-1.0.0.1
   Linting opam-repository at $TESTCASE_ROOT/. ...
-  Error in a-1.0.0.1: The field 'x-reason-for-archiving' must be present and hold a nonempty list of one or more of the valid reasons ocaml-version, source-unavailable, maintenance-intent, uninstallable
+  Errors in a-1.0.0.1:
+    - The field 'x-reason-for-archiving' must be present and hold a nonempty list of one or more of the valid reasons ocaml-version, source-unavailable, maintenance-intent, uninstallable
   [1]
 
 Test we do NOT report an error when the x-reason-for-archiving has multiple invalid reasons:
@@ -496,7 +519,8 @@ is missing:
   $ mv opam.new packages/a-1/a-1.0.0.1/opam
   $ opam-ci-check lint -r . --check=archive-repo a-1.0.0.1
   Linting opam-repository at $TESTCASE_ROOT/. ...
-  Error in a-1.0.0.1: The field 'x-opam-repository-commit-hash-at-time-of-archiving' must be present and hold a string recording the commit hash of the primary repo at the time the package version is archived.
+  Errors in a-1.0.0.1:
+    - The field 'x-opam-repository-commit-hash-at-time-of-archiving' must be present and hold a string recording the commit hash of the primary repo at the time the package version is archived.
   [1]
 
 Test we report an error when the x-opam-repository-commit-hash-at-time-of-archiving
@@ -506,7 +530,8 @@ has an invald value:
   > >> packages/a-1/a-1.0.0.1/opam
   $ opam-ci-check lint -r . --check=archive-repo a-1.0.0.1
   Linting opam-repository at $TESTCASE_ROOT/. ...
-  Error in a-1.0.0.1: The field 'x-opam-repository-commit-hash-at-time-of-archiving' must be present and hold a string recording the commit hash of the primary repo at the time the package version is archived.
+  Errors in a-1.0.0.1:
+    - The field 'x-opam-repository-commit-hash-at-time-of-archiving' must be present and hold a string recording the commit hash of the primary repo at the time the package version is archived.
   [1]
 
 ## conf- package checks
@@ -536,8 +561,9 @@ field triggers the expected lint errors:
   > EOF
   $ opam-ci-check lint -r . conf-invalid.0.0.1
   Linting opam-repository at $TESTCASE_ROOT/. ...
-  Error in conf-invalid.0.0.1: No package source directory provided.
-  Error in conf-invalid.0.0.1: conf packages should always use the 'conf-' name prefix, the 'conf' flag, and the 'depext' field all together, but this package only has the 'conf-' name prefix
+  Errors in conf-invalid.0.0.1:
+    - No package source directory provided.
+    - conf packages should always use the 'conf-' name prefix, the 'conf' flag, and the 'depext' field all together, but this package only has the 'conf-' name prefix
   [1]
   $ git reset -q --hard initial-state
 
@@ -563,8 +589,9 @@ Test that a package with a conf- prefix and `depext` feild, but missing the
   > EOF
   $ opam-ci-check lint -r . conf-invalid.0.0.2
   Linting opam-repository at $TESTCASE_ROOT/. ...
-  Error in conf-invalid.0.0.2: No package source directory provided.
-  Error in conf-invalid.0.0.2: conf packages should always use the 'conf-' name prefix, the 'conf' flag, and the 'depext' field all together, but this package only has the 'conf-' name prefix and a non-empty 'depext' field
+  Errors in conf-invalid.0.0.2:
+    - No package source directory provided.
+    - conf packages should always use the 'conf-' name prefix, the 'conf' flag, and the 'depext' field all together, but this package only has the 'conf-' name prefix and a non-empty 'depext' field
   [1]
   $ git reset -q --hard initial-state
 

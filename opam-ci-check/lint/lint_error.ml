@@ -165,3 +165,26 @@ let msg_of_error (package, (err : error)) =
   let pkg = OpamPackage.to_string package in
   let prefix = if is_warning err then "Warning" else "Error" in
   string_of_error err |> Printf.sprintf "%s in %s: %s" prefix pkg
+
+let msg_of_errors ?(machine_readable = false)
+    (errors : (OpamPackage.t * error) list) =
+  if machine_readable then
+    errors |> List.map msg_of_error |> String.concat "\n"
+    |> Printf.sprintf "%s\n"
+  else
+    let grouped_errors =
+      List.fold_left
+        (fun acc (p, e) ->
+          let es = OpamPackage.Map.find_opt p acc |> Option.value ~default:[] in
+          OpamPackage.Map.add p (e :: es) acc)
+        OpamPackage.Map.empty errors
+    in
+    grouped_errors |> OpamPackage.Map.bindings
+    |> List.map (fun (p, es) ->
+           let errors =
+             List.rev es
+             |> List.map (fun e -> string_of_error e |> Printf.sprintf "  - %s")
+           in
+           let head = OpamPackage.to_string p in
+           Printf.sprintf "Errors in %s:\n%s\n" head (String.concat "\n" errors))
+    |> String.concat "\n"
