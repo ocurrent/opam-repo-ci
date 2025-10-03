@@ -15,7 +15,7 @@ Test for invalid attributes that are properly formed
 
   $ opam-ci-check lint -r . 'foo.0.1.0:bar=baz'
   opam-ci-check: pkg_spec… arguments: invalid element in list ('bar=baz'):
-                 bar=baz is an not a valid attribute. Only [src=<path>] or
+                 bar=baz is not a valid attribute. Only [src=<path>] or
                  [new=<true|false>] allowed
   Usage: opam-ci-check lint [--checks=VAL] [--quiet] [--opam-repository=VAL] [OPTION]… [pkg_spec]…
   Try 'opam-ci-check lint --help' or 'opam-ci-check --help' for more information.
@@ -34,7 +34,7 @@ Test for a missing value
 
   $ opam-ci-check lint -r . 'foo.0.1.0:src='
   opam-ci-check: pkg_spec… arguments: invalid element in list ('src='): src=
-                 is an not a valid attribute. Only [src=<path>] or
+                 is not a valid attribute. Only [src=<path>] or
                  [new=<true|false>] allowed
   Usage: opam-ci-check lint [--checks=VAL] [--quiet] [--opam-repository=VAL] [OPTION]… [pkg_spec]…
   Try 'opam-ci-check lint --help' or 'opam-ci-check --help' for more information.
@@ -44,8 +44,8 @@ Test for a valid key with no value
 
   $ opam-ci-check lint -r . 'foo.0.1.0:src'
   opam-ci-check: pkg_spec… arguments: invalid element in list ('src'): src is
-                 an not a valid attribute. Only [src=<path>] or
-                 [new=<true|false>] allowed
+                 not a valid attribute. Only [src=<path>] or [new=<true|false>]
+                 allowed
   Usage: opam-ci-check lint [--checks=VAL] [--quiet] [--opam-repository=VAL] [OPTION]… [pkg_spec]…
   Try 'opam-ci-check lint --help' or 'opam-ci-check --help' for more information.
   [124]
