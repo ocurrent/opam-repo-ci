@@ -127,7 +127,7 @@ let msg_of_error (package, (err : error)) =
         pkg file
   | OpamLint warn ->
       let warn = OpamFileTools.warns_to_string [ warn ] in
-      Printf.sprintf "Error in %s: %s" pkg warn
+      String.trim warn |> Printf.sprintf "Error in %s: Opam lint %s" pkg
   | MaintainerWithoutContact maintainer ->
       Printf.sprintf
         "Error in %s: There is no way to contact the maintainer(s) '%s'. A \
