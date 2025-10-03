@@ -34,14 +34,18 @@ type error =
   | MissingUpperBound of string
   | InvalidReasonForArchiving
   | InvalidOpamRepositoryCommitHash
-  | InvalidConfPackage of [`Conf_prefix | `Depext | `Conf_flag] list
+  | InvalidConfPackage of [ `Conf_prefix | `Depext | `Conf_flag ] list
 
 (**/**)
 
 (* These x_ fields are used in the opam repo archive *)
 let x_reason_for_archiving_field = "x-reason-for-archiving"
+
 let x_reason_for_archiving_valid_reasons =
-  ["ocaml-version"; "source-unavailable"; "maintenance-intent"; "uninstallable" ]
+  [
+    "ocaml-version"; "source-unavailable"; "maintenance-intent"; "uninstallable";
+  ]
+
 let x_opam_repository_commit_hash_at_time_of_archiving_field =
   "x-opam-repository-commit-hash-at-time-of-archiving"
 
@@ -157,16 +161,16 @@ let msg_of_error (package, (err : error)) =
          version is archived."
         pkg x_opam_repository_commit_hash_at_time_of_archiving_field
   | InvalidConfPackage properties ->
-    let property_descriptions =
-      properties
-      |> List.map (function
-          | `Conf_flag -> "the 'conf' flag"
-          | `Conf_prefix -> "the 'conf-' name prefix"
-          | `Depext -> "a non-empty 'depext' field")
-      |> String.concat " and "
-    in
-    Printf.sprintf
-      "Error in %s: conf packages should always use the 'conf-' name prefix, \
-       the 'conf' flag, and the 'depext' field all together, but this \
-       package only has %s"
-      pkg property_descriptions
+      let property_descriptions =
+        properties
+        |> List.map (function
+             | `Conf_flag -> "the 'conf' flag"
+             | `Conf_prefix -> "the 'conf-' name prefix"
+             | `Depext -> "a non-empty 'depext' field")
+        |> String.concat " and "
+      in
+      Printf.sprintf
+        "Error in %s: conf packages should always use the 'conf-' name prefix, \
+         the 'conf' flag, and the 'depext' field all together, but this \
+         package only has %s"
+        pkg property_descriptions
