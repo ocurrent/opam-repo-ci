@@ -59,7 +59,7 @@ type package_spec = {
   newly_published : bool option;
 }
 
-let lint quiet checks package_specs local_repo_dir =
+let lint quiet machine_readable checks package_specs local_repo_dir =
   match local_repo_dir with
   | None -> failwith "TODO: default to using the opam repository"
   | Some opam_repo_dir -> (
@@ -87,9 +87,7 @@ let lint quiet checks package_specs local_repo_dir =
       | Ok [] ->
           if not quiet then print_endline "No errors";
           Ok ()
-      | Ok errors ->
-          errors |> List.map Lint.msg_of_error |> String.concat "\n"
-          |> Printf.sprintf "%s\n" |> Result.error
+      | Ok errors -> Lint.msg_of_errors ~machine_readable errors |> Result.error
       | Error _ as e -> e)
 
 let show_revdeps pkg local_repo_dir no_transitive_revdeps use_default_root =
@@ -327,6 +325,12 @@ let lint_cmd =
       value @@ flag
       @@ info [ "q"; "quiet" ] ~doc:"Run without any extraneous output.")
   in
+  let machine_readable =
+    Arg.(
+      value @@ flag
+      @@ info [ "machine-readable" ]
+           ~doc:"Print machine readable output for parsing in CI.")
+  in
   let check_kinds : Lint.Checks.kind list Term.t =
     let info =
       Arg.info [ "checks" ]
@@ -352,7 +356,7 @@ let lint_cmd =
   in
   let term =
     Term.(
-      const lint $ quiet $ check_kinds $ package_specs_term
+      const lint $ quiet $ machine_readable $ check_kinds $ package_specs_term
       $ local_opam_repo_term)
     |> to_exit_code
   in

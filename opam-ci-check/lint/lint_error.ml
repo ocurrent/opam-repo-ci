@@ -166,3 +166,36 @@ let msg_of_error (package, (err : error)) =
   let pkg = OpamPackage.to_string package in
   let prefix = if is_warning err then "Warning" else "Error" in
   string_of_error err |> Printf.sprintf "%s in %s: %s" prefix pkg
+
+(** [msg_of_errors ?machine_readable errors] is a string describing all the linting [errors].
+
+    [errors] is a list of pairs of packages and the errors found for them. The
+    function assumes that these list of pairs are ordered by package.
+
+    If [machine_readable] is true, the output is a simple list of error
+    messages, one per line.
+
+    If false (the default), the output is more human-friendly, grouping errors
+    by package and adding indentation and newlines for readability. *)
+let msg_of_errors ?(machine_readable = false)
+    (errors : (OpamPackage.t * error) list) =
+  if machine_readable then
+    errors |> List.map msg_of_error |> String.concat "\n"
+    |> Printf.sprintf "%s\n"
+  else
+    let seen = ref OpamPackage.Set.empty in
+    let spf = Printf.sprintf in
+    let error_indent = "  " in
+    errors
+    |> List.map (fun (pkg, err) ->
+           if OpamPackage.Set.mem pkg !seen then
+             spf "%s- %s" error_indent (string_of_error err)
+           else
+             let heading = spf "Errors in %s:" (OpamPackage.to_string pkg) in
+             let output =
+               if OpamPackage.Set.is_empty !seen then heading
+               else spf "\n%s" heading
+             in
+             seen := OpamPackage.Set.add pkg !seen;
+             spf "%s\n%s- %s" output error_indent (string_of_error err))
+    |> String.concat "\n"
