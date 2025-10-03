@@ -63,5 +63,5 @@ val lint_packages :
       let failed_some_checks = assert (lint_packages ~opam_repo_dir metas |> Result.get_ok |> List.length > 0)
       let messages_for_all_failed_checks =
         lint_packages ~opam_repo_dir ~repo_packages metas
-        |> Result.get_ok |> List.map msg_of_error
+        |> Result.get_ok |> msg_of_errors
     ]} *)
