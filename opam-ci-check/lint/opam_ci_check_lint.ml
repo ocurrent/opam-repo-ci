@@ -118,17 +118,19 @@ module Checks = struct
     match OpamFile.OPAM.name_opt opam with
     | None -> []
     | Some name ->
-        if OpamPackage.Name.equal name (OpamPackage.name pkg) then
+        let expected = OpamPackage.name pkg in
+        if OpamPackage.Name.equal name expected then
           [ (pkg, UnnecessaryField "name") ]
-        else [ (pkg, UnmatchedName name) ]
+        else [ (pkg, UnmatchedName (name, expected)) ]
 
   let check_version_field ~pkg opam =
     match OpamFile.OPAM.version_opt opam with
     | None -> []
     | Some version ->
-        if OpamPackage.Version.equal version (OpamPackage.version pkg) then
+        let expected = OpamPackage.version pkg in
+        if OpamPackage.Version.equal version expected then
           [ (pkg, UnnecessaryField "version") ]
-        else [ (pkg, UnmatchedVersion version) ]
+        else [ (pkg, UnmatchedVersion (version, expected)) ]
 
   let check_dune_subst ~pkg opam =
     let errors =

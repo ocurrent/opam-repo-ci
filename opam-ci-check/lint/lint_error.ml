@@ -15,8 +15,8 @@ type prefix_conflict_class_mismatch =
     Use {!msg_of_error} to produce descriptions the errors *)
 type error =
   | UnnecessaryField of string
-  | UnmatchedName of OpamPackage.Name.t
-  | UnmatchedVersion of OpamPackage.Version.t
+  | UnmatchedName of (OpamPackage.Name.t * OpamPackage.Name.t)
+  | UnmatchedVersion of (OpamPackage.Version.t * OpamPackage.Version.t)
   | DubiousDuneSubst
   | DuneIsBuild
   | NoPackageSources
@@ -66,20 +66,20 @@ let msg_of_error (package, (err : error)) =
       Printf.sprintf
         "Warning in %s: Unnecessary field '%s'. It is suggested to remove it."
         pkg field
-  | UnmatchedName value ->
+  | UnmatchedName (value, expected) ->
       Printf.sprintf
         "Error in %s: The field 'name' that doesn't match its context. Field \
          'name' has value '%s' but was expected of value '%s'."
         pkg
         (OpamPackage.Name.to_string value)
-        (OpamPackage.Name.to_string (OpamPackage.name package))
-  | UnmatchedVersion value ->
+        (OpamPackage.Name.to_string expected)
+  | UnmatchedVersion (value, expected) ->
       Printf.sprintf
         "Error in %s: The field 'version' that doesn't match its context. \
          Field 'version' has value '%s' but was expected of value '%s'."
         pkg
         (OpamPackage.Version.to_string value)
-        (OpamPackage.Version.to_string (OpamPackage.version package))
+        (OpamPackage.Version.to_string expected)
   | DubiousDuneSubst ->
       Printf.sprintf
         "Warning in %s: Dubious use of 'dune subst'. 'dune subst' should \
