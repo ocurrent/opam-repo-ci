@@ -23,22 +23,23 @@ Test for invalid attributes that are properly formed
 
 Test for an invalid values to a valid key
 
-  $ opam-ci-check lint -r . 'foo.0.1.0:new=invalid'
-  opam-ci-check: pkg_spec… arguments: invalid element in list
-                 ('new=invalid'): invalid must be [true] or [false]
-  Usage: opam-ci-check lint [--checks=VAL] [--quiet] [--opam-repository=VAL] [OPTION]… [pkg_spec]…
-  Try 'opam-ci-check lint --help' or 'opam-ci-check --help' for more information.
-  [124]
+# NOTE: We get rid of the line breaks in the output to work around
+# differences in UTF-8 length calculation between OCaml 5.4 and older
+# versions of OCaml.
+# See https://github.com/ocaml/ocaml/commit/1ef454907b19fba693a182296594d5b8024fa6f4 and
+# https://github.com/ocaml/ocaml/commit/d643794245c17e87bda08924e19a680673de7429
+
+  $ opam-ci-check lint -r . 'foo.0.1.0:new=invalid' 2>&1 | tr '\n' ' ' | sed -E 's/[[:space:]]+/ /g'
+  opam-ci-check: pkg_spec… arguments: invalid element in list ('new=invalid'): invalid must be [true] or [false] Usage: opam-ci-check lint [--checks=VAL] [--quiet] [--opam-repository=VAL] [OPTION]… [pkg_spec]… Try 'opam-ci-check lint --help' or 'opam-ci-check --help' for more information. 
 
 Test for a missing value
 
-  $ opam-ci-check lint -r . 'foo.0.1.0:src='
-  opam-ci-check: pkg_spec… arguments: invalid element in list ('src='): src=
-                 is not a valid attribute. Only [src=<path>] or
-                 [new=<true|false>] allowed
-  Usage: opam-ci-check lint [--checks=VAL] [--quiet] [--opam-repository=VAL] [OPTION]… [pkg_spec]…
-  Try 'opam-ci-check lint --help' or 'opam-ci-check --help' for more information.
-  [124]
+# NOTE: We get rid of the line breaks in the output to work around
+# differences in UTF-8 length calculation between OCaml 5.4 and older
+# versions of OCaml.
+
+  $ opam-ci-check lint -r . 'foo.0.1.0:src=' 2>&1 | tr '\n' ' ' | sed -E 's/[[:space:]]+/ /g'
+  opam-ci-check: pkg_spec… arguments: invalid element in list ('src='): src= is not a valid attribute. Only [src=<path>] or [new=<true|false>] allowed Usage: opam-ci-check lint [--checks=VAL] [--quiet] [--opam-repository=VAL] [OPTION]… [pkg_spec]… Try 'opam-ci-check lint --help' or 'opam-ci-check --help' for more information. 
 
 Test for a valid key with no value
 
