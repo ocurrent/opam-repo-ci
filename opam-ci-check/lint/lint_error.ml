@@ -119,16 +119,12 @@ let msg_of_error (package, (err : error)) =
       Printf.sprintf "Warning in %s: Possible name collision with package '%s'"
         pkg other_pkg
   | UnexpectedFile file ->
-      Printf.sprintf "Error in %s: Unexpected file in %s/%s" pkg
-        (Opam_helpers.path_from_pkg ~opam_repo_dir:"" package)
-        file
+      Printf.sprintf "Error in %s: Unexpected file in %s" pkg file
   | ForbiddenPerm file ->
       Printf.sprintf
-        "Error in %s: Forbidden permission for file %s/%s. All files should \
-         have permissions 644."
-        pkg
-        (Opam_helpers.path_from_pkg ~opam_repo_dir:"" package)
-        (Filename.basename file)
+        "Error in %s: Forbidden permission for file %s. All files should have \
+         permissions 644."
+        pkg file
   | OpamLint warn ->
       let warn = OpamFileTools.warns_to_string [ warn ] in
       Printf.sprintf "Error in %s: %s" pkg warn
