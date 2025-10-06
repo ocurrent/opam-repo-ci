@@ -118,17 +118,19 @@ module Checks = struct
     match OpamFile.OPAM.name_opt opam with
     | None -> []
     | Some name ->
-        if OpamPackage.Name.equal name (OpamPackage.name pkg) then
+        let expected = OpamPackage.name pkg in
+        if OpamPackage.Name.equal name expected then
           [ (pkg, UnnecessaryField "name") ]
-        else [ (pkg, UnmatchedName name) ]
+        else [ (pkg, UnmatchedName (name, expected)) ]
 
   let check_version_field ~pkg opam =
     match OpamFile.OPAM.version_opt opam with
     | None -> []
     | Some version ->
-        if OpamPackage.Version.equal version (OpamPackage.version pkg) then
+        let expected = OpamPackage.version pkg in
+        if OpamPackage.Version.equal version expected then
           [ (pkg, UnnecessaryField "version") ]
-        else [ (pkg, UnmatchedVersion version) ]
+        else [ (pkg, UnmatchedVersion (version, expected)) ]
 
   let check_dune_subst ~pkg opam =
     let errors =
@@ -265,11 +267,16 @@ module Checks = struct
 
   let check_package_dir ~opam_repo_dir ~pkg _opam =
     let dir = Opam_helpers.path_from_pkg ~opam_repo_dir pkg in
+    let relative_dir = Opam_helpers.path_from_pkg ~opam_repo_dir:"" pkg in
     let check_file = function
       | "opam" ->
           let path = dir // "opam" in
-          if is_perm_correct path then [] else [ (pkg, ForbiddenPerm path) ]
-      | file -> [ (pkg, UnexpectedFile file) ]
+          let relative_path = relative_dir // "opam" in
+          if is_perm_correct path then []
+          else [ (pkg, ForbiddenPerm relative_path) ]
+      | file ->
+          let relative_path = relative_dir // file in
+          [ (pkg, UnexpectedFile relative_path) ]
     in
     (* FIXME: Would it be better to make skipping this check more explicit? *)
     if Sys.file_exists dir then
