@@ -15,26 +15,51 @@ type prefix_conflict_class_mismatch =
     Use {!string_of_error} to produce descriptions the errors *)
 type error =
   | UnnecessaryField of string
+      (** A field that is not needed and should be removed *)
   | UnmatchedName of (OpamPackage.Name.t * OpamPackage.Name.t)
+      (** The [name] field does not match the package name *)
   | UnmatchedVersion of (OpamPackage.Version.t * OpamPackage.Version.t)
+      (** The [version] field does not match the package version *)
   | DubiousDuneSubst
+      (** The package uses [dune subst] without the {dev} flag *)
   | DuneIsBuild
+      (** The package tags [dune] as a build dependency, which is not allowed *)
   | NoPackageSources
+      (** The package's source directory could not be found, when one is required *)
   | UnexpectedFile of string
+      (** An unexpected file was found in the package's source directory *)
   | ForbiddenPerm of string
+      (** opam file in the package's source directory has forbidden permissions *)
   | OpamLint of (int * [ `Warning | `Error ] * string)
+      (** An error or warning produced by [opam lint] *)
   | MaintainerWithoutContact of string list
+      (** The package has maintainers but no way to contact them *)
   | NameCollision of string
+      (** The package name is too similar to another package name in the repo *)
   | WeakChecksum of string
+      (** The package uses a weak checksum algorithm (MD5) or has no checksum *)
   | PinDepends
+      (** The package uses [pin-depends], which is not allowed in the opam-repository *)
   | ExtraFiles
+      (** The package uses [extra-files], which is not allowed in the opam-repository *)
   | RestrictedPrefix of string
+      (** The package name has a restricted prefix (e.g. "arch-", "system-") *)
   | PrefixConflictClassMismatch of prefix_conflict_class_mismatch
+      (** The package has a restricted prefix without the corresponding conflict class, or vice versa *)
   | DefaultTagsPresent of string list
+      (** The package has not replaced the default example tags *)
   | MissingUpperBound of string
+      (** A dependency is missing an upper bound constraint *)
   | InvalidReasonForArchiving
+      (** The opam file is missing the field or has an invalid [x-reason-for-archiving] field *)
   | InvalidOpamRepositoryCommitHash
+      (** The opam file is missing the [x-opam-repository-commit-hash-at-time-of-archiving] field *)
   | InvalidConfPackage of [ `Conf_prefix | `Depext | `Conf_flag ] list
+      (** A conf package is missing one of the required properties:
+            - the 'conf-' name prefix
+            - a non-empty 'depext' field
+            - the 'conf' flag
+        *)
 
 (**/**)
 
