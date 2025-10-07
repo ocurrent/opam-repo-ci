@@ -2126,7 +2126,7 @@ build: macos-homebrew-ocaml-4.14/arm64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: freebsd-14.2-ocaml-5.3/amd64 opam-dev
+build: freebsd-14.3-ocaml-5.3/amd64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
@@ -2151,7 +2151,7 @@ build: freebsd-14.2-ocaml-5.3/amd64 opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"freebsd-14.2\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"freebsd-14.3\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -2159,7 +2159,7 @@ build: freebsd-14.2-ocaml-5.3/amd64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: freebsd-14.2-ocaml-4.14/amd64 opam-dev
+build: freebsd-14.3-ocaml-4.14/amd64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
@@ -2184,7 +2184,7 @@ build: freebsd-14.2-ocaml-4.14/amd64 opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"freebsd-14.2\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"freebsd-14.3\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
