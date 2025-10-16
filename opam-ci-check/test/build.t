@@ -51,7 +51,7 @@ Test the build command:
   
 
   $ opam-ci-check build lwt.5.7.0 --only-print
-  FROM ocaml/opam:debian-13-ocaml-5.3
+  FROM ocaml/opam:debian-13-ocaml-5.4
   USER 1000:1000
   WORKDIR /home/opam
   RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
@@ -171,7 +171,7 @@ Test the build command:
   
 
   $ opam-ci-check build ocaml-variants.5.3.1+trunk --only-print
-  FROM ocaml/opam:debian-13-ocaml-5.3
+  FROM ocaml/opam:debian-13-ocaml-5.4
   USER 1000:1000
   WORKDIR /home/opam
   RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
@@ -205,7 +205,7 @@ Test the build command:
   
 
   $ opam-ci-check build ocaml-compiler.5.4.0 --only-print
-  FROM ocaml/opam:debian-13-ocaml-5.3
+  FROM ocaml/opam:debian-13-ocaml-5.4
   USER 1000:1000
   WORKDIR /home/opam
   RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
@@ -239,7 +239,7 @@ Test the build command:
   
 
   $ opam-ci-check build ocaml-base-compiler.5.3.0 --only-print
-  FROM ocaml/opam:debian-13-ocaml-5.3
+  FROM ocaml/opam:debian-13-ocaml-5.4
   USER 1000:1000
   WORKDIR /home/opam
   RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam

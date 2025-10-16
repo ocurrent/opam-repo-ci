@@ -27,7 +27,7 @@ let docker_tag t =
 let distribution t = t.distribution
 let pp f t = Fmt.pf f "%s/%s" (docker_tag t) (Ocaml_version.string_of_arch t.arch)
 
-let freebsd = "freebsd-14.2"
+let freebsd = "freebsd-14.3"
 let macos_homebrew = "macos-homebrew"
 
 let macos_distributions = [
