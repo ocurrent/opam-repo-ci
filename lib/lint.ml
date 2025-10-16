@@ -55,7 +55,7 @@ module Check = struct
            in
            Option.map (Printf.sprintf "%s:new=%s" pkg_str) new_arg)
     in
-    let cmd = ["opam-ci-check"; "lint"; "--opam-repository"; "."] @ package_args in
+    let cmd = ["opam-ci-check"; "lint"; "--machine-readable"; "--opam-repository"; "."] @ package_args in
     (* Show instructions to run locally *)
     let install_instructions = ["opam"; "pin"; "opam-ci-check"; "git+https://github.com/ocurrent/opam-repo-ci.git#live"] in
     Current.Job.write job
