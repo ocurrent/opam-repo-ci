@@ -6,17 +6,16 @@
 - archlinux
 - centos-10
 - centos-9
-- debian-11
 - debian-12
 - debian-13
 - debian-testing
 - debian-unstable
-- fedora-41
 - fedora-42
 - fedora-43
 - freebsd-14.3
 - macos-homebrew
 - opensuse-15.6
+- opensuse-16.0
 - opensuse-tumbleweed
 - ubuntu-22.04
 - ubuntu-24.04
@@ -70,8 +69,6 @@
 | centos-10 | amd64 | 5.4 | dev | No | No |
 | centos-9 | amd64 | 4.14 | dev | No | No |
 | centos-9 | amd64 | 5.4 | dev | No | No |
-| debian-11 | amd64 | 4.14 | dev | No | No |
-| debian-11 | amd64 | 5.4 | dev | No | No |
 | debian-12 | amd64 | 4.14 | dev | No | No |
 | debian-12 | amd64 | 5.4 | dev | No | No |
 | debian-13 | amd64 | 4.08 | dev | Yes | No |
@@ -110,8 +107,6 @@
 | debian-testing | amd64 | 5.4 | dev | No | No |
 | debian-unstable | amd64 | 4.14 | dev | No | No |
 | debian-unstable | amd64 | 5.4 | dev | No | No |
-| fedora-41 | amd64 | 4.14 | dev | No | No |
-| fedora-41 | amd64 | 5.4 | dev | No | No |
 | fedora-42 | amd64 | 4.14 | dev | No | No |
 | fedora-42 | amd64 | 5.4 | dev | No | No |
 | fedora-43 | amd64 | 4.14 | dev | No | No |
@@ -124,6 +119,8 @@
 | macos-homebrew | arm64 | 5.4 | dev | No | No |
 | opensuse-15.6 | amd64 | 4.14 | dev | No | No |
 | opensuse-15.6 | amd64 | 5.4 | dev | No | No |
+| opensuse-16.0 | amd64 | 4.14 | dev | No | No |
+| opensuse-16.0 | amd64 | 5.4 | dev | No | No |
 | opensuse-tumbleweed | amd64 | 4.14 | dev | No | No |
 | opensuse-tumbleweed | amd64 | 5.4 | dev | No | No |
 | ubuntu-22.04 | amd64 | 4.14 | dev | No | No |
