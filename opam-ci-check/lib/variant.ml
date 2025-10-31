@@ -29,6 +29,7 @@ let pp f t = Fmt.pf f "%s/%s" (docker_tag t) (Ocaml_version.string_of_arch t.arc
 
 let freebsd = "freebsd-14.3"
 let macos_homebrew = "macos-homebrew"
+let windows_server = "windows-server-2022-amd64"
 
 let macos_distributions = [
   macos_homebrew;
@@ -41,6 +42,8 @@ let os { distribution; _ } =
     `Macos
   else if List.exists (String.equal distribution) [ freebsd ] then
     `Freebsd
+  else if List.exists (String.equal distribution) [ windows_server ] then
+    `Windows
   else
     `Linux
 
