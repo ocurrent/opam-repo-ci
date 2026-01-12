@@ -36,14 +36,14 @@ let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
      (* TODO: Remove this hack when https://github.com/ocurrent/obuilder/issues/77 is fixed *)
      (* NOTE: This hack will fail for packages that have src: "git+https://..." *)
      run ~network "(%sopam reinstall --with-test %s) || true"
-       (match opam_version with `V2_1 | `V2_2 | `V2_3 | `V2_4 | `Dev -> "" | `V2_0 -> fmt "opam depext%s %s && " with_tests_opt pkg_s) pkg_s
+       (match opam_version with `V2_1 | `V2_2 | `V2_3 | `V2_4 | `V2_5 | `Dev -> "" | `V2_0 -> fmt "opam depext%s %s && " with_tests_opt pkg_s) pkg_s
    ] else []) @ [
     (* TODO: Replace by two calls to opam install + opam install -t using the OPAMDROPINSTALLEDPACKAGES feature *)
     (* NOTE: See above for the ~network:(if with_tests ...) hack *)
     (* NOTE: We cannot use the cache as concurrent access to the cache might overwrite it and the required archives might not be available anymore at this point *)
     let depext =
       match opam_version with
-      | `V2_1 | `V2_2 | `V2_3 | `V2_4 | `Dev -> ""
+      | `V2_1 | `V2_2 | `V2_3 | `V2_4 | `V2_5 | `Dev -> ""
       | `V2_0 -> fmt "opam depext%s %s && " with_tests_opt pkg_s
     in
     let verbose = if with_tests then " --verbose" else "" in
@@ -117,7 +117,7 @@ let setup_repository ?(local=false) ~variant ~for_docker ~opam_version () =
      Otherwise the "opam pin" after the "opam repository set-url" will fail (cannot find the new package for some reason) *)
   run "%s -f %s/bin/opam-%s %s/bin/opam" ln prefix opam_version_str prefix ::
   run ~network "opam init --reinit%s -ni" opamrc :: (* TODO: Remove ~network when https://github.com/ocurrent/ocaml-dockerfile/pull/132 is merged *)
-  run "%sopam config report" (match opam_version with `V2_1 | `V2_2 | `V2_3 | `V2_4 | `Dev -> "opam option solver=builtin-0install && " | `V2_0 -> "") ::
+  run "%sopam config report" (match opam_version with `V2_1 | `V2_2 | `V2_3 | `V2_4 | `V2_5 | `Dev -> "opam option solver=builtin-0install && " | `V2_0 -> "") ::
   env "OPAMDOWNLOADJOBS" "1" :: (* Try to avoid github spam detection *)
   env "OPAMERRLOGLEN" "0" :: (* Show the whole log if it fails *)
   env "OPAMPRECISETRACKING" "1" :: (* Mitigate https://github.com/ocaml/opam/issues/3997 *)
@@ -126,7 +126,7 @@ let setup_repository ?(local=false) ~variant ~for_docker ~opam_version () =
     run "rm -rf opam-repository/";
     copy ["."] ~dst:"opam-repository/";
     run "opam repository set-url%s --strict default opam-repository/" opam_repo_args;
-    run ~network "opam %s || true" (match opam_version with `V2_1 | `V2_2 | `V2_3 | `V2_4 | `Dev -> "update --depexts" | `V2_0 -> "depext -u");
+    run ~network "opam %s || true" (match opam_version with `V2_1 | `V2_2 | `V2_3 | `V2_4 | `V2_5 | `Dev -> "update --depexts" | `V2_0 -> "depext -u");
   ] @
   if local then [ keep_installed ] else []
 

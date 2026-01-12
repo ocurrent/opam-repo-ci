@@ -96,7 +96,7 @@ module Analysis = struct
 
   (* we check extensions in case it changes the outcome of the CI (e.g. x-ci-accept-failures) *)
   let ci_extensions_equal old_file new_file =
-    let filter_ci_exts = OpamStd.String.Map.filter (fun name _ -> OpamStd.String.starts_with ~prefix:"x-ci-" name) in
+    let filter_ci_exts = OpamStd.String.Map.filter (fun name _ -> OpamCompat.String.starts_with ~prefix:"x-ci-" name) in
     let old_exts = filter_ci_exts (OpamFile.OPAM.extensions old_file) in
     let new_exts = filter_ci_exts (OpamFile.OPAM.extensions new_file) in
     OpamStd.String.Map.equal OpamPrinter.FullPos.value_equals old_exts new_exts
