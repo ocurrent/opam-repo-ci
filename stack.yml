@@ -33,6 +33,7 @@ services:
     volumes:
       - 'data:/var/lib/ocurrent'
       - 'capnp-secrets:/capnp-secrets'
+      - '/archive:/archive:ro'
     secrets:
       - 'opam-repo-ci-oauth'
       - 'opam-repo-ci-github-key'
