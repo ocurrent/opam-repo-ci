@@ -35,13 +35,13 @@ depends: [
   "memtrace" {>= "0.1.1"}
   "capnp-rpc-lwt" {>= "0.8.0"}
   "capnp-rpc-unix" {>= "0.8.0"}
-  "opam-state" {>= "2.3.0~alpha1"}
-  "opam-format" {>= "2.3.0~alpha1"}
+  "opam-state" {>= "2.4.0"}
+  "opam-format" {>= "2.4.0"}
   "opam-file-format" {>= "2.1.2"}
   "sexplib" {>= "v0.14.0"}
   "conf-libev"
-  "dockerfile" {>= "8.2.3"}
-  "dockerfile-opam" {>= "8.2.3"}
+  "dockerfile" {>= "8.3.6"}
+  "dockerfile-opam" {>= "8.3.6"}
   "ocaml-version" {>= "4.1.0"}
   "mula" {>= "0.1.2"}
   "alcotest" {>= "1.0.0" & with-test}

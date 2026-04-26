@@ -16,8 +16,8 @@ depends: [
   "current_rpc"
   "capnp" {>= "3.4.0"}
   "capnp-rpc-lwt"
-  "dockerfile" {>= "8.2.3"}
-  "dockerfile-opam" {>= "8.2.3"}
+  "dockerfile" {>= "8.3.6"}
+  "dockerfile-opam" {>= "8.3.6"}
   "odoc" {with-doc}
   "current" {>= "0.6.6"}
   "current_docker"
@@ -27,8 +27,8 @@ depends: [
   "mula" {>= "0.1.2"}
   "obuilder-spec" {>= "0.6.0"}
   "ocaml-version" {>= "4.1.0"}
-  "opam-format" {>= "2.3.0~alpha1"}
-  "opam-state" {>= "2.3.0~alpha1"}
+  "opam-format" {>= "2.4.0"}
+  "opam-state" {>= "2.4.0"}
   "ppx_deriving" {>= "5.2.1"}
   "ppx_deriving_yojson"
   "sexplib" {>= "v0.16.0"}
