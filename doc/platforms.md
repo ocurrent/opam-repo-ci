@@ -112,11 +112,11 @@
 | ubuntu-22.04 | amd64 | 5.4 | dev | No | No |
 | ubuntu-24.04 | amd64 | 4.14 | dev | No | No |
 | ubuntu-24.04 | amd64 | 5.4 | dev | No | No |
+| ubuntu-24.04 | riscv64 | 4.14 | dev | No | No |
+| ubuntu-24.04 | riscv64 | 5.4 | dev | No | No |
 | ubuntu-25.04 | amd64 | 4.14 | dev | No | No |
 | ubuntu-25.04 | amd64 | 5.4 | dev | No | No |
 | ubuntu-25.10 | amd64 | 4.14 | dev | No | No |
 | ubuntu-25.10 | amd64 | 5.4 | dev | No | No |
 | ubuntu-26.04 | amd64 | 4.14 | dev | No | No |
 | ubuntu-26.04 | amd64 | 5.4 | dev | No | No |
-| ubuntu-26.04 | riscv64 | 4.14 | dev | No | No |
-| ubuntu-26.04 | riscv64 | 5.4 | dev | No | No |
