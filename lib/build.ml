@@ -145,7 +145,7 @@ let extras ~build =
     in
     let arches =
       List.filter_map (function
-        | `X86_64 -> None
+        | `X86_64 | `Aarch32 | `I386 -> None
         | `Riscv64 ->
             let label = Ocaml_version.to_opam_arch `Riscv64 in
             let riscv_distro = (Distro.resolve_alias (`Ubuntu `LTS) :> Distro.t) in

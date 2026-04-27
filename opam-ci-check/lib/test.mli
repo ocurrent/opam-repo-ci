@@ -29,4 +29,4 @@ val build_run_spec :
   ?opam_repository:string ->
   base:Spec.base ->
   Spec.t ->
-  (unit, Rresult.R.msg) result
+  (unit, [ `Msg of string ]) result

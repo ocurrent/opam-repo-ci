@@ -22,8 +22,8 @@ depends: [
   "current_ocluster"
   "current_docker"
   "current_github"
-  "dockerfile" {>= "8.2.3"}
-  "dockerfile-opam" {>= "8.2.3"}
+  "dockerfile" {>= "8.3.6"}
+  "dockerfile-opam" {>= "8.3.6"}
   "obuilder-spec"
   "ocaml-version"
   "prometheus-app"
@@ -39,8 +39,8 @@ depends: [
   "odoc" {with-doc}
   "capnp-rpc-lwt" {>= "1.2.3"}
   "mula" {>= "0.1.2"}
-  "opam-format" {>= "2.3.0~alpha1"}
-  "opam-state" {>= "2.3.0~alpha1"}
+  "opam-format" {>= "2.5.0"}
+  "opam-state" {>= "2.5.0"}
   "ppx_deriving" {>= "5.2.1"}
   "sexplib" {>= "v0.16.0"}
 ]
