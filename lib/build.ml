@@ -148,8 +148,9 @@ let extras ~build =
         | `X86_64 | `Aarch32 | `I386 -> None
         | `Riscv64 ->
             let label = Ocaml_version.to_opam_arch `Riscv64 in
-            let riscv_distro = (Distro.resolve_alias (`Ubuntu `LTS) :> Distro.t) in
-            let riscv_distro = Distro.tag_of_distro riscv_distro in
+            (* Pinned to 24.04: should track `Ubuntu `LTS, but we lack the
+               hardware to build ocaml/opam riscv64 images for newer LTSes. *)
+            let riscv_distro = Distro.tag_of_distro (`Ubuntu `V24_04) in
             Some (build ~opam_version ~arch:`Riscv64 ~distro:riscv_distro ~compiler:(comp, None) label)
         | arch ->
             let label = Ocaml_version.to_opam_arch arch in
