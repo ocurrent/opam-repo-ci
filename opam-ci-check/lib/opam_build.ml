@@ -1,5 +1,3 @@
-let fmt = Fmt.str
-
 let download_cache = "opam-archives"
 let cache ~variant =
   match Variant.os variant with
@@ -9,7 +7,7 @@ let cache ~variant =
                 Obuilder_spec.Cache.v "homebrew" ~target:"/Users/mac1000/Library/Caches/Homebrew" ]
 let network = ["host"]
 
-let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
+let opam_install ~variant ~pin ~lower_bounds ~with_tests ~pkg =
   let pkg_s = OpamPackage.to_string pkg in
   let with_tests_opt = if with_tests then " --with-test" else "" in
   let cache = cache ~variant in
@@ -35,17 +33,11 @@ let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
   (if with_tests then [
      (* TODO: Remove this hack when https://github.com/ocurrent/obuilder/issues/77 is fixed *)
      (* NOTE: This hack will fail for packages that have src: "git+https://..." *)
-     run ~network "(%sopam reinstall --with-test %s) || true"
-       (match opam_version with `V2_1 | `V2_2 | `V2_3 | `V2_4 | `V2_5 | `Dev -> "" | `V2_0 -> fmt "opam depext%s %s && " with_tests_opt pkg_s) pkg_s
+     run ~network "(opam reinstall --with-test %s) || true" pkg_s
    ] else []) @ [
     (* TODO: Replace by two calls to opam install + opam install -t using the OPAMDROPINSTALLEDPACKAGES feature *)
     (* NOTE: See above for the ~network:(if with_tests ...) hack *)
     (* NOTE: We cannot use the cache as concurrent access to the cache might overwrite it and the required archives might not be available anymore at this point *)
-    let depext =
-      match opam_version with
-      | `V2_1 | `V2_2 | `V2_3 | `V2_4 | `V2_5 | `Dev -> ""
-      | `V2_0 -> fmt "opam depext%s %s && " with_tests_opt pkg_s
-    in
     let verbose = if with_tests then " --verbose" else "" in
     let update_invariant =
       if List.mem (OpamPackage.name_to_string pkg)
@@ -55,7 +47,7 @@ let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
       else ""
     in
     run ~cache:(if with_tests then [] else cache) ~network:(if with_tests then [] else network)
-      {|%sopam reinstall%s%s%s %s;
+      {|opam reinstall%s%s%s %s;
         res=$?;
         test "$res" != 31 && exit "$res";
         export OPAMCLI=2.0;
@@ -70,7 +62,7 @@ let opam_install ~variant ~opam_version ~pin ~lower_bounds ~with_tests ~pkg =
         done;
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
         exit 1|}
-      depext with_tests_opt verbose update_invariant pkg_s
+      with_tests_opt verbose update_invariant pkg_s
       (Variant.distribution variant)
       pkg_s
   ]
@@ -117,7 +109,7 @@ let setup_repository ?(local=false) ~variant ~for_docker ~opam_version () =
      Otherwise the "opam pin" after the "opam repository set-url" will fail (cannot find the new package for some reason) *)
   run "%s -f %s/bin/opam-%s %s/bin/opam" ln prefix opam_version_str prefix ::
   run ~network "opam init --reinit%s -ni" opamrc :: (* TODO: Remove ~network when https://github.com/ocurrent/ocaml-dockerfile/pull/132 is merged *)
-  run "%sopam config report" (match opam_version with `V2_1 | `V2_2 | `V2_3 | `V2_4 | `V2_5 | `Dev -> "opam option solver=builtin-0install && " | `V2_0 -> "") ::
+  run "opam option solver=builtin-0install && opam config report" ::
   env "OPAMDOWNLOADJOBS" "1" :: (* Try to avoid github spam detection *)
   env "OPAMERRLOGLEN" "0" :: (* Show the whole log if it fails *)
   env "OPAMPRECISETRACKING" "1" :: (* Mitigate https://github.com/ocaml/opam/issues/3997 *)
@@ -126,7 +118,7 @@ let setup_repository ?(local=false) ~variant ~for_docker ~opam_version () =
     run "rm -rf opam-repository/";
     copy ["."] ~dst:"opam-repository/";
     run "opam repository set-url%s --strict default opam-repository/" opam_repo_args;
-    run ~network "opam %s || true" (match opam_version with `V2_1 | `V2_2 | `V2_3 | `V2_4 | `V2_5 | `Dev -> "update --depexts" | `V2_0 -> "depext -u");
+    run ~network "opam update --depexts || true";
   ] @
   if local then [ keep_installed ] else []
 
@@ -137,7 +129,7 @@ let set_personality ~variant =
     []
 
 let spec ?(local=false) ~for_docker ~opam_version ~base ~variant ~revdep ~lower_bounds ~with_tests ~pkg () =
-  let opam_install = opam_install ~variant ~opam_version in
+  let opam_install = opam_install ~variant in
   let revdep = match revdep with
     | None -> []
     | Some revdep -> opam_install ~pin:false ~lower_bounds:false ~with_tests:false ~pkg:revdep
