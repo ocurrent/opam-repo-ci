@@ -12,9 +12,9 @@
 - debian-unstable
 - fedora-42
 - fedora-43
+- fedora-44
 - freebsd-15.0
 - macos-homebrew
-- opensuse-15.6
 - opensuse-16.0
 - opensuse-tumbleweed
 - ubuntu-22.04
@@ -33,7 +33,6 @@
 
 ## OCaml Versions
 
-- 4.08
 - 4.11
 - 4.14
 - 4.14-afl
@@ -65,7 +64,6 @@
 | centos-9 | amd64 | 5.4 | dev | No | No |
 | debian-12 | amd64 | 4.14 | dev | No | No |
 | debian-12 | amd64 | 5.4 | dev | No | No |
-| debian-13 | amd64 | 4.08 | dev | Yes | No |
 | debian-13 | amd64 | 4.11 | dev | Yes | No |
 | debian-13 | amd64 | 4.14 | dev | Yes | Yes |
 | debian-13 | amd64 | 4.14-afl | dev | No | No |
@@ -96,14 +94,14 @@
 | fedora-42 | amd64 | 5.4 | dev | No | No |
 | fedora-43 | amd64 | 4.14 | dev | No | No |
 | fedora-43 | amd64 | 5.4 | dev | No | No |
+| fedora-44 | amd64 | 4.14 | dev | No | No |
+| fedora-44 | amd64 | 5.4 | dev | No | No |
 | freebsd-15.0 | amd64 | 4.14 | dev | No | No |
 | freebsd-15.0 | amd64 | 5.4 | dev | No | No |
 | macos-homebrew | amd64 | 4.14 | dev | No | No |
 | macos-homebrew | amd64 | 5.4 | dev | No | No |
 | macos-homebrew | arm64 | 4.14 | dev | No | No |
 | macos-homebrew | arm64 | 5.4 | dev | No | No |
-| opensuse-15.6 | amd64 | 4.14 | dev | No | No |
-| opensuse-15.6 | amd64 | 5.4 | dev | No | No |
 | opensuse-16.0 | amd64 | 4.14 | dev | No | No |
 | opensuse-16.0 | amd64 | 5.4 | dev | No | No |
 | opensuse-tumbleweed | amd64 | 4.14 | dev | No | No |
