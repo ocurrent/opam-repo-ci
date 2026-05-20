@@ -41,8 +41,8 @@ depends: [
   "sexplib" {>= "v0.14.0"}
   "conf-libev"
   "dockerfile" {>= "8.3.6"}
-  "dockerfile-opam" {>= "8.3.6"}
-  "ocaml-version" {>= "4.1.0"}
+  "dockerfile-opam" {>= "8.4.1"}
+  "ocaml-version" {>= "4.1.3"}
   "mula" {>= "0.1.2"}
   "alcotest" {>= "1.0.0" & with-test}
   "alcotest-lwt" {>= "1.0.1" & with-test}
