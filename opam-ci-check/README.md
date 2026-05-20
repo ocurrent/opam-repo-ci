@@ -9,6 +9,7 @@ This tool is in progress.
 ## Installation
 
 ``` sh
+opam pin opam-ci-check-lint https://github.com/ocurrent/opam-repo-ci.git 
 opam pin opam-ci-check https://github.com/ocurrent/opam-repo-ci.git
 ```
 
