@@ -145,12 +145,13 @@ module Op = struct
       { Key.commit; ty; variant } =
     let { docker_context; pool; build_timeout } = config in
     let os = match Variant.os variant with
-      | `Macos | `Linux | `Freebsd -> `Unix
+      | `Macos | `Linux | `Freebsd | `Windows -> `Unix
     in
     let build_config = {Spec.variant; ty}
     in
     let image =
       match base with
+      | Windows _s -> failwith "Local Windows OBuilder worker not supported"
       | Macos _s -> failwith "Local MacOS OBuilder worker not supported"
       | Freebsd _s -> failwith "Local FreeBSD OBuilder worker not supported"
       | Docker image -> image

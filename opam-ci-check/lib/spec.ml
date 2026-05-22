@@ -3,11 +3,13 @@ type base =
   | Docker of string
   | Macos of string
   | Freebsd of string
+  | Windows of string
 
 let base_to_string = function
   | Docker img -> img
   | Macos base -> base
   | Freebsd base -> base
+  | Windows base -> base
 
 type package = OpamPackage.t
 
