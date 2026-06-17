@@ -5,6 +5,13 @@ RUN cd ~/opam-repository && git fetch origin master && git reset --hard ceed23f9
 COPY --chown=opam opam-repo-ci-service.opam opam-repo-ci-api.opam opam-ci-check.opam /src/
 WORKDIR /src
 RUN opam option --global solver=builtin-0install
+RUN opam pin add -yn current.dev         "https://github.com/mtelvers/ocurrent.git#cb9fe87b717c102a73bdda00ca461d8875ec7882" && \
+    opam pin add -yn current_web.dev     "https://github.com/mtelvers/ocurrent.git#cb9fe87b717c102a73bdda00ca461d8875ec7882" && \
+    opam pin add -yn current_git.dev     "https://github.com/mtelvers/ocurrent.git#cb9fe87b717c102a73bdda00ca461d8875ec7882" && \
+    opam pin add -yn current_github.dev  "https://github.com/mtelvers/ocurrent.git#cb9fe87b717c102a73bdda00ca461d8875ec7882" && \
+    opam pin add -yn current_docker.dev  "https://github.com/mtelvers/ocurrent.git#cb9fe87b717c102a73bdda00ca461d8875ec7882" && \
+    opam pin add -yn current_slack.dev   "https://github.com/mtelvers/ocurrent.git#cb9fe87b717c102a73bdda00ca461d8875ec7882" && \
+    opam pin add -yn current_rpc.dev     "https://github.com/mtelvers/ocurrent.git#cb9fe87b717c102a73bdda00ca461d8875ec7882"
 RUN opam install -y --deps-only .
 ADD --chown=opam . .
 RUN opam exec -- dune build ./_build/install/default/bin/opam-repo-ci-service ./_build/install/default/bin/opam-ci-check
