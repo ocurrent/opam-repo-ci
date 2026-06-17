@@ -141,8 +141,22 @@ let main config mode app capnp_address github_auth submission_uri prometheus_con
       else has_role
     in
     let routes = routes ~engine app github_auth in
+    (* Require a proof-of-work browser challenge before serving HTML pages, to
+       keep JavaScript-less crawlers off the (expensive) /job/ log pages.
+       Webhooks (POST) and /metrics are not GET-html, so they pass untouched. *)
+    let challenge =
+      (* Difficulty as leading zero bits; the browser solver does one async hash
+         per try, so keep it modest. Any value blocks JS-less crawlers (they
+         never solve it); difficulty only throttles JS-capable clients.
+         Override at runtime with POW_DIFFICULTY. *)
+      let difficulty =
+        Stdlib.Option.bind (Sys.getenv_opt "POW_DIFFICULTY") int_of_string_opt
+        |> Stdlib.Option.value ~default:12
+      in
+      Current_web.Challenge.v ~difficulty ()
+    in
     let site =
-      Current_web.Site.v ?authn ~has_role ~secure_cookies:true ~name:"opam-ci" routes
+      Current_web.Site.v ?authn ~has_role ~secure_cookies:true ~challenge ~name:"opam-ci" routes
     in
     let prometheus =
       List.map (Lwt.map @@ Result.ok) (Prometheus_unix.serve prometheus_config)
