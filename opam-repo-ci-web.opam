@@ -23,9 +23,9 @@ depends: [
   "current_docker"
   "current_github"
   "dockerfile" {>= "8.3.6"}
-  "dockerfile-opam" {>= "8.3.6"}
+  "dockerfile-opam" {>= "8.4.1"}
   "obuilder-spec"
-  "ocaml-version"
+  "ocaml-version" {>= "4.1.3"}
   "prometheus-app"
   "cmdliner" {>= "1.1.0"}
   "lwt"
