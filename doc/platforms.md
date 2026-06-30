@@ -13,7 +13,7 @@
 - fedora-42
 - fedora-43
 - fedora-44
-- freebsd-15.0
+- freebsd-15.1
 - macos-homebrew
 - opensuse-16.0
 - opensuse-tumbleweed
@@ -94,8 +94,8 @@
 | fedora-43 | amd64 | 5.5 | dev | No | No |
 | fedora-44 | amd64 | 4.14 | dev | No | No |
 | fedora-44 | amd64 | 5.5 | dev | No | No |
-| freebsd-15.0 | amd64 | 4.14 | dev | No | No |
-| freebsd-15.0 | amd64 | 5.5 | dev | No | No |
+| freebsd-15.1 | amd64 | 4.14 | dev | No | No |
+| freebsd-15.1 | amd64 | 5.5 | dev | No | No |
 | macos-homebrew | amd64 | 4.14 | dev | No | No |
 | macos-homebrew | amd64 | 5.5 | dev | No | No |
 | macos-homebrew | arm64 | 4.14 | dev | No | No |
