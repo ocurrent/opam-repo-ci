@@ -153,7 +153,10 @@ let main config mode app capnp_address github_auth submission_uri prometheus_con
         Stdlib.Option.bind (Sys.getenv_opt "POW_DIFFICULTY") int_of_string_opt
         |> Stdlib.Option.value ~default:12
       in
-      Current_web.Challenge.v ~difficulty ()
+      (* Challenge the expensive /job/ log pages regardless of Accept: the
+         crawler farm sends Accept: */* to slip past the header-only check. *)
+      Current_web.Challenge.v ~difficulty
+        ~protect:(String.starts_with ~prefix:"/job/") ()
     in
     let site =
       Current_web.Site.v ?authn ~has_role ~secure_cookies:true ~challenge ~name:"opam-ci" routes
