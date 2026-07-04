@@ -5,6 +5,7 @@
  (libraries
   lwt.unix
   current_ansi
+  current_web
   cohttp-lwt-unix
   tyxml
   prometheus-app.unix
