@@ -59,8 +59,13 @@ CREATE TABLE IF NOT EXISTS ci_build_index (
                                      WHERE owner = ? AND name = ? AND hash = ? AND variant = ?" in
   let get_job_ids = Sqlite3.prepare db "SELECT variant, job_id FROM ci_build_index \
                                      WHERE owner = ? AND name = ? AND hash = ?" in
+  (* GLOB (not LIKE) so the query uses the primary-key index: LIKE is
+     case-insensitive by default, which disables the index and forces a full
+     scan of the (millions-of-rows) table on every call. GLOB is case-sensitive
+     and its prefix pattern compiles to an indexed range seek. Git hashes are
+     lowercase hex, so case-sensitivity is a non-issue. *)
   let full_hash = Sqlite3.prepare db "SELECT DISTINCT hash FROM ci_build_index \
-                                      WHERE owner = ? AND name = ? AND hash LIKE ?" in
+                                      WHERE owner = ? AND name = ? AND hash GLOB ?" in
   {
     record_job;
     remove;
@@ -225,7 +230,7 @@ let get_full_hash ~owner ~name short_hash =
   let t = Lazy.force db in
   if is_valid_hash short_hash then (
     Log.info (fun f -> f "@[<h>Index.get_full_hash %s/%s %s@]" owner name short_hash);
-    match Db.query t.full_hash Sqlite3.Data.[ TEXT owner; TEXT name; TEXT (short_hash ^ "%") ] with
+    match Db.query t.full_hash Sqlite3.Data.[ TEXT owner; TEXT name; TEXT (short_hash ^ "*") ] with
     | [] -> Error `Unknown
     | [Sqlite3.Data.[ TEXT hash ]] -> Ok hash
     | [_] -> failwith "get_full_hash: invalid result!"
