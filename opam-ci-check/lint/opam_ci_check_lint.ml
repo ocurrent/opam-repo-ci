@@ -301,12 +301,7 @@ module Checks = struct
     let path = dir // "opam" in
     let relative_path = Opam_helpers.path_from_pkg ~opam_repo_dir:"" pkg // "opam" in
     if Sys.file_exists path then
-      let ic = open_in_bin path in
-      let content =
-        Fun.protect
-          ~finally:(fun () -> close_in ic)
-          (fun () -> really_input_string ic (in_channel_length ic))
-      in
+      let content = In_channel.(with_open_bin path input_all) in
       if contains_crlf content then [ (pkg, ForbiddenCRLF relative_path) ] else []
     else []
 
