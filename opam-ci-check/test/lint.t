@@ -315,6 +315,25 @@ Test presence of unexpected files in a-1.0.0.2 package
     - No package source directory provided.
   [1]
 
+Setup repo for CRLF line endings
+
+The lint check inspects the file on disk (not the git blob), so we rewrite the
+opam file to use CRLF line endings and lint it directly, without going through
+`git add` (which could normalise the staged blob under core.autocrlf).
+
+  $ git reset -q --hard initial-state
+  $ sed 's/$/\r/' packages/a-1/a-1.0.0.2/opam > opam.new
+  $ mv opam.new packages/a-1/a-1.0.0.2/opam
+
+Test that CRLF line endings in an opam file are rejected
+
+  $ opam-ci-check lint -r . a-1.0.0.2:new=false
+  Linting opam-repository at $TESTCASE_ROOT/. ...
+  Errors in a-1.0.0.2:
+    - The file packages/a-1/a-1.0.0.2/opam contains CRLF line endings, which are not allowed in the opam-repository. Please normalise the file to use LF line endings.
+    - No package source directory provided.
+  [1]
+
 # Maintainer contact lint
 
 The maintainer contact lint requires that a package EITHER provide a URL for the
@@ -409,7 +428,7 @@ Test that we do not report an error on a minimal well-formed package:
   depends: []
   x-reason-for-archiving: [ "source-unavailable" ]
   x-opam-repository-commit-hash-at-time-of-archiving: "de786e28dbea73843ad5e5f0290a4e81fba39370"
-  $ opam-ci-check lint -r . --check=archive-repo a-1.0.0.1
+  $ opam-ci-check lint -r . --checks=archive-repo a-1.0.0.1
   Linting opam-repository at $TESTCASE_ROOT/. ...
   No errors
 
@@ -423,7 +442,7 @@ Test that we report errors when a package has dependencies without an upper boun
   > -e 's/depends.*/depends: [ "foo" {with-test} "bar" {>= "0.0.1"} "baz" ]/' \
   > packages/a-1/a-1.0.0.1/opam > opam.new
   $ mv opam.new packages/a-1/a-1.0.0.1/opam
-  $ opam-ci-check lint -r . --check=archive-repo a-1.0.0.1
+  $ opam-ci-check lint -r . --checks=archive-repo a-1.0.0.1
   Linting opam-repository at $TESTCASE_ROOT/. ...
   Errors in a-1.0.0.1:
     - An upper bound constraint is missing on dependency 'baz'
@@ -437,7 +456,7 @@ Test that we do NOT report errors when all a packages dependencies have an upper
   > -e 's/depends.*/depends: ["foo" {with-test \& <= "0.1.0"} "bar" {>= "0.0.1" \& = "0.1.0"} "baz" {< "0.0.1"}]/' \
   > packages/a-1/a-1.0.0.1/opam > opam.new
   $ mv opam.new packages/a-1/a-1.0.0.1/opam
-  $ opam-ci-check lint -r . --check=archive-repo a-1.0.0.1
+  $ opam-ci-check lint -r . --checks=archive-repo a-1.0.0.1
   Linting opam-repository at $TESTCASE_ROOT/. ...
   No errors
 
@@ -447,7 +466,7 @@ Test that we do NOT report errors when the compiler dependency has no upper boun
   > -e 's/depends.*/depends: ["ocaml"]/' \
   > packages/a-1/a-1.0.0.1/opam > opam.new
   $ mv opam.new packages/a-1/a-1.0.0.1/opam
-  $ opam-ci-check lint -r . --check=archive-repo a-1.0.0.1
+  $ opam-ci-check lint -r . --checks=archive-repo a-1.0.0.1
   Linting opam-repository at $TESTCASE_ROOT/. ...
   No errors
 
@@ -459,7 +478,7 @@ Test we report an error when the x-reason-for-archiving is missing:
   > -e '/x-reason-for-archiving/d' \
   > packages/a-1/a-1.0.0.1/opam > opam.new
   $ mv opam.new packages/a-1/a-1.0.0.1/opam
-  $ opam-ci-check lint -r . --check=archive-repo a-1.0.0.1
+  $ opam-ci-check lint -r . --checks=archive-repo a-1.0.0.1
   Linting opam-repository at $TESTCASE_ROOT/. ...
   Errors in a-1.0.0.1:
     - The field 'x-reason-for-archiving' must be present and hold a nonempty list of one or more of the valid reasons ocaml-version, source-unavailable, maintenance-intent, uninstallable
@@ -468,7 +487,7 @@ Test we report an error when the x-reason-for-archiving is missing:
 Test we report an error when the x-reason-for-archiving has an invalid value:
 
   $ echo 'x-reason-for-archiving: "not a list"' >> packages/a-1/a-1.0.0.1/opam
-  $ opam-ci-check lint -r . --check=archive-repo a-1.0.0.1
+  $ opam-ci-check lint -r . --checks=archive-repo a-1.0.0.1
   Linting opam-repository at $TESTCASE_ROOT/. ...
   Errors in a-1.0.0.1:
     - The field 'x-reason-for-archiving' must be present and hold a nonempty list of one or more of the valid reasons ocaml-version, source-unavailable, maintenance-intent, uninstallable
@@ -480,7 +499,7 @@ Test we report an error when the x-reason-for-archiving has an empty list:
   > -e 's/x-reason-for-archiving:.*/x-reason-for-archiving: []/' \
   > packages/a-1/a-1.0.0.1/opam > opam.new
   $ mv opam.new packages/a-1/a-1.0.0.1/opam
-  $ opam-ci-check lint -r . --check=archive-repo a-1.0.0.1
+  $ opam-ci-check lint -r . --checks=archive-repo a-1.0.0.1
   Linting opam-repository at $TESTCASE_ROOT/. ...
   Errors in a-1.0.0.1:
     - The field 'x-reason-for-archiving' must be present and hold a nonempty list of one or more of the valid reasons ocaml-version, source-unavailable, maintenance-intent, uninstallable
@@ -492,7 +511,7 @@ Test we report an error when the x-reason-for-archiving has an invalid reason:
   > -e 's/x-reason-for-archiving:.*/x-reason-for-archiving: ["an indalid reason"]/' \
   > packages/a-1/a-1.0.0.1/opam > opam.new
   $ mv opam.new packages/a-1/a-1.0.0.1/opam
-  $ opam-ci-check lint -r . --check=archive-repo a-1.0.0.1
+  $ opam-ci-check lint -r . --checks=archive-repo a-1.0.0.1
   Linting opam-repository at $TESTCASE_ROOT/. ...
   Errors in a-1.0.0.1:
     - The field 'x-reason-for-archiving' must be present and hold a nonempty list of one or more of the valid reasons ocaml-version, source-unavailable, maintenance-intent, uninstallable
@@ -504,7 +523,7 @@ Test we do NOT report an error when the x-reason-for-archiving has multiple inva
   > -e 's/x-reason-for-archiving:.*/x-reason-for-archiving: ["source-unavailable" "maintenance-intent"]/' \
   > packages/a-1/a-1.0.0.1/opam > opam.new
   $ mv opam.new packages/a-1/a-1.0.0.1/opam
-  $ opam-ci-check lint -r . --check=archive-repo a-1.0.0.1
+  $ opam-ci-check lint -r . --checks=archive-repo a-1.0.0.1
   Linting opam-repository at $TESTCASE_ROOT/. ...
   No errors
 
@@ -517,7 +536,7 @@ is missing:
   > -e '/x-opam-repository-commit-hash-at-time-of-archiving/d' \
   > packages/a-1/a-1.0.0.1/opam > opam.new
   $ mv opam.new packages/a-1/a-1.0.0.1/opam
-  $ opam-ci-check lint -r . --check=archive-repo a-1.0.0.1
+  $ opam-ci-check lint -r . --checks=archive-repo a-1.0.0.1
   Linting opam-repository at $TESTCASE_ROOT/. ...
   Errors in a-1.0.0.1:
     - The field 'x-opam-repository-commit-hash-at-time-of-archiving' must be present and hold a string recording the commit hash of the primary repo at the time the package version is archived.
@@ -528,7 +547,7 @@ has an invald value:
 
   $ echo 'x-opam-repository-commit-hash-at-time-of-archiving: false' \
   > >> packages/a-1/a-1.0.0.1/opam
-  $ opam-ci-check lint -r . --check=archive-repo a-1.0.0.1
+  $ opam-ci-check lint -r . --checks=archive-repo a-1.0.0.1
   Linting opam-repository at $TESTCASE_ROOT/. ...
   Errors in a-1.0.0.1:
     - The field 'x-opam-repository-commit-hash-at-time-of-archiving' must be present and hold a string recording the commit hash of the primary repo at the time the package version is archived.

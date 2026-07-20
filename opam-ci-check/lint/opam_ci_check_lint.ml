@@ -287,6 +287,24 @@ module Checks = struct
            "Skipped check_package_dir since package dir %s doesn't exist" dir;
       [])
 
+  let contains_crlf s =
+    let n = String.length s in
+    let rec aux i =
+      if i + 1 >= n then false
+      else if s.[i] = '\r' && s.[i + 1] = '\n' then true
+      else aux (i + 1)
+    in
+    aux 0
+
+  let check_no_crlf ~opam_repo_dir ~pkg _opam =
+    let dir = Opam_helpers.path_from_pkg ~opam_repo_dir pkg in
+    let path = dir // "opam" in
+    let relative_path = Opam_helpers.path_from_pkg ~opam_repo_dir:"" pkg // "opam" in
+    if Sys.file_exists path then
+      let content = In_channel.(with_open_bin path input_all) in
+      if contains_crlf content then [ (pkg, ForbiddenCRLF relative_path) ] else []
+    else []
+
   (* Check that package names have the "conf-" perfix iff they have the "conf"
      flag iff they have a non-empty "depext". As per
      https://opam.ocaml.org/doc/Manual.html#opamflag-conf, which stipulates that
@@ -416,6 +434,7 @@ module Checks = struct
         check_version_field;
         check_checksums;
         check_package_dir ~opam_repo_dir;
+        check_no_crlf ~opam_repo_dir;
         check_package_source ~pkg_src_dir;
         check_maintainer_contact;
         check_tags;
