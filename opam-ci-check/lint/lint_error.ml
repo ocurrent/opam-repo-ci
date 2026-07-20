@@ -22,6 +22,7 @@ type error =
   | NoPackageSources
   | UnexpectedFile of string
   | ForbiddenPerm of string
+  | ForbiddenCRLF of string
   | OpamLint of (int * [ `Warning | `Error ] * string)
   | MaintainerWithoutContact of string list
   | NameCollision of string
@@ -118,6 +119,11 @@ let string_of_error = function
       Printf.sprintf
         "Forbidden permission for file %s. All files should have permissions \
          644."
+        file
+  | ForbiddenCRLF file ->
+      Printf.sprintf
+        "The file %s contains CRLF line endings, which are not allowed in the \
+         opam-repository. Please normalise the file to use LF line endings."
         file
   | OpamLint warn ->
       let warn = OpamFileTools.warns_to_string [ warn ] in
