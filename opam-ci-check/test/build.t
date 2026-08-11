@@ -5,7 +5,7 @@ Test the build command:
   USER 1000:1000
   WORKDIR /home/opam
   RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
-  RUN opam init --reinit -ni
+  RUN opam init --reinit -ni || opam init --reinit -ni
   RUN opam option solver=builtin-0install && opam config report
   ENV OPAMDOWNLOADJOBS="1"
   ENV OPAMERRLOGLEN="0"
@@ -55,7 +55,7 @@ Test the build command:
   USER 1000:1000
   WORKDIR /home/opam
   RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
-  RUN opam init --reinit -ni
+  RUN opam init --reinit -ni || opam init --reinit -ni
   RUN opam option solver=builtin-0install && opam config report
   ENV OPAMDOWNLOADJOBS="1"
   ENV OPAMERRLOGLEN="0"
@@ -89,7 +89,7 @@ Test the build command:
   USER 1000:1000
   WORKDIR /home/opam
   RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
-  RUN opam init --reinit -ni
+  RUN opam init --reinit -ni || opam init --reinit -ni
   RUN opam option solver=builtin-0install && opam config report
   ENV OPAMDOWNLOADJOBS="1"
   ENV OPAMERRLOGLEN="0"
@@ -141,7 +141,7 @@ Test the build command:
   USER 1000:1000
   WORKDIR /home/opam
   RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
-  RUN opam init --reinit -ni
+  RUN opam init --reinit -ni || opam init --reinit -ni
   RUN opam option solver=builtin-0install && opam config report
   ENV OPAMDOWNLOADJOBS="1"
   ENV OPAMERRLOGLEN="0"
@@ -175,7 +175,7 @@ Test the build command:
   USER 1000:1000
   WORKDIR /home/opam
   RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
-  RUN opam init --reinit -ni
+  RUN opam init --reinit -ni || opam init --reinit -ni
   RUN opam option solver=builtin-0install && opam config report
   ENV OPAMDOWNLOADJOBS="1"
   ENV OPAMERRLOGLEN="0"
@@ -209,7 +209,7 @@ Test the build command:
   USER 1000:1000
   WORKDIR /home/opam
   RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
-  RUN opam init --reinit -ni
+  RUN opam init --reinit -ni || opam init --reinit -ni
   RUN opam option solver=builtin-0install && opam config report
   ENV OPAMDOWNLOADJOBS="1"
   ENV OPAMERRLOGLEN="0"
@@ -243,7 +243,7 @@ Test the build command:
   USER 1000:1000
   WORKDIR /home/opam
   RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
-  RUN opam init --reinit -ni
+  RUN opam init --reinit -ni || opam init --reinit -ni
   RUN opam option solver=builtin-0install && opam config report
   ENV OPAMDOWNLOADJOBS="1"
   ENV OPAMERRLOGLEN="0"

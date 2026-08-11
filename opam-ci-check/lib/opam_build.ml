@@ -108,7 +108,14 @@ let setup_repository ?(local=false) ~variant ~for_docker ~opam_version () =
   (* TODO: MacOS seems to have a bug in (copy ...) so I am forced to remove the (workdir ...) here.
      Otherwise the "opam pin" after the "opam repository set-url" will fail (cannot find the new package for some reason) *)
   run "%s -f %s/bin/opam-%s %s/bin/opam" ln prefix opam_version_str prefix ::
-  run ~network "opam init --reinit%s -ni" opamrc :: (* TODO: Remove ~network when https://github.com/ocurrent/ocaml-dockerfile/pull/132 is merged *)
+  (* NOTE: opam 2.6~alpha bumps the opam root layout from the 2.1 version the
+     base images ship with. On the first run it performs the migration and then
+     exits 10 (Aborted) with "Update done, please now retry your command", so we
+     have to run it again. No flag suppresses this (-y, --confirm-level,
+     OPAMNOAUTOUPGRADE and --cli=2.1 all still abort). The retry is conditional
+     so that opam versions needing no migration don't update the repositories,
+     and hit GitHub, twice per job. *)
+  run ~network "opam init --reinit%s -ni || opam init --reinit%s -ni" opamrc opamrc :: (* TODO: Remove ~network when https://github.com/ocurrent/ocaml-dockerfile/pull/132 is merged *)
   run "opam option solver=builtin-0install && opam config report" ::
   env "OPAMDOWNLOADJOBS" "1" :: (* Try to avoid github spam detection *)
   env "OPAMERRLOGLEN" "0" :: (* Show the whole log if it fails *)
