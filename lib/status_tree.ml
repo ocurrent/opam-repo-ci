@@ -77,9 +77,7 @@ let status (s, elms1) elms2 =
   li ~a:[a_class [status_class_name]] (elms1 @ elms2)
 
 let tag_experimental b =
-  (* TODO: Remove this *)
-  if Astring.String.is_prefix ~affix:"macos-homebrew" b ||
-    Astring.String.is_prefix ~affix:"freebsd" b
+  if Astring.String.is_prefix ~affix:"day10" b
   then b ^ " (experimental)"
   else b
 
