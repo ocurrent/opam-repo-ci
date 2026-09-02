@@ -256,15 +256,33 @@ let build (module Builder : Build_intf.S) ~analysis ~pkgopts ~master ~source ~op
   |> (fun x -> Node.branch ~label [x])
   |> Node.collapse ~key:"platform" ~value:label ~input:analysis
 
+(* Shadow the riscv64 build through day10, in addition to the OBuilder riscv64
+   test in [extras]. Same variants, distinct labels; the [build] passed in is
+   the day10 builder, which routes to the day10 pool. *)
+let day10 ~build =
+  let riscv_distro = Distro.tag_of_distro (`Ubuntu `V24_04) in
+  List.map (fun comp ->
+    let variant = Variant.v ~arch:`Riscv64 ~distro:riscv_distro ~compiler:(Ocaml_version.to_string comp, None) in
+    let label = Fmt.str "day10-riscv64-ocaml-%s" (Variant.ocaml_version_to_string variant) in
+    build ~opam_version ~lower_bounds:false ~revdeps:false label variant
+  ) default_compilers
+
 let with_cluster ~ocluster ~analysis ~lint ~master source =
   let module Builder : Build_intf.S = struct
-    let v = Cluster_build.v ocluster
+    let v ~label ~spec ~base ~master ~urgent commit =
+      Cluster_build.v ocluster ~label ~spec ~base ~master ~urgent commit
+    let list_revdeps = Cluster_build.list_revdeps ocluster
+  end in
+  let module Builder_day10 : Build_intf.S = struct
+    let v ~label ~spec ~base ~master ~urgent commit =
+      Cluster_build.v ocluster ~use_day10:true ~label ~spec ~base ~master ~urgent commit
     let list_revdeps = Cluster_build.list_revdeps ocluster
   end in
   let pkgopts =
     Current.map (fun x -> Analyse.Analysis.packages x
     |> List.filter_map get_significant_available_pkg) analysis
   in
+  let build_day10 = build (module Builder_day10) ~analysis ~pkgopts ~master ~source in
   let build = build (module Builder) ~analysis ~pkgopts ~master ~source in
   [
     Node.leaf ~label:"(lint)" (Node.action `Linted lint);
@@ -274,6 +292,9 @@ let with_cluster ~ocluster ~analysis ~lint ~master source =
     Node.branch ~label:"freebsd" (freebsd ~build);
     Node.branch ~label:"extras" (extras ~build);
   ]
+  @ (if Cluster_build.day10_available ocluster
+     then [ Node.branch ~label:"day10" (day10 ~build:build_day10) ]
+     else [])
 
 let with_docker ~host_arch ~analysis ~lint ~master source =
   let module Builder : Build_intf.S = Local_build in
