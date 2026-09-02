@@ -11,8 +11,13 @@ val config :
     [master] branch. This build is run on a cluster specified by [ocluster].
     The job is labelled [label]. [urgent] specifies whether high- and
     low-priority jobs are set as urgent. *)
+val day10_available : t -> bool
+(** [day10_available t] is true when day10 shadow builds are enabled
+    (OPAM_REPO_CI_USE_DAY10). *)
+
 val v :
   t ->
+  ?use_day10:bool ->
   label:string ->
   spec:Opam_ci_check.Spec.t Current.t ->
   base:Opam_ci_check.Spec.base Current.t ->

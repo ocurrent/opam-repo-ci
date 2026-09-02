@@ -159,7 +159,10 @@ let main config mode app capnp_address github_auth submission_uri prometheus_con
         ~protect:(String.starts_with ~prefix:"/job/") ()
     in
     let site =
-      Current_web.Site.v ?authn ~has_role ~secure_cookies:true ~challenge ~name:"opam-ci" routes
+      (* Secure cookies require HTTPS; over local HTTP the browser never returns
+         them, breaking the session (CSRF token) and the PoW challenge. Only set
+         Secure in production, which is served over HTTPS. *)
+      Current_web.Site.v ?authn ~has_role ~secure_cookies:(Conf.profile = `Production) ~challenge ~name:"opam-ci" routes
     in
     let prometheus =
       List.map (Lwt.map @@ Result.ok) (Prometheus_unix.serve prometheus_config)
