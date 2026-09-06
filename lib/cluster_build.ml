@@ -123,7 +123,12 @@ let day10_classify log =
   let has affix = Astring.String.is_infix ~affix log in
   if has "[NOTE] success" then Lwt_result.return ""
   else if has "[WARNING] no_solution" then
-    Lwt_result.fail (`Msg "day10: no solution (package not installable on this variant)")
+    (* No solution on this variant = the package is not available/installable
+       here (e.g. an [ocaml >= 5.2] constraint on a 4.14 variant). OBuilder
+       treats this as an accepted skip, not a failure; match that by using a
+       [SKIP]-prefixed error, which summary.ml counts as [skip] (non-gating)
+       rather than [err]. See mtelvers/day10#3. *)
+    Lwt_result.fail (`Msg "[SKIP] Package not available (day10: no solution on this variant)")
   else if has "[WARNING] dependency_failed" then
     Lwt_result.fail (`Msg "day10: a dependency failed to build")
   else if has "[ERROR] failure" then
