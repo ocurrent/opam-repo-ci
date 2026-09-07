@@ -122,6 +122,14 @@ let day10_action ~variant ~pkg ~with_test ~overlay_base ~commit =
 let day10_classify log =
   let has affix = Astring.String.is_infix ~affix log in
   if has "[NOTE] success" then Lwt_result.return ""
+  else if has "[NOTE] accept_failures" then
+    (* The build genuinely failed, but the maintainer declared this platform in
+       the package's x-ci-accept-failures field, so day10 tags the failure as
+       ignorable. Match OBuilder, whose log-matcher reports [SKIP] Failure
+       ignored for the same case (non-gating). Checked after [NOTE] success (so
+       a real success stays Ok) and before the failure markers (so an accepted
+       failure wins over [ERROR] failure / dependency_failed). *)
+    Lwt_result.fail (`Msg "[SKIP] Failure ignored")
   else if has "[WARNING] no_solution" then
     (* No solution on this variant = the package is not available/installable
        here (e.g. an [ocaml >= 5.2] constraint on a 4.14 variant). OBuilder
