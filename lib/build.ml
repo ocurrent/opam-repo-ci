@@ -146,12 +146,6 @@ let extras ~build =
     let arches =
       List.filter_map (function
         | `X86_64 | `Aarch32 | `I386 -> None
-        | `Riscv64 ->
-            let label = Ocaml_version.to_opam_arch `Riscv64 in
-            (* Pinned to 24.04: should track `Ubuntu `LTS, but we lack the
-               hardware to build ocaml/opam riscv64 images for newer LTSes. *)
-            let riscv_distro = Distro.tag_of_distro (`Ubuntu `V24_04) in
-            Some (build ~opam_version ~arch:`Riscv64 ~distro:riscv_distro ~compiler:(comp, None) label)
         | arch ->
             let label = Ocaml_version.to_opam_arch arch in
             Some (build ~opam_version ~arch ~distro:master_distro ~compiler:(comp, None) label)
@@ -260,7 +254,7 @@ let build (module Builder : Build_intf.S) ~analysis ~pkgopts ~master ~source ~op
    test in [extras]. Same variants, distinct labels; the [build] passed in is
    the day10 builder, which routes to the day10 pool. *)
 let day10 ~build =
-  let riscv_distro = Distro.tag_of_distro (`Ubuntu `V24_04) in
+  let riscv_distro = Distro.tag_of_distro master_distro in
   List.map (fun comp ->
     let variant = Variant.v ~arch:`Riscv64 ~distro:riscv_distro ~compiler:(Ocaml_version.to_string comp, None) in
     let label = Fmt.str "day10-riscv64-ocaml-%s" (Variant.ocaml_version_to_string variant) in
