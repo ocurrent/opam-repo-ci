@@ -264,7 +264,9 @@ let day10 ~build =
   List.map (fun comp ->
     let variant = Variant.v ~arch:`Riscv64 ~distro:riscv_distro ~compiler:(Ocaml_version.to_string comp, None) in
     let label = Fmt.str "day10-riscv64-ocaml-%s" (Variant.ocaml_version_to_string variant) in
-    build ~opam_version ~lower_bounds:false ~revdeps:false label variant
+    (* Lower-bounds runs go to day10 too (via --prefer-oldest); revdeps stay on
+       OBuilder for now (List_revdeps is output-parsed, not a day10 verb). *)
+    build ~opam_version ~lower_bounds:true ~revdeps:false label variant
   ) default_compilers
 
 let with_cluster ~ocluster ~analysis ~lint ~master source =
