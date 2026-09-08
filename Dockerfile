@@ -12,7 +12,7 @@ RUN opam pin add -yn current.dev         "https://github.com/mtelvers/ocurrent.g
     opam pin add -yn current_docker.dev  "https://github.com/mtelvers/ocurrent.git#35eb9592a2f39e1889edf03ea1f323d094fdece4" && \
     opam pin add -yn current_slack.dev   "https://github.com/mtelvers/ocurrent.git#35eb9592a2f39e1889edf03ea1f323d094fdece4" && \
     opam pin add -yn current_rpc.dev     "https://github.com/mtelvers/ocurrent.git#35eb9592a2f39e1889edf03ea1f323d094fdece4"
-RUN opam pin add -yn ocluster-api.0.3.0 "https://github.com/mtelvers/ocluster.git#6d62dbbfdd6e99409a9da3697f636560d7e19bb0"
+RUN opam pin add -yn ocluster-api.0.3.0 "https://github.com/mtelvers/ocluster.git#7da0d7662c51b1959bd06c9dc3e1afc9431c7df1"
 RUN opam install -y --deps-only .
 ADD --chown=opam . .
 RUN opam exec -- dune build ./_build/install/default/bin/opam-repo-ci-service ./_build/install/default/bin/opam-ci-check
