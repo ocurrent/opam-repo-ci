@@ -85,10 +85,18 @@ let day10_ocaml_version variant =
   | Some r -> "ocaml." ^ Ocaml_version.to_string r
   | None -> "ocaml." ^ mm
 
+(* A target that is itself a compiler package needs day10's --update-invariant:
+   otherwise pinning both [ocaml] (the variant) and the target compiler demands
+   two compilers and yields no solution. Mirrors OBuilder's opam_build.ml. *)
+let is_compiler_package pkg =
+  List.mem (OpamPackage.name_to_string pkg)
+    [ "ocaml-variants"; "ocaml-base-compiler"; "ocaml-compiler" ]
+
 (* Build a Custom kind="day10" job that health-checks [pkg]. [overlay_base] is
    the master commit for a PR overlay (head wins), or [None] for the head alone
-   (a PR that removes a package: its head tree already omits it). *)
-let day10_action ~variant ~pkg ~with_test ~overlay_base ~commit =
+   (a PR that removes a package: its head tree already omits it). [lower_bound]
+   requests day10's --prefer-oldest (the lower-bounds test). *)
+let day10_action ~variant ~pkg ~with_test ~lower_bound ~overlay_base ~commit =
   let os = match Variant.os variant with `Linux -> "linux" | `Macos -> "macos" | `Freebsd -> "freebsd" in
   let arch = Ocaml_version.to_opam_arch (Variant.arch variant) in
   let os_distribution, os_version =
@@ -110,6 +118,8 @@ let day10_action ~variant ~pkg ~with_test ~overlay_base ~commit =
     B.package_set d (OpamPackage.to_string pkg);
     B.ocaml_version_set d (day10_ocaml_version variant);
     B.with_test_set d with_test;
+    B.lower_bound_set d lower_bound;
+    B.update_invariant_set d (is_compiler_package pkg);
     B.os_set d os;
     B.arch_set d arch;
     B.os_distribution_set d os_distribution;
@@ -205,26 +215,26 @@ module Op = struct
       | _ -> timeout in
     (* A job runs on day10 iff it was submitted to the day10 pool (set in [v]
        via ~use_day10) — such jobs only exist when day10 is enabled, so the pool
-       alone is the signal. Only plain package builds/tests (incl. revdep
-       builds) are eligible; List_revdeps (output-parsed) and lower-bounds
-       (day10 has no --lower-bound) fall through to OBuilder even on that pool. *)
+       alone is the signal. Package builds/tests (incl. revdep builds) and
+       lower-bounds runs (day10's --prefer-oldest) are eligible; only
+       List_revdeps (output-parsed) falls through to OBuilder on that pool. *)
     let day10 =
       match ty with
-      | `Opam (`Build { lower_bounds = false; revdep; with_tests; _ }, pkg)
+      | `Opam (`Build { lower_bounds; revdep; with_tests; _ }, pkg)
         when String.equal pool day10_pool ->
           let target = match revdep with Some r -> r | None -> pkg in
-          Some (target, with_tests)
+          Some (target, with_tests, lower_bounds)
       | _ -> None
     in
     match day10 with
-    | Some (target, with_tests) ->
+    | Some (target, with_tests, lower_bounds) ->
         (* Overlay the base (master) so the PR is tested against current master
            (head wins per package version). Deleted packages generate no build
            jobs, so the overlay is exact for every job we create here; the only
            gap is a PR that removes a package a *modified* package still depends
            on (self-inconsistent) — accepted for now. *)
         let overlay_base = Some master in
-        let action = day10_action ~variant ~pkg:target ~with_test:with_tests ~overlay_base ~commit in
+        let action = day10_action ~variant ~pkg:target ~with_test:with_tests ~lower_bound:lower_bounds ~overlay_base ~commit in
         let cache_hint =
           Fmt.str "day10-%s-%s" (OpamPackage.to_string target) (Git.Commit_id.hash commit)
         in
