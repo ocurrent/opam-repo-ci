@@ -70,6 +70,17 @@ let add_default_matching_log_rules () =
         report = {|[SKIP] Failure ignored|};
         score = 100;
       };
+      { (* day10 equivalent of the rule above. day10 marks an accepted failure
+           with its own [NOTE] accept_failures line (it does the platform
+           matching itself, so the marker's presence already means the failure
+           is accepted), but leaves the genuine [ERROR] failure lines in the
+           log. Without this high score, the generic [ERROR] catch-all below
+           (score 20) would win and gate the job. Not newline-anchored: the
+           marker abuts the following [ERROR] line in day10's output. *)
+        pattern = {|\[NOTE\] accept_failures|};
+        report = {|[SKIP] Failure ignored|};
+        score = 100;
+      };
       { (* Catches failures when building dependencies *)
         pattern = {|[\n]opam-repo-ci detected dependencies failing: (.*)[\n]|};
         report = {|\1 failed to build|};
