@@ -68,9 +68,17 @@ let day10_enabled () =
   | Some ("1" | "true" | "yes") -> true
   | _ -> false
 
-(* day10 shadow builds run on this pool (the day10-capable workers, e.g.
-   carpenter). Hardcoded like the freebsd distro rather than configured. *)
-let day10_pool = "test"
+(* day10 shadow builds run on arch-specific day10-capable pools: riscv64 on
+   [test] (carpenter), x86_64 on [solver-test] (doris). Hardcoded like the
+   freebsd distro rather than configured. *)
+let day10_pool_of_variant variant =
+  match Variant.arch variant with
+  | `Riscv64 -> "test"
+  | _ -> "solver-test"
+
+(* A job is a day10 job iff it was submitted to one of these pools; no OBuilder
+   variant maps to them (see [pool_of_variant]), so the pool alone is the signal. *)
+let is_day10_pool pool = List.mem pool [ "test"; "solver-test" ]
 
 (* day10 constrains the compiler with [= version] (main.ml), so it needs an
    exact [ocaml.X.Y.Z]; the variant only carries the major.minor (e.g. "5.3").
@@ -221,7 +229,7 @@ module Op = struct
     let day10 =
       match ty with
       | `Opam (`Build { lower_bounds; revdep; with_tests; _ }, pkg)
-        when String.equal pool day10_pool ->
+        when is_day10_pool pool ->
           let target = match revdep with Some r -> r | None -> pkg in
           Some (target, with_tests, lower_bounds)
       | _ -> None
@@ -314,7 +322,7 @@ let v t ?(use_day10 = false) ~label ~spec ~base ~master ~urgent commit =
   (* Routing to day10 is carried by the pool: a day10 job goes to the day10
      pool, which — being part of the cache Key — also keeps its result distinct
      from the sibling OBuilder job at the same variant. *)
-  let pool = if use_day10 then day10_pool else pool_of_variant variant in
+  let pool = if use_day10 then day10_pool_of_variant variant else pool_of_variant variant in
   let t = { Op.config = t; master; urgent; base } in
   BC.get t { Op.Key.pool; commit; variant; ty }
   |> Current.Primitive.map_result (Result.map ignore) (* TODO: Create a separate type of cache that doesn't parse the output *)
