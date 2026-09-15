@@ -250,18 +250,38 @@ let build (module Builder : Build_intf.S) ~analysis ~pkgopts ~master ~source ~op
   |> (fun x -> Node.branch ~label [x])
   |> Node.collapse ~key:"platform" ~value:label ~input:analysis
 
-(* Shadow the riscv64 build through day10, in addition to the OBuilder riscv64
-   test in [extras]. Same variants, distinct labels; the [build] passed in is
-   the day10 builder, which routes to the day10 pool. *)
+(* Shadow OBuilder builds through day10, in addition to the OBuilder tests.
+   Same variants, distinct ["day10-"] labels; the [build] passed in is the day10
+   builder, which routes to the day10 pool. revdeps stay on OBuilder throughout
+   (List_revdeps is output-parsed, not a day10 verb). *)
 let day10 ~build =
-  let riscv_distro = Distro.tag_of_distro master_distro in
-  List.map (fun comp ->
-    let variant = Variant.v ~arch:`Riscv64 ~distro:riscv_distro ~compiler:(Ocaml_version.to_string comp, None) in
-    let label = Fmt.str "day10-riscv64-ocaml-%s" (Variant.ocaml_version_to_string variant) in
-    (* Lower-bounds runs go to day10 too (via --prefer-oldest); revdeps stay on
-       OBuilder for now (List_revdeps is output-parsed, not a day10 verb). *)
-    build ~opam_version ~lower_bounds:true ~revdeps:false label variant
-  ) default_compilers
+  (* riscv64 shadow (debian), as before. *)
+  let riscv =
+    let riscv_distro = Distro.tag_of_distro master_distro in
+    List.map (fun comp ->
+      let variant = Variant.v ~arch:`Riscv64 ~distro:riscv_distro ~compiler:(Ocaml_version.to_string comp, None) in
+      let label = Fmt.str "day10-riscv64-ocaml-%s" (Variant.ocaml_version_to_string variant) in
+      build ~opam_version ~lower_bounds:false ~revdeps:false label variant
+    ) default_compilers
+  in
+  (* x86_64 shadow mirroring the OBuilder [distributions] node: every active
+     linux distro plus [master_distro] (which [distributions] omits, testing it
+     in [compilers] instead). All validated on day10 across both
+     [default_compilers]. Lower-bounds stay off (day10's --prefer-oldest path is
+     validated separately; the OBuilder [compilers] node still covers it). *)
+  let x86_64 =
+    let distros = master_distro :: List.filter is_supported_linux_distro (Distro.active_distros `X86_64) in
+    List.concat_map (fun comp ->
+      let comp = Ocaml_version.to_string comp in
+      List.map (fun distro ->
+        let distro = Distro.tag_of_distro distro in
+        let variant = Variant.v ~arch:`X86_64 ~distro ~compiler:(comp, None) in
+        let label = Fmt.str "day10-%s-ocaml-%s" distro (Variant.ocaml_version_to_string variant) in
+        build ~opam_version ~lower_bounds:false ~revdeps:false label variant
+      ) distros
+    ) default_compilers
+  in
+  riscv @ x86_64
 
 let with_cluster ~ocluster ~analysis ~lint ~master source =
   let module Builder : Build_intf.S = struct
