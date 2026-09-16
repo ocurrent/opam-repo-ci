@@ -26,7 +26,7 @@ depends: [
   "dockerfile-opam" {>= "8.4.4"}
   "obuilder-spec"
   "ocaml-version" {>= "4.1.4"}
-  "prometheus-app"
+  "prometheus-app" {< "2.0"}
   "cmdliner" {>= "1.1.0"}
   "lwt"
   "cohttp-lwt-unix" {>= "6.0.0"}
