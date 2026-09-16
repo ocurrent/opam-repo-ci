@@ -2,7 +2,7 @@
 
 ## Operating Systems
 
-- alpine-3.23
+- alpine-3.24
 - archlinux
 - centos-10
 - centos-9
@@ -53,8 +53,8 @@
 
 |  OS | Arch | OCaml version |Opam version | Test lower-bounds | Test reverse dependencies |
 | --- | --- | --- | --- | --- | --- |
-| alpine-3.23 | amd64 | 4.14 | dev | No | No |
-| alpine-3.23 | amd64 | 5.5 | dev | No | No |
+| alpine-3.24 | amd64 | 4.14 | dev | No | No |
+| alpine-3.24 | amd64 | 5.5 | dev | No | No |
 | archlinux | amd64 | 4.14 | dev | No | No |
 | archlinux | amd64 | 5.5 | dev | No | No |
 | centos-10 | amd64 | 4.14 | dev | No | No |
