@@ -1,7 +1,7 @@
 FROM ocaml/opam:debian-13-ocaml-4.14 AS build
 RUN sudo ln -f /usr/bin/opam-2.5 /usr/bin/opam && opam init --reinit -ni
 RUN sudo apt-get update && sudo apt-get install libev-dev capnproto graphviz m4 pkg-config libsqlite3-dev libgmp-dev libffi-dev -y --no-install-recommends
-RUN cd ~/opam-repository && git fetch origin master && git reset --hard ceed23f9d33677f323a62325ad42599d14f46b98 && opam update
+RUN cd ~/opam-repository && git fetch origin master && git reset --hard 544825e77ff664abd7de5f51d723fbf53bec964d && opam update
 COPY --chown=opam opam-repo-ci-service.opam opam-repo-ci-api.opam opam-ci-check.opam /src/
 WORKDIR /src
 RUN opam option --global solver=builtin-0install
