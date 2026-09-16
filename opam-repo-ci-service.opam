@@ -12,8 +12,8 @@ homepage: "https://github.com/ocurrent/opam-repo-ci"
 bug-reports: "https://github.com/ocurrent/opam-repo-ci/issues"
 depends: [
   "routes" {>= "2.0.0"} # needed for ocurrent
-  "prometheus-app" {>= "1.2"} # needed for ocurrent
-  "prometheus" {>= "1.2"} # needed for ocurrent
+  "prometheus-app" {>= "1.2" & < "2.0"} # needed for ocurrent
+  "prometheus" {>= "1.2" & < "2.0"} # needed for ocurrent
   "ppx_sexp_conv"
   "ppx_deriving_yojson"
   "ppx_deriving" {with-test}
