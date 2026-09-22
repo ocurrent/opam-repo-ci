@@ -121,6 +121,19 @@ let add_default_matching_log_rules () =
         report = {|\1|};
         score = 25;
       };
+      { (* opam prints "The compilation of X failed at Y" at column 0 on some
+           distros but, on others, only inside its 8-space-indented replay box
+           (#=== ERROR while compiling … ===). The column-0-anchored [ERROR]
+           rules miss the indented form, leaving only day10's generic
+           "<pkg> failed:" header — so the same failure renders differently
+           across variants. Match it with any leading indentation and score it
+           above the generic catch-all (20) so the summary is consistent. Kept
+           below the specific `# …: error:` rules (30+), so a real compiler
+           error still wins when one is captured at column 0. *)
+        pattern = {|[\n] *\[ERROR\] (The compilation of .+ failed at .+)[\n]|};
+        report = {|\1|};
+        score = 28;
+      };
       { (* Opam errors *)
         pattern = {|[\n]\[ERROR\] (.+)[\n]|};
         report = {|\1|};
