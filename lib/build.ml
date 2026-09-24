@@ -272,47 +272,37 @@ let day10 ~build =
     | `Riscv64 -> [ master_distro ]
     | arch -> master_distro :: List.filter is_supported_linux_distro (Distro.active_distros arch)
   in
-  (* Every day10 variant as a (family, version, arch, variant) tuple. *)
+  (* Every day10 variant as a (distro, arch, variant) tuple. *)
   let leaves =
     List.concat_map (fun arch ->
       let arch_tag = Ocaml_version.to_opam_arch arch in
       List.concat_map (fun distro ->
-        let tag = Distro.tag_of_distro distro in
-        let family, version =
-          match String.rindex_opt tag '-' with
-          | Some i -> String.sub tag 0 i, String.sub tag (i + 1) (String.length tag - i - 1)
-          | None -> tag, ""
-        in
+        let distro = Distro.tag_of_distro distro in
         List.map
           (fun comp ->
             let comp = Ocaml_version.to_string comp in
-            (family, version, arch_tag, Variant.v ~arch ~distro:tag ~compiler:(comp, None)))
+            (distro, arch_tag, Variant.v ~arch ~distro ~compiler:(comp, None)))
           default_compilers)
         (distros_of arch))
       [ `X86_64; `Ppc64le; `Riscv64 ]
   in
-  (* Nest as [day10 > family > version > arch > ocaml] (leaf label = the ocaml
-     version). archlinux has no version, so it skips that level (family > arch >
-     ocaml). This is tree/labels only — the day10 cache key is
-     pool/commit/variant/ty (see [Cluster_build]), so it re-keys nothing.
-     lower-bounds and revdeps stay off (day10's --prefer-oldest is validated
-     separately and the OBuilder [compilers] node still covers lower-bounds;
-     day10 has no revdeps verb). *)
-  let leaf (_, _, _, variant) =
+  (* Nest as [day10 > distro > arch > ocaml]: distro is the full tag (e.g.
+     debian-13), so many-version families stay flat siblings (debian-12,
+     debian-13, …) rather than debian > 12 / debian > 13, and versionless
+     archlinux needs no special case. Leaf label = the ocaml version. Tree and
+     labels only — the day10 cache key is pool/commit/variant/ty (see
+     [Cluster_build]), so it re-keys nothing. lower-bounds and revdeps stay off
+     (day10's --prefer-oldest is validated separately and the OBuilder
+     [compilers] node still covers lower-bounds; day10 has no revdeps verb). *)
+  let leaf (_, _, variant) =
     build ~opam_version ~lower_bounds:false ~revdeps:false
       (Variant.ocaml_version_to_string variant) variant
   in
-  let arch_level ls =
-    group_by (fun (_, _, arch, _) -> arch) ls
-    |> List.map (fun (arch, ls) -> Node.branch ~label:arch (List.map leaf ls))
-  in
-  group_by (fun (family, _, _, _) -> family) leaves
-  |> List.map (fun (family, fls) ->
-         group_by (fun (_, version, _, _) -> version) fls
-         |> List.concat_map (fun (version, vls) ->
-                if version = "" then arch_level vls
-                else [ Node.branch ~label:version (arch_level vls) ])
-         |> Node.branch ~label:family)
+  group_by (fun (distro, _, _) -> distro) leaves
+  |> List.map (fun (distro, dls) ->
+         group_by (fun (_, arch, _) -> arch) dls
+         |> List.map (fun (arch, als) -> Node.branch ~label:arch (List.map leaf als))
+         |> Node.branch ~label:distro)
 
 let with_cluster ~ocluster ~analysis ~lint ~master source =
   let module Builder : Build_intf.S = struct
