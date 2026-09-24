@@ -281,7 +281,24 @@ let day10 ~build =
       ) distros
     ) default_compilers
   in
-  riscv @ x86_64
+  (* ppc64le shadow: the active ppc64le distros (all Debian/Ubuntu — no fedora/
+     alpine/opensuse ppc64le images) plus master_distro. Validated on day10
+     across both compilers. Labels are arch-qualified to stay distinct from the
+     unqualified x86_64 rows above. Routed to the ppc64 day10 pool by
+     [Cluster_build.day10_pool_of_variant]. *)
+  let ppc64 =
+    let distros = master_distro :: List.filter is_supported_linux_distro (Distro.active_distros `Ppc64le) in
+    List.concat_map (fun comp ->
+      let comp = Ocaml_version.to_string comp in
+      List.map (fun distro ->
+        let distro = Distro.tag_of_distro distro in
+        let variant = Variant.v ~arch:`Ppc64le ~distro ~compiler:(comp, None) in
+        let label = Fmt.str "day10-ppc64-%s-ocaml-%s" distro (Variant.ocaml_version_to_string variant) in
+        build ~opam_version ~lower_bounds:false ~revdeps:false label variant
+      ) distros
+    ) default_compilers
+  in
+  riscv @ x86_64 @ ppc64
 
 let with_cluster ~ocluster ~analysis ~lint ~master source =
   let module Builder : Build_intf.S = struct
