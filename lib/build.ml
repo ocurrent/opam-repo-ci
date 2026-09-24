@@ -255,50 +255,64 @@ let build (module Builder : Build_intf.S) ~analysis ~pkgopts ~master ~source ~op
    builder, which routes to the day10 pool. revdeps stay on OBuilder throughout
    (List_revdeps is output-parsed, not a day10 verb). *)
 let day10 ~build =
-  (* riscv64 shadow (debian), as before. *)
-  let riscv =
-    let riscv_distro = Distro.tag_of_distro master_distro in
-    List.map (fun comp ->
-      let variant = Variant.v ~arch:`Riscv64 ~distro:riscv_distro ~compiler:(Ocaml_version.to_string comp, None) in
-      let label = Fmt.str "day10-riscv64-ocaml-%s" (Variant.ocaml_version_to_string variant) in
-      build ~opam_version ~lower_bounds:false ~revdeps:false label variant
-    ) default_compilers
+  (* Group [xs] by [key], preserving first-seen order; returns (key, members). *)
+  let group_by key xs =
+    List.fold_left (fun acc x ->
+      let k = key x in
+      if List.mem_assoc k acc
+      then List.map (fun (k', g) -> if k' = k then (k', g @ [ x ]) else (k', g)) acc
+      else acc @ [ (k, [ x ]) ])
+      [] xs
   in
-  (* x86_64 shadow mirroring the OBuilder [distributions] node: every active
-     linux distro plus [master_distro] (which [distributions] omits, testing it
-     in [compilers] instead). All validated on day10 across both
-     [default_compilers]. Lower-bounds stay off (day10's --prefer-oldest path is
-     validated separately; the OBuilder [compilers] node still covers it). *)
-  let x86_64 =
-    let distros = master_distro :: List.filter is_supported_linux_distro (Distro.active_distros `X86_64) in
-    List.concat_map (fun comp ->
-      let comp = Ocaml_version.to_string comp in
-      List.map (fun distro ->
-        let distro = Distro.tag_of_distro distro in
-        let variant = Variant.v ~arch:`X86_64 ~distro ~compiler:(comp, None) in
-        let label = Fmt.str "day10-%s-ocaml-%s" distro (Variant.ocaml_version_to_string variant) in
-        build ~opam_version ~lower_bounds:false ~revdeps:false label variant
-      ) distros
-    ) default_compilers
+  (* Per-arch distro sets: riscv64 stays debian-13-only; x86_64/ppc64 mirror the
+     OBuilder [distributions] node (active linux distros + [master_distro], which
+     that node omits — master is tested in [compilers]). All validated on day10
+     across both [default_compilers]. *)
+  let distros_of = function
+    | `Riscv64 -> [ master_distro ]
+    | arch -> master_distro :: List.filter is_supported_linux_distro (Distro.active_distros arch)
   in
-  (* ppc64le shadow: the active ppc64le distros (all Debian/Ubuntu — no fedora/
-     alpine/opensuse ppc64le images) plus master_distro. Validated on day10
-     across both compilers. Labels are arch-qualified to stay distinct from the
-     unqualified x86_64 rows above. Routed to the ppc64 day10 pool by
-     [Cluster_build.day10_pool_of_variant]. *)
-  let ppc64 =
-    let distros = master_distro :: List.filter is_supported_linux_distro (Distro.active_distros `Ppc64le) in
-    List.concat_map (fun comp ->
-      let comp = Ocaml_version.to_string comp in
-      List.map (fun distro ->
-        let distro = Distro.tag_of_distro distro in
-        let variant = Variant.v ~arch:`Ppc64le ~distro ~compiler:(comp, None) in
-        let label = Fmt.str "day10-ppc64-%s-ocaml-%s" distro (Variant.ocaml_version_to_string variant) in
-        build ~opam_version ~lower_bounds:false ~revdeps:false label variant
-      ) distros
-    ) default_compilers
+  (* Every day10 variant as a (family, version, arch, variant) tuple. *)
+  let leaves =
+    List.concat_map (fun arch ->
+      let arch_tag = Ocaml_version.to_opam_arch arch in
+      List.concat_map (fun distro ->
+        let tag = Distro.tag_of_distro distro in
+        let family, version =
+          match String.rindex_opt tag '-' with
+          | Some i -> String.sub tag 0 i, String.sub tag (i + 1) (String.length tag - i - 1)
+          | None -> tag, ""
+        in
+        List.map
+          (fun comp ->
+            let comp = Ocaml_version.to_string comp in
+            (family, version, arch_tag, Variant.v ~arch ~distro:tag ~compiler:(comp, None)))
+          default_compilers)
+        (distros_of arch))
+      [ `X86_64; `Ppc64le; `Riscv64 ]
   in
-  riscv @ x86_64 @ ppc64
+  (* Nest as [day10 > family > version > arch > ocaml] (leaf label = the ocaml
+     version). archlinux has no version, so it skips that level (family > arch >
+     ocaml). This is tree/labels only — the day10 cache key is
+     pool/commit/variant/ty (see [Cluster_build]), so it re-keys nothing.
+     lower-bounds and revdeps stay off (day10's --prefer-oldest is validated
+     separately and the OBuilder [compilers] node still covers lower-bounds;
+     day10 has no revdeps verb). *)
+  let leaf (_, _, _, variant) =
+    build ~opam_version ~lower_bounds:false ~revdeps:false
+      (Variant.ocaml_version_to_string variant) variant
+  in
+  let arch_level ls =
+    group_by (fun (_, _, arch, _) -> arch) ls
+    |> List.map (fun (arch, ls) -> Node.branch ~label:arch (List.map leaf ls))
+  in
+  group_by (fun (family, _, _, _) -> family) leaves
+  |> List.map (fun (family, fls) ->
+         group_by (fun (_, version, _, _) -> version) fls
+         |> List.concat_map (fun (version, vls) ->
+                if version = "" then arch_level vls
+                else [ Node.branch ~label:version (arch_level vls) ])
+         |> Node.branch ~label:family)
 
 let with_cluster ~ocluster ~analysis ~lint ~master source =
   let module Builder : Build_intf.S = struct
