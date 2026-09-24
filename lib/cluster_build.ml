@@ -68,17 +68,19 @@ let day10_enabled () =
   | Some ("1" | "true" | "yes") -> true
   | _ -> false
 
-(* day10 shadow builds run on arch-specific day10-capable pools: riscv64 on
-   [test] (carpenter), x86_64 on [solver-test] (doris). Hardcoded like the
-   freebsd distro rather than configured. *)
+(* day10 shadow builds run on arch-specific day10-capable pools named
+   [day10-<os>-<arch>] (opam arch name), mirroring the OBuilder pool set — e.g.
+   [day10-linux-x86_64] (doris), [day10-linux-riscv64] (carpenter),
+   [day10-linux-ppc64] (orithia). *)
 let day10_pool_of_variant variant =
-  match Variant.arch variant with
-  | `Riscv64 -> "test"
-  | _ -> "solver-test"
+  let os = match Variant.os variant with
+    | `Linux -> "linux" | `Macos -> "macos" | `Freebsd -> "freebsd"
+  in
+  Fmt.str "day10-%s-%s" os (Ocaml_version.to_opam_arch (Variant.arch variant))
 
-(* A job is a day10 job iff it was submitted to one of these pools; no OBuilder
-   variant maps to them (see [pool_of_variant]), so the pool alone is the signal. *)
-let is_day10_pool pool = List.mem pool [ "test"; "solver-test" ]
+(* A job is a day10 job iff it was submitted to a [day10-*] pool; no OBuilder
+   variant maps to one (see [pool_of_variant]), so the pool alone is the signal. *)
+let is_day10_pool pool = String.starts_with ~prefix:"day10-" pool
 
 (* day10 constrains the compiler with [= version] (main.ml), so it needs an
    exact [ocaml.X.Y.Z]; the variant only carries the major.minor (e.g. "5.3").
