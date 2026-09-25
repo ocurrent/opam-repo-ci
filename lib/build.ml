@@ -264,10 +264,10 @@ let day10 ~build =
       else acc @ [ (k, [ x ]) ])
       [] xs
   in
-  (* Per-arch distro sets: riscv64 stays debian-13-only; x86_64/ppc64 mirror the
-     OBuilder [distributions] node (active linux distros + [master_distro], which
-     that node omits — master is tested in [compilers]). All validated on day10
-     across both [default_compilers]. *)
+  (* Per-arch distro sets: riscv64 stays debian-13-only; x86_64/arm64/ppc64 mirror
+     the OBuilder [distributions] node (active linux distros + [master_distro],
+     which that node omits — master is tested in [compilers]). All validated on
+     day10 across both [default_compilers]. *)
   let distros_of = function
     | `Riscv64 -> [ master_distro ]
     | arch -> master_distro :: List.filter is_supported_linux_distro (Distro.active_distros arch)
@@ -284,7 +284,7 @@ let day10 ~build =
             (distro, arch_tag, Variant.v ~arch ~distro ~compiler:(comp, None)))
           default_compilers)
         (distros_of arch))
-      [ `X86_64; `Ppc64le; `Riscv64 ]
+      [ `X86_64; `Aarch64; `Ppc64le; `Riscv64 ]
   in
   (* Nest as [day10 > distro > arch > ocaml]: distro is the full tag (e.g.
      debian-13), so many-version families stay flat siblings (debian-12,
