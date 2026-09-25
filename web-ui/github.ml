@@ -12,8 +12,12 @@ let headers = Cohttp.Header.init_with "Content-Type" "text/html; charset=utf-8"
 let normal_response x =
   x >|= fun x -> `Response x
 
+(* Error bodies may echo client-supplied strings (e.g. an unknown variant), so
+   never serve them as HTML. *)
+let error_headers = Cohttp.Header.init_with "Content-Type" "text/plain; charset=utf-8"
+
 let respond_error status body =
-  Server.respond_error ~status ~headers ~body () |> normal_response
+  Server.respond_error ~status ~headers:error_headers ~body () |> normal_response
 
 let (>>!=) x f =
   x >>= function
@@ -308,7 +312,7 @@ module Repo_handle = struct
       let uri = job_url ~owner ~name ~hash variant |> Uri.of_string in
       Server.respond_redirect ~uri () |> normal_response
     | Error { Capnp_rpc.Exception.reason; _ } ->
-      Server.respond_error ~body:reason () |> normal_response
+      respond_error `Internal_server_error reason
 
   let post_rebuild_mode ~owner ~name ~repo hash rebuild_mode =
     let rebuild_all =
