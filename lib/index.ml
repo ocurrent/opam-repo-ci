@@ -142,7 +142,7 @@ module Commit_info_cache = struct
     |> Stdlib.Option.iter (fun x -> Metrics.modify_n_per_status (fun x -> x - 1) x.build_status);
     (* Increment new status *)
     Metrics.modify_n_per_status (fun x -> x + 1) status.build_status;
-    Hashtbl.add cache key status
+    Hashtbl.replace cache key status
 
   let find ~owner ~name ~hash =
     Hashtbl.find_opt cache (owner, name, hash)
