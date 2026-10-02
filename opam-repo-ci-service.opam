@@ -12,8 +12,7 @@ homepage: "https://github.com/ocurrent/opam-repo-ci"
 bug-reports: "https://github.com/ocurrent/opam-repo-ci/issues"
 depends: [
   "routes" {>= "2.0.0"} # needed for ocurrent
-  "prometheus-app" {>= "1.2" & < "2.0"} # needed for ocurrent
-  "prometheus" {>= "1.2" & < "2.0"} # needed for ocurrent
+  "prometheus-app" {>= "2.0"}
   "ppx_sexp_conv"
   "ppx_deriving_yojson"
   "ppx_deriving" {with-test}
@@ -23,7 +22,7 @@ depends: [
   "dune" {>= "3.16"}
   "ocaml" {>= "4.14.1"}
   "current_incr" {>= "0.6.0"} # see https://github.com/ocurrent/opam-repo-ci/pull/161
-  "current" {>= "0.6.6"}
+  "current" {>= "0.8.0"}
   "current_git"
   "current_github"
   "current_docker"
