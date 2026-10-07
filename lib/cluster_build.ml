@@ -102,11 +102,9 @@ let is_compiler_package pkg =
   List.mem (OpamPackage.name_to_string pkg)
     [ "ocaml-variants"; "ocaml-base-compiler"; "ocaml-compiler" ]
 
-(* Build a Custom kind="day10" job that health-checks [pkg]. [overlay_base] is
-   the master commit for a PR overlay (head wins), or [None] for the head alone
-   (a PR that removes a package: its head tree already omits it). [lower_bound]
-   requests day10's --prefer-oldest (the lower-bounds test). *)
-let day10_action ~variant ~pkg ~with_test ~lower_bound ~overlay_base ~commit =
+(* Decompose a variant into the day10 target fields: os, opam arch, and the
+   (distribution, version) split of the distribution tag at its last '-'. *)
+let day10_platform variant =
   let os = match Variant.os variant with `Linux -> "linux" | `Macos -> "macos" | `Freebsd -> "freebsd" in
   let arch = Ocaml_version.to_opam_arch (Variant.arch variant) in
   let os_distribution, os_version =
@@ -115,6 +113,14 @@ let day10_action ~variant ~pkg ~with_test ~lower_bound ~overlay_base ~commit =
     | Some i -> (String.sub d 0 i, String.sub d (i + 1) (String.length d - i - 1))
     | None -> (d, "")
   in
+  (os, arch, os_distribution, os_version)
+
+(* Build a Custom kind="day10" job that health-checks [pkg]. [overlay_base] is
+   the master commit for a PR overlay (head wins), or [None] for the head alone
+   (a PR that removes a package: its head tree already omits it). [lower_bound]
+   requests day10's --prefer-oldest (the lower-bounds test). *)
+let day10_action ~variant ~pkg ~with_test ~lower_bound ~overlay_base ~commit =
+  let os, arch, os_distribution, os_version = day10_platform variant in
   let payload builder =
     let module B = Cluster_api.Raw.Builder.Day10 in
     let d = B.init_pointer builder in
@@ -130,6 +136,29 @@ let day10_action ~variant ~pkg ~with_test ~lower_bound ~overlay_base ~commit =
     B.with_test_set d with_test;
     B.lower_bound_set d lower_bound;
     B.update_invariant_set d (is_compiler_package pkg);
+    B.os_set d os;
+    B.arch_set d arch;
+    B.os_distribution_set d os_distribution;
+    B.os_version_set d os_version
+  in
+  Cluster_api.Submission.custom_build (Cluster_api.Custom.v ~kind:"day10" payload)
+
+(* A Custom kind="day10" job that lists the revdeps of [pkg] — the day10
+   equivalent of OBuilder's List_revdeps. [overlay_base] is the master commit for
+   the PR overlay, so the list is computed against the merged tree (head wins).
+   The worker brackets day10's output with @@@OUTPUT markers; [parse_output] cuts
+   it out and [Common.revdeps] parses it. *)
+let day10_revdeps_action ~variant ~pkg ~overlay_base ~commit =
+  let os, arch, os_distribution, os_version = day10_platform variant in
+  let payload builder =
+    let module B = Cluster_api.Raw.Builder.Day10 in
+    let d = B.init_pointer builder in
+    B.verb_set d "revdeps";
+    B.opam_repository_set d (Git.Commit_id.repo commit);
+    B.opam_repository_commit_set d (Git.Commit_id.hash commit);
+    (match overlay_base with Some h -> B.opam_repository_base_set d h | None -> ());
+    B.package_set d (OpamPackage.to_string pkg);
+    B.ocaml_version_set d (day10_ocaml_version variant);
     B.os_set d os;
     B.arch_set d arch;
     B.os_distribution_set d os_distribution;
@@ -202,19 +231,22 @@ module Op = struct
       | false, `Opam (`List_revdeps _, _) -> Some (Buffer.create 1024)
       | false, _ -> None
     in
+    let extract_output contents =
+      match Astring.String.cuts ~sep:"\n@@@OUTPUT\n" contents with
+      | [_; output; _] -> Lwt_result.return output
+      | [_; rest ] when Astring.String.is_prefix ~affix:"@@@OUTPUT\n" rest -> Lwt_result.return ""
+      | _ -> Lwt_result.fail (`Msg "Missing output from command")
+    in
     Capability.with_ref build_job (run_job ?buffer ~job) >>!= fun (_ : string) ->
-    if day10 then
-      match buffer with
-      | Some b -> day10_classify (Buffer.contents b)
-      | None -> Lwt_result.return ""
-    else
-      match buffer with
-      | None -> Lwt_result.return ""
-      | Some buffer ->
-        match Astring.String.cuts ~sep:"\n@@@OUTPUT\n" (Buffer.contents buffer) with
-        | [_; output; _] -> Lwt_result.return output
-        | [_; rest ] when Astring.String.is_prefix ~affix:"@@@OUTPUT\n" rest -> Lwt_result.return ""
-        | _ -> Lwt_result.fail (`Msg "Missing output from command")
+    match day10, ty with
+    | true, `Opam (`List_revdeps _, _) ->
+      (* day10 revdeps: the package list sits between the @@@OUTPUT markers the
+         dispatch writes, exactly like the OBuilder List_revdeps spec. *)
+      (match buffer with Some b -> extract_output (Buffer.contents b) | None -> Lwt_result.return "")
+    | true, _ ->
+      (match buffer with Some b -> day10_classify (Buffer.contents b) | None -> Lwt_result.return "")
+    | false, _ ->
+      (match buffer with None -> Lwt_result.return "" | Some b -> extract_output (Buffer.contents b))
 
   let build { config; master; urgent; base } job
       { Key.pool; commit; variant; ty } =
@@ -233,11 +265,13 @@ module Op = struct
       | `Opam (`Build { lower_bounds; revdep; with_tests; _ }, pkg)
         when is_day10_pool pool ->
           let target = match revdep with Some r -> r | None -> pkg in
-          Some (target, with_tests, lower_bounds)
-      | _ -> None
+          `Build (target, with_tests, lower_bounds)
+      | `Opam (`List_revdeps _, pkg) when is_day10_pool pool ->
+          `Revdeps pkg
+      | _ -> `Obuilder
     in
     match day10 with
-    | Some (target, with_tests, lower_bounds) ->
+    | `Build (target, with_tests, lower_bounds) ->
         (* Overlay the base (master) so the PR is tested against current master
            (head wins per package version). Deleted packages generate no build
            jobs, so the overlay is exact for every job we create here; the only
@@ -259,7 +293,24 @@ module Op = struct
         in
         Current.Job.start_with ~pool:build_pool job ~timeout ~level:Current.Level.Average >>=
         parse_output ~day10:true ty job
-    | None ->
+    | `Revdeps pkg ->
+        (* day10's revdeps list, computed against the merged tree (as the build
+           above). [pool] is already the day10 pool (from the Key). *)
+        let overlay_base = Some master in
+        let action = day10_revdeps_action ~variant ~pkg ~overlay_base ~commit in
+        let cache_hint =
+          Fmt.str "day10-revdeps-%s-%s" (OpamPackage.to_string pkg) (Git.Commit_id.hash commit)
+        in
+        Current.Job.log job
+          "Listing revdeps with day10 (variant %a, package %s)"
+          Variant.pp variant (OpamPackage.to_string pkg);
+        let src = (Git.Commit_id.repo commit, []) in
+        let build_pool =
+          Current_ocluster.Connection.pool ?urgent ~job ~pool ~action ~cache_hint ~src connection
+        in
+        Current.Job.start_with ~pool:build_pool job ~timeout ~level:Current.Level.Average >>=
+        parse_output ~day10:true ty job
+    | `Obuilder ->
         let os = match Variant.os variant with
           | `Macos | `Linux | `Freebsd -> `Unix
         in
@@ -329,7 +380,7 @@ let v t ?(use_day10 = false) ~label ~spec ~base ~master ~urgent commit =
   BC.get t { Op.Key.pool; commit; variant; ty }
   |> Current.Primitive.map_result (Result.map ignore) (* TODO: Create a separate type of cache that doesn't parse the output *)
 
-let list_revdeps t ~variant ~opam_version ~pkgopt ~new_pkgs ~base ~master ~after commit =
+let list_revdeps_gen ~use_day10 t ~variant ~opam_version ~pkgopt ~new_pkgs ~base ~master ~after commit =
   Current.component "list revdeps" |>
   let> {Package_opt.pkg; urgent; has_tests = _} = pkgopt
   and> new_pkgs
@@ -337,8 +388,14 @@ let list_revdeps t ~variant ~opam_version ~pkgopt ~new_pkgs ~base ~master ~after
   and> commit
   and> master
   and> () = after in
-  let pool = pool_of_variant variant in
+  (* On a day10 pool, [Op.build] runs the [revdeps] verb and cuts the list from
+     the @@@OUTPUT markers; otherwise it is the OBuilder [opam list] spec. Either
+     way the result is the same newline-separated package list. *)
+  let pool = if use_day10 then day10_pool_of_variant variant else pool_of_variant variant in
   let t = { Op.config = t; master; urgent; base } in
   let ty = `Opam (`List_revdeps {Spec.opam_version}, pkg) in
   BC.get t { Op.Key.pool; commit; variant; ty }
   |> Current.Primitive.map_result (Result.map (Common.revdeps ~pkg ~new_pkgs))
+
+let list_revdeps = list_revdeps_gen ~use_day10:false
+let list_revdeps_day10 = list_revdeps_gen ~use_day10:true

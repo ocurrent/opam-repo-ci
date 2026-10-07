@@ -252,8 +252,8 @@ let build (module Builder : Build_intf.S) ~analysis ~pkgopts ~master ~source ~op
 
 (* Shadow OBuilder builds through day10, in addition to the OBuilder tests.
    Same variants, distinct ["day10-"] labels; the [build] passed in is the day10
-   builder, which routes to the day10 pool. revdeps stay on OBuilder throughout
-   (List_revdeps is output-parsed, not a day10 verb). *)
+   builder, which routes to the day10 pool — including the revdeps list (day10's
+   [revdeps] verb) and each revdep build, on the debian-13 / x86_64 leaf. *)
 let day10 ~build =
   (* Group [xs] by [key], preserving first-seen order; returns (key, members). *)
   let group_by key xs =
@@ -291,11 +291,15 @@ let day10 ~build =
      debian-13, …) rather than debian > 12 / debian > 13, and versionless
      archlinux needs no special case. Leaf label = the ocaml version. Tree and
      labels only — the day10 cache key is pool/commit/variant/ty (see
-     [Cluster_build]), so it re-keys nothing. lower-bounds and revdeps stay off
-     (day10's --prefer-oldest is validated separately and the OBuilder
-     [compilers] node still covers lower-bounds; day10 has no revdeps verb). *)
-  let leaf (_, _, variant) =
-    build ~opam_version ~lower_bounds:false ~revdeps:false
+     [Cluster_build]), so it re-keys nothing. lower-bounds stays off (day10's
+     --prefer-oldest is validated separately and the OBuilder [compilers] node
+     still covers lower-bounds). revdeps mirror the OBuilder [compilers] node,
+     which runs them on x86_64 / [master_distro] only, so the day10 shadow does
+     the same: enable revdeps on the debian-13 / x86_64 leaf alone. *)
+  let master_distro_tag = Distro.tag_of_distro master_distro in
+  let leaf (distro, arch, variant) =
+    let revdeps = String.equal distro master_distro_tag && String.equal arch "x86_64" in
+    build ~opam_version ~lower_bounds:false ~revdeps
       (Variant.ocaml_version_to_string variant) variant
   in
   group_by (fun (distro, _, _) -> distro) leaves
@@ -313,7 +317,7 @@ let with_cluster ~ocluster ~analysis ~lint ~master source =
   let module Builder_day10 : Build_intf.S = struct
     let v ~label ~spec ~base ~master ~urgent commit =
       Cluster_build.v ocluster ~use_day10:true ~label ~spec ~base ~master ~urgent commit
-    let list_revdeps = Cluster_build.list_revdeps ocluster
+    let list_revdeps = Cluster_build.list_revdeps_day10 ocluster
   end in
   let pkgopts =
     Current.map (fun x -> Analyse.Analysis.packages x
