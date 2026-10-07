@@ -43,3 +43,17 @@ val list_revdeps :
   after:unit Current.t ->
   Current_git.Commit_id.t Current.t ->
   OpamPackage.Set.t Current.t
+
+(** As [list_revdeps], but the list is computed by day10's [revdeps] verb on the
+    day10 pool, rather than by the OBuilder [opam list] spec. *)
+val list_revdeps_day10 :
+  t ->
+  variant:Opam_ci_check.Variant.t ->
+  opam_version:Opam_ci_check.Opam_version.t ->
+  pkgopt:Package_opt.t Current.t ->
+  new_pkgs:OpamPackage.t list Current.t ->
+  base:Opam_ci_check.Spec.base Current.t ->
+  master:Current_git.Commit.t Current.t ->
+  after:unit Current.t ->
+  Current_git.Commit_id.t Current.t ->
+  OpamPackage.Set.t Current.t
