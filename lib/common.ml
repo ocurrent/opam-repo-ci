@@ -2,14 +2,16 @@ let parse_revdeps ~pkg output =
   String.split_on_char '\n' output
   |> List.fold_left (fun acc -> function
     | "" -> acc
-    | revdep ->
-        let revdep = OpamPackage.of_string revdep in
-        if OpamPackage.equal pkg revdep then
-          (* NOTE: opam list --recursive --depends-on <pkg>
-             also returns <pkg> itself *)
-          acc
-        else
-          OpamPackage.Set.add revdep acc
+    | line ->
+        (* day10's revdeps output can carry non-package lines (opam warnings)
+           between the @@@OUTPUT markers, so skip anything that isn't a package.
+           OBuilder's [opam list] output is clean, so this is a no-op there.
+           NOTE: [opam list --recursive --depends-on <pkg>] also returns <pkg>
+           itself, which we drop. *)
+        match OpamPackage.of_string_opt line with
+        | Some revdep when not (OpamPackage.equal pkg revdep) ->
+            OpamPackage.Set.add revdep acc
+        | _ -> acc
   ) OpamPackage.Set.empty
 
 (* Don't include new packages that we're adding
