@@ -5,13 +5,13 @@ RUN cd ~/opam-repository && git fetch origin master && git reset --hard 5e04663b
 COPY --chown=opam opam-repo-ci-service.opam opam-repo-ci-api.opam opam-ci-check.opam /src/
 WORKDIR /src
 RUN opam option --global solver=builtin-0install
-RUN opam pin add -yn current.dev         "https://github.com/mtelvers/ocurrent.git#35eb9592a2f39e1889edf03ea1f323d094fdece4" && \
-    opam pin add -yn current_web.dev     "https://github.com/mtelvers/ocurrent.git#35eb9592a2f39e1889edf03ea1f323d094fdece4" && \
-    opam pin add -yn current_git.dev     "https://github.com/mtelvers/ocurrent.git#35eb9592a2f39e1889edf03ea1f323d094fdece4" && \
-    opam pin add -yn current_github.dev  "https://github.com/mtelvers/ocurrent.git#35eb9592a2f39e1889edf03ea1f323d094fdece4" && \
-    opam pin add -yn current_docker.dev  "https://github.com/mtelvers/ocurrent.git#35eb9592a2f39e1889edf03ea1f323d094fdece4" && \
-    opam pin add -yn current_slack.dev   "https://github.com/mtelvers/ocurrent.git#35eb9592a2f39e1889edf03ea1f323d094fdece4" && \
-    opam pin add -yn current_rpc.dev     "https://github.com/mtelvers/ocurrent.git#35eb9592a2f39e1889edf03ea1f323d094fdece4"
+RUN opam pin add -yn current.dev         "https://github.com/mtelvers/ocurrent.git#5d93b7b657369d40df9207f449f2dcd74f3a7900" && \
+    opam pin add -yn current_web.dev     "https://github.com/mtelvers/ocurrent.git#5d93b7b657369d40df9207f449f2dcd74f3a7900" && \
+    opam pin add -yn current_git.dev     "https://github.com/mtelvers/ocurrent.git#5d93b7b657369d40df9207f449f2dcd74f3a7900" && \
+    opam pin add -yn current_github.dev  "https://github.com/mtelvers/ocurrent.git#5d93b7b657369d40df9207f449f2dcd74f3a7900" && \
+    opam pin add -yn current_docker.dev  "https://github.com/mtelvers/ocurrent.git#5d93b7b657369d40df9207f449f2dcd74f3a7900" && \
+    opam pin add -yn current_slack.dev   "https://github.com/mtelvers/ocurrent.git#5d93b7b657369d40df9207f449f2dcd74f3a7900" && \
+    opam pin add -yn current_rpc.dev     "https://github.com/mtelvers/ocurrent.git#5d93b7b657369d40df9207f449f2dcd74f3a7900"
 RUN opam pin add -yn ocluster-api.0.3.0 "https://github.com/mtelvers/ocluster.git#7da0d7662c51b1959bd06c9dc3e1afc9431c7df1"
 RUN opam install -y --deps-only .
 ADD --chown=opam . .
