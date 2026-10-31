@@ -10,7 +10,6 @@
 - debian-13
 - debian-testing
 - debian-unstable
-- fedora-42
 - fedora-43
 - fedora-44
 - freebsd-15.1
@@ -19,9 +18,8 @@
 - opensuse-tumbleweed
 - ubuntu-22.04
 - ubuntu-24.04
-- ubuntu-25.04
-- ubuntu-25.10
 - ubuntu-26.04
+- ubuntu-26.10
 
 ## Architectures
 
@@ -88,8 +86,6 @@
 | debian-testing | amd64 | 5.5 | dev | No | No |
 | debian-unstable | amd64 | 4.14 | dev | No | No |
 | debian-unstable | amd64 | 5.5 | dev | No | No |
-| fedora-42 | amd64 | 4.14 | dev | No | No |
-| fedora-42 | amd64 | 5.5 | dev | No | No |
 | fedora-43 | amd64 | 4.14 | dev | No | No |
 | fedora-43 | amd64 | 5.5 | dev | No | No |
 | fedora-44 | amd64 | 4.14 | dev | No | No |
@@ -110,9 +106,7 @@
 | ubuntu-24.04 | amd64 | 5.5 | dev | No | No |
 | ubuntu-24.04 | riscv64 | 4.14 | dev | No | No |
 | ubuntu-24.04 | riscv64 | 5.5 | dev | No | No |
-| ubuntu-25.04 | amd64 | 4.14 | dev | No | No |
-| ubuntu-25.04 | amd64 | 5.5 | dev | No | No |
-| ubuntu-25.10 | amd64 | 4.14 | dev | No | No |
-| ubuntu-25.10 | amd64 | 5.5 | dev | No | No |
 | ubuntu-26.04 | amd64 | 4.14 | dev | No | No |
 | ubuntu-26.04 | amd64 | 5.5 | dev | No | No |
+| ubuntu-26.10 | amd64 | 4.14 | dev | No | No |
+| ubuntu-26.10 | amd64 | 5.5 | dev | No | No |
