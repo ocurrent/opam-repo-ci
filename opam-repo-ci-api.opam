@@ -16,8 +16,8 @@ depends: [
   "current_rpc"
   "capnp" {>= "3.4.0"}
   "capnp-rpc-lwt"
-  "dockerfile" {>= "8.3.6"}
-  "dockerfile-opam" {>= "8.4.4"}
+  "dockerfile" {= "8.4.6"}
+  "dockerfile-opam" {= "8.4.6"}
   "odoc" {with-doc}
   "current" {>= "0.6.6"}
   "current_docker"
@@ -26,7 +26,7 @@ depends: [
   "logs"
   "mula" {>= "0.1.2"}
   "obuilder-spec" {>= "0.6.0"}
-  "ocaml-version" {>= "4.1.4"}
+  "ocaml-version" {= "4.1.5"}
   "opam-format" {>= "2.5.0"}
   "opam-state" {>= "2.5.0"}
   "ppx_deriving" {>= "5.2.1"}
