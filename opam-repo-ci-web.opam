@@ -22,10 +22,10 @@ depends: [
   "current_ocluster"
   "current_docker"
   "current_github"
-  "dockerfile" {>= "8.3.6"}
-  "dockerfile-opam" {>= "8.4.4"}
+  "dockerfile" {= "8.4.6"}
+  "dockerfile-opam" {= "8.4.6"}
   "obuilder-spec"
-  "ocaml-version" {>= "4.1.4"}
+  "ocaml-version" {= "4.1.5"}
   "prometheus-app" {>= "2.0"}
   "cmdliner" {>= "1.1.0"}
   "lwt"

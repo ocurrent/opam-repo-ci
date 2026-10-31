@@ -39,9 +39,9 @@ depends: [
   "opam-file-format" {>= "2.1.2"}
   "sexplib" {>= "v0.14.0"}
   "conf-libev"
-  "dockerfile" {>= "8.3.6"}
-  "dockerfile-opam" {>= "8.4.4"}
-  "ocaml-version" {>= "4.1.4"}
+  "dockerfile" {= "8.4.6"}
+  "dockerfile-opam" {= "8.4.6"}
+  "ocaml-version" {= "4.1.5"}
   "mula" {>= "0.1.2"}
   "alcotest" {>= "1.0.0" & with-test}
   "alcotest-lwt" {>= "1.0.1" & with-test}
