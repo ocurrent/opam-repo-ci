@@ -10,5 +10,6 @@
   fpath
   str
   ocaml-version
+  dockerfile-opam
   obuilder-spec
   opam-ci-check-lint))

@@ -17,11 +17,11 @@ type opam_build = {
   revdep : package option;
   with_tests : bool;
   lower_bounds : bool;
-  opam_version : Opam_version.t;
+  opam_version : Dockerfile_opam.Opam_version.t;
 } [@@deriving to_yojson]
 
 type list_revdeps = {
-  opam_version : Opam_version.t;
+  opam_version : Dockerfile_opam.Opam_version.t;
 } [@@deriving to_yojson]
 
 type ty = [
@@ -49,12 +49,12 @@ let pp_pkg ?revdep f pkg =
 let pp_ty f = function
   | `Opam (`List_revdeps {opam_version}, pkg) ->
       Fmt.pf f "list revdeps of %s, using opam %s" (OpamPackage.to_string pkg)
-        (Opam_version.to_string opam_version)
+        (Dockerfile_opam.Opam_version.to_string opam_version)
   | `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) ->
     let action = if with_tests then "test" else "build" in
     Fmt.pf f "%s %a%s, using opam %s" action (pp_pkg ?revdep) pkg
       (if lower_bounds then ", lower-bounds" else "")
-      (Opam_version.to_string opam_version)
+      (Dockerfile_opam.Opam_version.to_string opam_version)
 
 let pp_summary f = function
   | `Opam (`List_revdeps _, _) -> Fmt.string f "Opam list revdeps"
