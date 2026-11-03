@@ -235,7 +235,22 @@ let can_rebuild job_info =
    requests for an uncached page share one render. *)
 module Page_cache = Opam_repo_ci.Page_cache
 
-let commit_cache = Page_cache.create ~max_bytes:(512 * 1024 * 1024) ()
+(* Size of the commit page cache in MiB, from PAGE_CACHE_MAX_MB. *)
+let cache_max_bytes =
+  let default = 512 in
+  let mb =
+    match Sys.getenv_opt "PAGE_CACHE_MAX_MB" with
+    | None -> default
+    | Some s ->
+      match int_of_string_opt (String.trim s) with
+      | Some n when n >= 0 -> n
+      | _ ->
+        Log.warn (fun f -> f "Ignoring invalid PAGE_CACHE_MAX_MB=%S; using %d" s default);
+        default
+  in
+  mb * 1024 * 1024
+
+let commit_cache = Page_cache.create ~max_bytes:cache_max_bytes ()
 let active_commit_ttl = 5.
 let inactive_commit_ttl = 3600.
 
