@@ -46,6 +46,9 @@ services:
     command: >
       --backend=/capnp-secrets/opam-repo-ci-admin.cap
       --verbosity=info
+    environment:
+      # Rendered commit pages are cached in memory; the largest are ~60MB.
+      - "PAGE_CACHE_MAX_MB=8192"
     volumes:
       - 'capnp-secrets:/capnp-secrets:ro'
     sysctls:
