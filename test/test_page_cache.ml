@@ -9,13 +9,13 @@ let cache ?(max_bytes = 1000) () =
 
 let renders = ref 0
 
-let render ?(ttl = 60.) body () =
+let render ?(ttl = 60.) ?(tag = "") body () =
   incr renders;
-  Lwt.return (Ok (body, ttl))
+  Lwt.return (Ok { C.body; ttl; tag })
 
-let get ?ttl c key body =
+let get ?ttl ?tag ?valid c key body =
   let open Lwt.Infix in
-  C.find_or_render c key (render ?ttl body) >|= function
+  C.find_or_render c key ?valid (render ?ttl ?tag body) >|= function
   | Ok o -> o.C.body, o.C.max_age
   | Error () -> failwith "unexpected error"
 
@@ -73,7 +73,7 @@ let test_single_flight _ () =
   let release, wake = Lwt.wait () in
   let slow () =
     incr started;
-    release >|= fun () -> Ok ("slow", 60.)
+    release >|= fun () -> Ok { C.body = "slow"; ttl = 60.; tag = "" }
   in
   let r1 = C.find_or_render c "k" slow in
   let r2 = C.find_or_render c "k" slow in
@@ -109,9 +109,30 @@ let test_error_not_cached _ () =
     (function Raised -> Lwt.return_unit | ex -> Lwt.fail ex)
   >>= fun () ->
   (* A failed render must not leave the key marked in-flight. *)
-  C.find_or_render c "k" (fun () -> Lwt.return (Ok ("ok", 60.))) >|= function
+  C.find_or_render c "k" (fun () -> Lwt.return (Ok { C.body = "ok"; ttl = 60.; tag = "" })) >|= function
   | Ok o -> Alcotest.(check string) "renders again after failure" "ok" o.C.body
   | Error _ -> Alcotest.fail "unexpected error"
+
+let test_validation _ () =
+  let open Lwt.Infix in
+  let c = cache () in
+  renders := 0;
+  let checked = ref [] in
+  let valid tag = checked := tag :: !checked; Lwt.return (tag = "passed") in
+  get ~tag:"passed" c "k" "one" >>= fun (b, _) ->
+  Alcotest.(check string) "rendered" "one" b;
+  get ~valid c "k" "two" >>= fun (b, _) ->
+  Alcotest.(check string) "valid tag is a hit" "one" b;
+  Alcotest.(check (list string)) "validator saw the stored tag" [ "passed" ] !checked;
+  Alcotest.(check int) "one render" 1 !renders;
+  (* Simulate the source changing: the stored tag no longer validates. *)
+  let valid _ = Lwt.return_false in
+  get ~tag:"pending" ~valid c "k" "three" >>= fun (b, _) ->
+  Alcotest.(check string) "invalid tag re-renders" "three" b;
+  Alcotest.(check int) "two renders" 2 !renders;
+  get c "k" "four" >>= fun (b, _) ->
+  Alcotest.(check string) "no validator: plain hit on the new entry" "three" b;
+  Lwt.return_unit
 
 let tests = [
   Alcotest_lwt.test_case "hit-and-expiry" `Quick test_hit_and_expiry;
@@ -119,4 +140,5 @@ let tests = [
   Alcotest_lwt.test_case "eviction" `Quick test_eviction;
   Alcotest_lwt.test_case "single-flight" `Quick test_single_flight;
   Alcotest_lwt.test_case "error-not-cached" `Quick test_error_not_cached;
+  Alcotest_lwt.test_case "validation" `Quick test_validation;
 ]

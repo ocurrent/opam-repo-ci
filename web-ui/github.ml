@@ -229,10 +229,16 @@ let can_rebuild job_info =
 (* Rendered commit summary pages. A commit that touches a core package has
    hundreds of thousands of reverse-dependency jobs, and building that page is
    seconds of CPU in both the engine and this process, so repeated requests for
-   it (humans reloading, crawlers) are served from here. A commit that is the
-   head of an open PR is re-tested whenever master moves, so its page is kept
-   only briefly; a commit no longer on any ref never changes again. Concurrent
-   requests for an uncached page share one render. *)
+   it (humans reloading, crawlers) are served from here. Concurrent requests
+   for an uncached page share one render.
+
+   How long a page is kept depends on what can change it:
+   - a commit no longer on any ref never changes again;
+   - a commit on an open PR whose jobs have all finished changes only when
+     the engine re-tests it (master moved, or a rebuild was requested). The
+     engine's summary status for the commit leaves `Passed/`Failed when that
+     happens, so each hit re-checks the status, which is an in-memory lookup;
+   - a commit with jobs running changes as they finish, so it is kept briefly. *)
 module Page_cache = Opam_repo_ci.Page_cache
 
 (* Size of the commit page cache in MiB, from PAGE_CACHE_MAX_MB. *)
@@ -251,8 +257,24 @@ let cache_max_bytes =
   mb * 1024 * 1024
 
 let commit_cache = Page_cache.create ~max_bytes:cache_max_bytes ()
-let active_commit_ttl = 5.
-let inactive_commit_ttl = 3600.
+let busy_commit_ttl = 5.
+let settled_commit_ttl = 3600.
+
+let status_tag = function
+  | `Not_started -> "not-started"
+  | `Pending -> "pending"
+  | `Passed -> "passed"
+  | `Failed -> "failed"
+
+(* The tag of a cached commit page: the summary status it was rendered with,
+   or "" for a commit that is on no ref and so needs no checking. *)
+let commit_page_valid ~repo hash tag =
+  if tag = "" then Lwt.return_true
+  else
+    Capability.with_ref (Client.Repo.commit_of_hash repo hash) @@ fun commit ->
+    Client.Commit.status commit >|= function
+    | Ok status -> String.equal (status_tag status) tag
+    | Error _ -> false
 
 module Repo_handle = struct
   let get ~owner ~name ~repo =
@@ -301,13 +323,21 @@ module Repo_handle = struct
         div buttons;
       ] @ show_status commit_status @ link_jobs ~owner ~name ~hash jobs)
     in
-    let ttl = if refs = [] then inactive_commit_ttl else active_commit_ttl in
-    Lwt.return (Ok (body, ttl))
+    let active = refs <> [] in
+    let busy = match commit_status with `Not_started | `Pending -> true | `Passed | `Failed -> false in
+    let ttl = if active && busy then busy_commit_ttl else settled_commit_ttl in
+    let tag = if active then status_tag commit_status else "" in
+    Lwt.return (Ok { Page_cache.body; ttl; tag })
 
   let get_commit ~owner ~name ~repo hash =
     let key = commit_url ~owner ~name hash in
-    Page_cache.find_or_render commit_cache key (render_commit ~owner ~name ~repo hash)
-    >>!= fun { Page_cache.body; max_age } ->
+    Page_cache.find_or_render commit_cache key
+      ~valid:(commit_page_valid ~repo hash)
+      (render_commit ~owner ~name ~repo hash)
+    >>!= fun { Page_cache.body; max_age; tag } ->
+    (* Browsers cannot re-check the status, so a page we validate per hit
+       gets only the short lifetime downstream. *)
+    let max_age = if tag = "" then max_age else min max_age (int_of_float busy_commit_ttl) in
     let headers =
       Cohttp.Header.add headers "Cache-Control" (Printf.sprintf "public, max-age=%d" max_age)
     in

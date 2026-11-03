@@ -4,7 +4,8 @@
     a per-entry time-to-live chosen by the renderer. Concurrent requests for a
     key that is not cached share one render ("single-flight"), so a burst of
     requests for an expensive page costs one render rather than one per
-    request. *)
+    request. An entry may carry a tag that the caller can check on each hit,
+    to drop a page whose source has changed before its time is up. *)
 
 type 'e t
 (** A cache whose renderers fail with ['e]. *)
@@ -15,31 +16,38 @@ val create : ?clock:(unit -> float) -> max_bytes:int -> unit -> 'e t
     evicted first. A body larger than [max_bytes] on its own is served but
     never stored. [clock] defaults to [Unix.gettimeofday]. *)
 
+type entry = {
+  body : string;
+  ttl : float;    (** Seconds to keep the body. Not positive: serve, don't store. *)
+  tag : string;   (** Opaque; handed back to [valid] on each hit. *)
+}
+
 type outcome = {
   body : string;
   max_age : int;  (** Seconds until this body expires, as of now. *)
+  tag : string;
 }
 
 val find_or_render :
   'e t -> string ->
-  (unit -> (string * float, 'e) result Lwt.t) ->
+  ?valid:(string -> bool Lwt.t) ->
+  (unit -> (entry, 'e) result Lwt.t) ->
   (outcome, 'e) result Lwt.t
-(** [find_or_render t key render] returns the cached body for [key] if present
-    and unexpired. Otherwise it calls [render], which produces the body and
-    its time-to-live in seconds, stores the result, and returns it. If a render
-    for [key] is already in progress, the call waits for it instead of starting
-    another. A render that returns [Error] or raises is not cached, and every
-    waiter sees the same failure. A body whose time-to-live is not positive is
-    returned but not stored. *)
+(** [find_or_render t key render] returns the cached body for [key] if present,
+    unexpired, and (when [valid] is given) [valid tag] holds. Otherwise it
+    calls [render], stores the result, and returns it. If a render for [key]
+    is already in progress, the call waits for it instead of starting another.
+    A render that returns [Error] or raises is not cached, and every waiter
+    sees the same failure. *)
+
+val invalidate : _ t -> string -> unit
+(** [invalidate t key] drops the stored body for [key], if any. A render in
+    progress for [key] is unaffected. *)
 
 val size : _ t -> int
 (** Total bytes of bodies currently stored. *)
 
 val length : _ t -> int
 (** Number of entries currently stored. *)
-
-val invalidate : _ t -> string -> unit
-(** [invalidate t key] drops the stored body for [key], if any. A render in
-    progress for [key] is unaffected. *)
 
 val clear : _ t -> unit
