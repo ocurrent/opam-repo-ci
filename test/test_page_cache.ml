@@ -13,11 +13,22 @@ let render ?(ttl = 60.) ?(tag = "") body () =
   incr renders;
   Lwt.return (Ok { C.body; ttl; tag })
 
+let last : C.outcome option ref = ref None
+
 let get ?ttl ?tag ?valid c key body =
   let open Lwt.Infix in
   C.find_or_render c key ?valid (render ?ttl ?tag body) >|= function
-  | Ok o -> o.C.body, o.C.max_age
+  | Ok o -> last := Some o; o.C.body, o.C.max_age
   | Error () -> failwith "unexpected error"
+
+let source = Alcotest.testable
+    (fun f s -> Fmt.string f (match s with C.Hit -> "hit" | Miss -> "miss" | Joined -> "joined" | Stale -> "stale"))
+    ( = )
+
+let check_source msg expected =
+  match !last with
+  | Some o -> Alcotest.check source msg expected o.C.source
+  | None -> Alcotest.fail "no outcome recorded"
 
 let test_hit_and_expiry _ () =
   let open Lwt.Infix in
@@ -26,10 +37,13 @@ let test_hit_and_expiry _ () =
   get c "k" "one" >>= fun (b, age) ->
   Alcotest.(check string) "rendered" "one" b;
   Alcotest.(check int) "max-age" 60 age;
+  check_source "first is a miss" C.Miss;
   now := 10.;
   get c "k" "two" >>= fun (b, age) ->
   Alcotest.(check string) "served from cache" "one" b;
   Alcotest.(check int) "max-age counts down" 50 age;
+  check_source "second is a hit" C.Hit;
+  (match !last with Some o -> Alcotest.(check int) "age" 10 o.C.age | None -> ());
   Alcotest.(check int) "one render" 1 !renders;
   now := 61.;
   get c "k" "two" >>= fun (b, _) ->
@@ -85,6 +99,12 @@ let test_single_flight _ () =
   List.iter (function
       | Ok o -> Alcotest.(check string) "shared body" "slow" o.C.body
       | Error () -> Alcotest.fail "unexpected error") rs;
+  (match rs with
+   | [ Ok a; Ok b; Ok c ] ->
+     Alcotest.check source "starter is a miss" C.Miss a.C.source;
+     Alcotest.check source "waiter joined" C.Joined b.C.source;
+     Alcotest.check source "waiter joined" C.Joined c.C.source
+   | _ -> Alcotest.fail "unexpected results");
   Alcotest.(check int) "stored once" 1 (C.length c);
   C.find_or_render c "k" slow >>= fun _ ->
   Alcotest.(check int) "later call is a hit" 1 !started;
@@ -129,6 +149,7 @@ let test_validation _ () =
   let valid _ = Lwt.return_false in
   get ~tag:"pending" ~valid c "k" "three" >>= fun (b, _) ->
   Alcotest.(check string) "invalid tag re-renders" "three" b;
+  check_source "rejected entry is stale" C.Stale;
   Alcotest.(check int) "two renders" 2 !renders;
   get c "k" "four" >>= fun (b, _) ->
   Alcotest.(check string) "no validator: plain hit on the new entry" "three" b;

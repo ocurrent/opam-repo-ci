@@ -1,5 +1,6 @@
 type stored = {
   body : string;
+  stored_at : float;
   expires : float;
   tag : string;
 }
@@ -19,10 +20,14 @@ type 'e t = {
   mutable bytes : int;
 }
 
+type source = Hit | Miss | Joined | Stale
+
 type outcome = {
   body : string;
   max_age : int;
+  age : int;
   tag : string;
+  source : source;
 }
 
 let create ?(clock = Unix.gettimeofday) ~max_bytes () =
@@ -67,7 +72,8 @@ let store t key { body; ttl; tag } =
   remove t key;
   if ttl > 0. && len <= t.max_bytes then begin
     make_room t len;
-    Hashtbl.replace t.entries key { body; expires = t.clock () +. ttl; tag };
+    let now = t.clock () in
+    Hashtbl.replace t.entries key { body; stored_at = now; expires = now +. ttl; tag };
     Queue.add key t.order;
     t.bytes <- t.bytes + len
   end
@@ -81,32 +87,35 @@ let find t key =
   | Some _ -> remove t key; None
   | None -> None
 
-let render_and_store t key render =
+let render_and_store t key ~stale render =
   let open Lwt.Infix in
-  let p =
+  let p, source =
     match Hashtbl.find_opt t.in_flight key with
-    | Some p -> p
+    | Some p -> p, (if stale then Stale else Joined)
     | None ->
       let p = Lwt.catch render Lwt.reraise in
       Hashtbl.replace t.in_flight key p;
       (* Register before attaching the cleanup: if [p] is already resolved
          the callback runs now, and must find the entry to remove. *)
       Lwt.on_termination p (fun () -> Hashtbl.remove t.in_flight key);
-      p
+      p, (if stale then Stale else Miss)
   in
   p >|= function
   | Error _ as e -> e
   | Ok ({ body; ttl; tag } as e) ->
     (* Every waiter runs this; only the first finds nothing stored. *)
     if find t key = None then store t key e;
-    Ok { body; max_age = int_of_float (Float.ceil ttl) |> max 0; tag }
+    Ok { body; max_age = int_of_float (Float.ceil ttl) |> max 0; age = 0; tag; source }
 
 let find_or_render t key ?valid render =
   let open Lwt.Infix in
   match find t key with
-  | None -> render_and_store t key render
+  | None -> render_and_store t key ~stale:false render
   | Some e ->
-    let hit = Lwt.return (Ok { body = e.body; max_age = max_age t e.expires; tag = e.tag }) in
+    let hit =
+      let age = int_of_float (t.clock () -. e.stored_at) |> max 0 in
+      Lwt.return (Ok { body = e.body; max_age = max_age t e.expires; age; tag = e.tag; source = Hit })
+    in
     match valid with
     | None -> hit
     | Some valid ->
@@ -114,5 +123,5 @@ let find_or_render t key ?valid render =
       if ok then hit
       else begin
         remove t key;
-        render_and_store t key render
+        render_and_store t key ~stale:true render
       end

@@ -287,6 +287,7 @@ module Repo_handle = struct
     Server.respond_string ~status:`OK ~body () |> normal_response
 
   let render_commit ~owner ~name ~repo hash () =
+    let started = Unix.gettimeofday () in
     Capability.with_ref (Client.Repo.commit_of_hash repo hash) @@ fun commit ->
     let refs = Client.Commit.refs commit in
     let commit_status = Client.Commit.status commit in
@@ -327,6 +328,10 @@ module Repo_handle = struct
     let busy = match commit_status with `Not_started | `Pending -> true | `Passed | `Failed -> false in
     let ttl = if active && busy then busy_commit_ttl else settled_commit_ttl in
     let tag = if active then status_tag commit_status else "" in
+    Log.info (fun f -> f "Rendered commit page %s: %d jobs, %d bytes, %.2fs, %s, keep %.0fs"
+                 (short_hash hash) (List.length jobs) (String.length body)
+                 (Unix.gettimeofday () -. started)
+                 (if active then "active/" ^ tag else "inactive") ttl);
     Lwt.return (Ok { Page_cache.body; ttl; tag })
 
   let get_commit ~owner ~name ~repo hash =
@@ -334,12 +339,20 @@ module Repo_handle = struct
     Page_cache.find_or_render commit_cache key
       ~valid:(commit_page_valid ~repo hash)
       (render_commit ~owner ~name ~repo hash)
-    >>!= fun { Page_cache.body; max_age; tag } ->
+    >>!= fun { Page_cache.body; max_age; age; tag; source } ->
     (* Browsers cannot re-check the status, so a page we validate per hit
        gets only the short lifetime downstream. *)
     let max_age = if tag = "" then max_age else min max_age (int_of_float busy_commit_ttl) in
+    let x_cache =
+      match source with
+      | Page_cache.Hit -> "HIT" | Miss -> "MISS" | Joined -> "JOINED" | Stale -> "STALE"
+    in
     let headers =
-      Cohttp.Header.add headers "Cache-Control" (Printf.sprintf "public, max-age=%d" max_age)
+      Cohttp.Header.add_list headers [
+        "Cache-Control", Printf.sprintf "public, max-age=%d" max_age;
+        "Age", string_of_int age;
+        "X-Cache", x_cache;
+      ]
     in
     Server.respond_string ~status:`OK ~headers ~body () |> normal_response
 

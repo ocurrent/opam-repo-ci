@@ -22,10 +22,18 @@ type entry = {
   tag : string;   (** Opaque; handed back to [valid] on each hit. *)
 }
 
+type source =
+  | Hit     (** Served from the store. *)
+  | Miss    (** Nothing stored; this call ran the render. *)
+  | Joined  (** Nothing stored; waited on a render another call started. *)
+  | Stale   (** Stored but [valid] rejected it; rendered again. *)
+
 type outcome = {
   body : string;
   max_age : int;  (** Seconds until this body expires, as of now. *)
+  age : int;      (** Seconds since the body was stored; 0 when just rendered. *)
   tag : string;
+  source : source;
 }
 
 val find_or_render :
