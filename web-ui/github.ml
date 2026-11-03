@@ -226,6 +226,19 @@ let can_rebuild job_info =
   | Failed m when not (Status_tree.is_skip m) -> true
   | Failed _ | Active | NotStarted | Passed | Undefined _ -> false
 
+(* Rendered commit summary pages. A commit that touches a core package has
+   hundreds of thousands of reverse-dependency jobs, and building that page is
+   seconds of CPU in both the engine and this process, so repeated requests for
+   it (humans reloading, crawlers) are served from here. A commit that is the
+   head of an open PR is re-tested whenever master moves, so its page is kept
+   only briefly; a commit no longer on any ref never changes again. Concurrent
+   requests for an uncached page share one render. *)
+module Page_cache = Opam_repo_ci.Page_cache
+
+let commit_cache = Page_cache.create ~max_bytes:(512 * 1024 * 1024) ()
+let active_commit_ttl = 5.
+let inactive_commit_ttl = 3600.
+
 module Repo_handle = struct
   let get ~owner ~name ~repo =
     Client.Repo.refs repo >>!= fun refs ->
@@ -236,13 +249,14 @@ module Repo_handle = struct
       ] in
     Server.respond_string ~status:`OK ~body () |> normal_response
 
-  let get_commit ~owner ~name ~repo hash =
+  let render_commit ~owner ~name ~repo hash () =
     Capability.with_ref (Client.Repo.commit_of_hash repo hash) @@ fun commit ->
     let refs = Client.Commit.refs commit in
     let commit_status = Client.Commit.status commit in
-    Client.Commit.jobs commit >>!= fun jobs ->
-    refs >>!= fun refs ->
-    commit_status >>!= fun commit_status ->
+    let ( let** ) x f = x >>= function Ok y -> f y | Error _ as e -> Lwt.return e in
+    let** jobs = Client.Commit.jobs commit in
+    let** refs = refs in
+    let** commit_status = commit_status in
     let can_cancel = List.exists can_cancel jobs in
     let can_rebuild = List.exists can_rebuild jobs in
     let buttons = Tyxml.Html.[
@@ -272,7 +286,17 @@ module Repo_handle = struct
         div buttons;
       ] @ show_status commit_status @ link_jobs ~owner ~name ~hash jobs)
     in
-    Server.respond_string ~status:`OK ~body () |> normal_response
+    let ttl = if refs = [] then inactive_commit_ttl else active_commit_ttl in
+    Lwt.return (Ok (body, ttl))
+
+  let get_commit ~owner ~name ~repo hash =
+    let key = commit_url ~owner ~name hash in
+    Page_cache.find_or_render commit_cache key (render_commit ~owner ~name ~repo hash)
+    >>!= fun { Page_cache.body; max_age } ->
+    let headers =
+      Cohttp.Header.add headers "Cache-Control" (Printf.sprintf "public, max-age=%d" max_age)
+    in
+    Server.respond_string ~status:`OK ~headers ~body () |> normal_response
 
   let get_variant ~owner ~name ~repo hash variant =
     Capability.with_ref (Client.Repo.commit_of_hash repo hash) @@ fun commit ->
@@ -309,6 +333,7 @@ module Repo_handle = struct
     Capability.with_ref (Current_rpc.Job.rebuild job) @@ fun new_job ->
     Capability.await_settled new_job >>= function
     | Ok () ->
+      Page_cache.invalidate commit_cache (commit_url ~owner ~name hash);
       let uri = job_url ~owner ~name ~hash variant |> Uri.of_string in
       Server.respond_redirect ~uri () |> normal_response
     | Error { Capnp_rpc.Exception.reason; _ } ->
@@ -353,6 +378,7 @@ module Repo_handle = struct
     rebuild_many commit jobs >>= fun (success, failed) ->
     let open Tyxml.Html in
     let uri = commit_url ~owner ~name hash in
+    Page_cache.invalidate commit_cache uri;
     let format_job_info ji =
       li [span [txt @@ Fmt.str "Rebuild job: %s" ji.Client.variant]]
     in
@@ -405,6 +431,7 @@ module Repo_handle = struct
     cancel_many commit jobs >>= fun (success, failed) ->
     let open Tyxml.Html in
     let uri = commit_url ~owner ~name hash in
+    Page_cache.invalidate commit_cache uri;
     let format_job_info ji =
       li [span [txt @@ Fmt.str "Cancelling job: %s" ji.Client.variant]]
     in

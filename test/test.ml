@@ -104,6 +104,7 @@ let main dump_specs =
       [
         ("index", Test_index.tests);
         ("status-tree", Test_status_tree.tests);
+        ("page-cache", Test_page_cache.tests);
       ]
 
 open Cmdliner
