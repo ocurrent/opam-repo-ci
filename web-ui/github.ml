@@ -19,9 +19,22 @@ let error_headers = Cohttp.Header.init_with "Content-Type" "text/plain; charset=
 let respond_error status body =
   Server.respond_error ~status ~headers:error_headers ~body () |> normal_response
 
+(* The engine reports a URL that names something it does not have (a commit,
+   ref, variant or repository) as an ordinary Cap'n Proto failure. Those are
+   404s: the request was fine, there is just nothing there. *)
+let not_found_reasons =
+  [ "Unknown Git hash"; "Ambiguous commit hash"; "Invalid Git hash";
+    "Unknown ref"; "No such variant"; "Invalid GitHub repo" ]
+
+let status_of_capnp_error = function
+  | `Exception { Capnp_rpc.Exception.ty = `Failed; reason }
+    when List.exists (fun prefix -> String.starts_with ~prefix reason) not_found_reasons ->
+    `Not_found
+  | _ -> `Internal_server_error
+
 let (>>!=) x f =
   x >>= function
-  | Error `Capnp ex -> respond_error `Internal_server_error (Fmt.to_to_string Capnp_rpc.Error.pp ex)
+  | Error `Capnp ex -> respond_error (status_of_capnp_error ex) (Fmt.to_to_string Capnp_rpc.Error.pp ex)
   | Error `Msg msg -> respond_error `Internal_server_error msg
   | Ok y -> f y
 
