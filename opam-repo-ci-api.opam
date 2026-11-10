@@ -16,8 +16,8 @@ depends: [
   "current_rpc"
   "capnp" {>= "3.4.0"}
   "capnp-rpc-lwt"
-  "dockerfile" {= "8.4.6"}
-  "dockerfile-opam" {= "8.4.6"}
+  "dockerfile" {= "8.4.7"}
+  "dockerfile-opam" {= "8.4.7"}
   "odoc" {with-doc}
   "current" {>= "0.6.6"}
   "current_docker"
