@@ -1,10 +1,16 @@
 let download_cache = "opam-archives"
+
+(* Windows variants are built only through day10, which never generates an
+   OBuilder spec, so the OBuilder path below is never reached for them. *)
+let windows_unreachable () = failwith "opam_build: Windows builds via day10, not OBuilder"
+
 let cache ~variant =
   match Variant.os variant with
   | `Freebsd
   | `Linux -> [ Obuilder_spec.Cache.v download_cache ~target:"/home/opam/.opam/download-cache" ]
   | `Macos -> [ Obuilder_spec.Cache.v download_cache ~target:"/Users/mac1000/.opam/download-cache";
                 Obuilder_spec.Cache.v "homebrew" ~target:"/Users/mac1000/Library/Caches/Homebrew" ]
+  | `Windows -> windows_unreachable ()
 let network = ["host"]
 
 let opam_install ~variant ~pin ~lower_bounds ~with_tests ~pkg =
@@ -73,21 +79,25 @@ let setup_repository ?(local=false) ~variant ~for_docker ~opam_version () =
     | `Macos -> None
     | `Freebsd
     | `Linux -> Some "/home/opam"
+    | `Windows -> windows_unreachable ()
   in
   let prefix = match Variant.os variant with
     | `Macos -> "~/local"
     | `Freebsd -> "/usr/local"
     | `Linux -> "/usr"
+    | `Windows -> windows_unreachable ()
   in
   let ln = match Variant.os variant with
     | `Macos -> "ln"
     | `Freebsd | `Linux -> "sudo ln"
+    | `Windows -> windows_unreachable ()
   in
   let opam_version_str = Dockerfile_opam.Opam_version.to_string opam_version
   in
   let opam_repo_args = match Variant.os variant with
     | `Macos -> " -k local" (* TODO: (copy ...) do not copy the content of .git or something like that and make the subsequent opam pin fail *)
     | `Freebsd | `Linux -> ""
+    | `Windows -> windows_unreachable ()
   in
   let opamrc = match Variant.os variant with
     (* NOTE: [for_docker] is required because docker does not support bubblewrap in docker build *)
@@ -96,6 +106,7 @@ let setup_repository ?(local=false) ~variant ~for_docker ~opam_version () =
     | `Linux when not for_docker -> " --config .opamrc-sandbox"
     | `Freebsd | `Macos | `Linux -> ""
     (* TODO: On MacOS, the sandbox is always (and should be) enabled by default but does not have those ~/.opamrc-sandbox files *)
+    | `Windows -> windows_unreachable ()
   in
   (* If we are testing a minimal opam-repository without
     the base packages, we have to pin them to keep them around.
