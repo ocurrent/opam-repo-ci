@@ -44,6 +44,7 @@ let pool_of_variant v =
     | `Macos -> "macos"
     | `Freebsd -> "freebsd"
     | `Linux -> "linux"
+    | `Windows -> "windows"
   in
   let arch = match Variant.arch v with
     | `X86_64 | `I386 -> "x86_64"
@@ -73,8 +74,10 @@ let day10_enabled () =
    [day10-linux-x86_64] (doris), [day10-linux-riscv64] (carpenter),
    [day10-linux-ppc64] (orithia). *)
 let day10_pool_of_variant variant =
+  (* Pool name, not the opam [os] value: Windows is the pool [day10-windows-*]. *)
   let os = match Variant.os variant with
     | `Linux -> "linux" | `Macos -> "macos" | `Freebsd -> "freebsd"
+    | `Windows -> "windows"
   in
   Fmt.str "day10-%s-%s" os (Ocaml_version.to_opam_arch (Variant.arch variant))
 
@@ -105,7 +108,12 @@ let is_compiler_package pkg =
 (* Decompose a variant into the day10 target fields: os, opam arch, and the
    (distribution, version) split of the distribution tag at its last '-'. *)
 let day10_platform variant =
-  let os = match Variant.os variant with `Linux -> "linux" | `Macos -> "macos" | `Freebsd -> "freebsd" in
+  (* [os] is opam's own [os] variable (drives the repository's availability
+     filters), so Windows is "win32", not "windows". *)
+  let os = match Variant.os variant with
+    | `Linux -> "linux" | `Macos -> "macos" | `Freebsd -> "freebsd"
+    | `Windows -> "win32"
+  in
   let arch = Ocaml_version.to_opam_arch (Variant.arch variant) in
   let os_distribution, os_version =
     let d = Variant.distribution variant in
@@ -313,6 +321,7 @@ module Op = struct
     | `Obuilder ->
         let os = match Variant.os variant with
           | `Macos | `Linux | `Freebsd -> `Unix
+          | `Windows -> `Windows
         in
         let build_config = {Spec.variant; ty} in
         Current.Job.write job

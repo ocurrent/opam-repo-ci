@@ -146,6 +146,7 @@ module Op = struct
     let { docker_context; pool; build_timeout } = config in
     let os = match Variant.os variant with
       | `Macos | `Linux | `Freebsd -> `Unix
+      | `Windows -> `Windows
     in
     let build_config = {Spec.variant; ty}
     in

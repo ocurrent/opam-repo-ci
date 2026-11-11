@@ -185,6 +185,10 @@ let get_base ~arch variant =
       Current.return (Spec.Macos (Variant.docker_tag variant))
   | `Freebsd ->
       Current.return (Spec.Freebsd (Variant.docker_tag variant))
+  | `Windows ->
+      (* Windows is day10-only (no OBuilder build); day10 reads its base from the
+         worker, so this value is never used — just don't Docker.peek it. *)
+      Current.return (Spec.Docker (Variant.docker_tag variant))
   | `Linux -> (* TODO: Use docker images as base for both MacOS and Linux *)
       let+ repo_id =
         Docker.peek ~schedule:weekly ~arch:(Ocaml_version.to_docker_arch arch)
@@ -286,6 +290,18 @@ let day10 ~build =
         (distros_of arch))
       [ `X86_64; `Aarch64; `Ppc64le; `Riscv64 ]
   in
+  (* Windows is day10-only (no OBuilder counterpart; previously GitHub Actions):
+     the two day10 Windows distributions (cygwin, msys2) on x86_64, across
+     [default_compilers]. The distro tags carry no version. *)
+  let windows_leaves =
+    List.concat_map (fun distro ->
+      List.map (fun comp ->
+        let comp = Ocaml_version.to_string comp in
+        (distro, "x86_64", Variant.v ~arch:`X86_64 ~distro ~compiler:(comp, None)))
+        default_compilers)
+      Variant.windows_distributions
+  in
+  let leaves = leaves @ windows_leaves in
   (* Nest as [day10 > distro > arch > ocaml]: distro is the full tag (e.g.
      debian-13), so many-version families stay flat siblings (debian-12,
      debian-13, …) rather than debian > 12 / debian > 13, and versionless

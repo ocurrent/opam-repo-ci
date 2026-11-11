@@ -30,6 +30,12 @@ let pp f t = Fmt.pf f "%s/%s" (docker_tag t) (Ocaml_version.string_of_arch t.arc
 let freebsd = "freebsd-15.1"
 let macos_homebrew = "macos-homebrew"
 
+(* day10 Windows distributions (the Unix layer opam installs, passed as
+   [--os-distribution]); opam's [os] for both is "win32". *)
+let windows_cygwin = "cygwin"
+let windows_msys2 = "msys2"
+let windows_distributions = [ windows_cygwin; windows_msys2 ]
+
 let macos_distributions = [
   macos_homebrew;
   (* TODO: Add macos-macports *)
@@ -41,6 +47,8 @@ let os { distribution; _ } =
     `Macos
   else if List.exists (String.equal distribution) [ freebsd ] then
     `Freebsd
+  else if List.exists (String.equal distribution) windows_distributions then
+    `Windows
   else
     `Linux
 
