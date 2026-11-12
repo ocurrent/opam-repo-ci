@@ -259,15 +259,6 @@ let build (module Builder : Build_intf.S) ~analysis ~pkgopts ~master ~source ~op
    builder, which routes to the day10 pool — including the revdeps list (day10's
    [revdeps] verb) and each revdep build, on the debian-13 / x86_64 leaf. *)
 let day10 ~build =
-  (* Group [xs] by [key], preserving first-seen order; returns (key, members). *)
-  let group_by key xs =
-    List.fold_left (fun acc x ->
-      let k = key x in
-      if List.mem_assoc k acc
-      then List.map (fun (k', g) -> if k' = k then (k', g @ [ x ]) else (k', g)) acc
-      else acc @ [ (k, [ x ]) ])
-      [] xs
-  in
   (* Per-arch distro sets: riscv64 stays debian-13-only; x86_64/arm64/ppc64 mirror
      the OBuilder [distributions] node (active linux distros + [master_distro],
      which that node omits — master is tested in [compilers]). All validated on
@@ -312,27 +303,24 @@ let day10 ~build =
       default_compilers
   in
   let leaves = leaves @ windows_leaves @ macos_leaves in
-  (* Nest as [day10 > distro > arch > ocaml]: distro is the full tag (e.g.
-     debian-13), so many-version families stay flat siblings (debian-12,
-     debian-13, …) rather than debian > 12 / debian > 13, and versionless
-     archlinux needs no special case. Leaf label = the ocaml version. Tree and
-     labels only — the day10 cache key is pool/commit/variant/ty (see
-     [Cluster_build]), so it re-keys nothing. lower-bounds stays off (day10's
-     --prefer-oldest is validated separately and the OBuilder [compilers] node
-     still covers lower-bounds). revdeps mirror the OBuilder [compilers] node,
-     which runs them on x86_64 / [master_distro] only, so the day10 shadow does
-     the same: enable revdeps on the debian-13 / x86_64 leaf alone. *)
+  (* One flat leaf per variant, each labelled [day10-<distro>-<arch>-ocaml-<ver>].
+     The nesting we used before (day10 > distro > arch > ocaml) drew nothing in
+     the DAG — [Node.branch] only prepends to the index path; the one box drawn
+     per build is its [Current.collapse], whose value is this label — so the
+     label has to carry distro/arch/version itself to be visible and filterable.
+     Label only: the day10 cache key is pool/commit/variant/ty (see
+     [Cluster_build]), so this re-keys and rebuilds nothing. lower-bounds stays
+     off (day10's --prefer-oldest is validated separately and the OBuilder
+     [compilers] node still covers lower-bounds). revdeps mirror that node, which
+     runs them on x86_64 / [master_distro] only, so the day10 shadow enables them
+     on the debian-13 / x86_64 leaf alone. *)
   let master_distro_tag = Distro.tag_of_distro master_distro in
   let leaf (distro, arch, variant) =
     let revdeps = String.equal distro master_distro_tag && String.equal arch "x86_64" in
-    build ~opam_version ~lower_bounds:false ~revdeps
-      (Variant.ocaml_version_to_string variant) variant
+    let label = Fmt.str "day10-%s-%s-ocaml-%s" distro arch (Variant.ocaml_version_to_string variant) in
+    build ~opam_version ~lower_bounds:false ~revdeps label variant
   in
-  group_by (fun (distro, _, _) -> distro) leaves
-  |> List.map (fun (distro, dls) ->
-         group_by (fun (_, arch, _) -> arch) dls
-         |> List.map (fun (arch, als) -> Node.branch ~label:arch (List.map leaf als))
-         |> Node.branch ~label:distro)
+  List.map leaf leaves
 
 let with_cluster ~ocluster ~analysis ~lint ~master source =
   let module Builder : Build_intf.S = struct
