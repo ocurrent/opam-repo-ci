@@ -301,7 +301,17 @@ let day10 ~build =
         default_compilers)
       Variant.windows_distributions
   in
-  let leaves = leaves @ windows_leaves in
+  (* Shadow the OBuilder [macos] node on the one available day10 macOS pool
+     (arm64): macos-homebrew across [default_compilers]. The macOS version is
+     the worker's, so day10 fills os-version itself. *)
+  let macos_leaves =
+    List.map (fun comp ->
+      let comp = Ocaml_version.to_string comp in
+      (Variant.macos_homebrew, "arm64",
+       Variant.v ~arch:`Aarch64 ~distro:Variant.macos_homebrew ~compiler:(comp, None)))
+      default_compilers
+  in
+  let leaves = leaves @ windows_leaves @ macos_leaves in
   (* Nest as [day10 > distro > arch > ocaml]: distro is the full tag (e.g.
      debian-13), so many-version families stay flat siblings (debian-12,
      debian-13, …) rather than debian > 12 / debian > 13, and versionless

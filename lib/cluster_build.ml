@@ -117,9 +117,19 @@ let day10_platform variant =
   let arch = Ocaml_version.to_opam_arch (Variant.arch variant) in
   let os_distribution, os_version =
     let d = Variant.distribution variant in
-    match String.rindex_opt d '-' with
-    | Some i -> (String.sub d 0 i, String.sub d (i + 1) (String.length d - i - 1))
-    | None -> (d, "")
+    match Variant.os variant with
+    | `Macos ->
+      (* "macos-homebrew" -> distribution "homebrew"; the macOS version is the
+         worker's own, which day10 fills in from the host. *)
+      let dist = match String.index_opt d '-' with
+        | Some i -> String.sub d (i + 1) (String.length d - i - 1)
+        | None -> d
+      in
+      (dist, "")
+    | _ ->
+      (match String.rindex_opt d '-' with
+       | Some i -> (String.sub d 0 i, String.sub d (i + 1) (String.length d - i - 1))
+       | None -> (d, ""))
   in
   (os, arch, os_distribution, os_version)
 
