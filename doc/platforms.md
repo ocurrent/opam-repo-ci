@@ -95,8 +95,6 @@
 | fedora-45 | amd64 | 5.5 | dev | No | No |
 | freebsd-15.1 | amd64 | 4.14 | dev | No | No |
 | freebsd-15.1 | amd64 | 5.5 | dev | No | No |
-| macos-homebrew | amd64 | 4.14 | dev | No | No |
-| macos-homebrew | amd64 | 5.5 | dev | No | No |
 | macos-homebrew | arm64 | 4.14 | dev | No | No |
 | macos-homebrew | arm64 | 5.5 | dev | No | No |
 | opensuse-16.0 | amd64 | 4.14 | dev | No | No |

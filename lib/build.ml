@@ -105,7 +105,7 @@ let macos ~build =
     let comp = Ocaml_version.to_string comp in
     List.fold_left (fun acc arch ->
       build ~distro:Variant.macos_homebrew ~arch ~compiler:(comp, None) :: acc
-    ) acc [`Aarch64; `X86_64]
+    ) acc [`Aarch64]
   ) [] default_compilers
 
 let freebsd ~build =
