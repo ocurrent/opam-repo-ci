@@ -316,7 +316,17 @@ let day10 ~build =
        Variant.v ~arch:`Aarch64 ~distro:Variant.macos_homebrew ~compiler:(comp, None)))
       default_compilers
   in
-  let leaves = leaves @ windows_leaves @ macos_leaves in
+  (* Shadow the OBuilder [freebsd] node on the day10-freebsd-x86_64 pool:
+     freebsd-15.1 on x86_64 across [default_compilers]. The FreeBSD version is an
+     osreldate day10 derives from the worker, so os-version is left empty. *)
+  let freebsd_leaves =
+    List.map (fun comp ->
+      let comp = Ocaml_version.to_string comp in
+      (Variant.freebsd, "x86_64",
+       Variant.v ~arch:`X86_64 ~distro:Variant.freebsd ~compiler:(comp, None)))
+      default_compilers
+  in
+  let leaves = leaves @ windows_leaves @ macos_leaves @ freebsd_leaves in
   (* Nest as [day10 > distro > arch > ocaml] for the status-tree bullet list, so
      the leaf [label] is just the ocaml version and the list reads cleanly. The
      SVG draws only the per-build collapse box (branch labels aren't drawn), so
