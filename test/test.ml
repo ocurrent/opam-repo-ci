@@ -10,7 +10,7 @@ let specs =
   let pkg = OpamPackage.create (OpamPackage.Name.of_string "a") (OpamPackage.Version.of_string "0.0.1") in
   let revdep = OpamPackage.create (OpamPackage.Name.of_string "b") (OpamPackage.Version.of_string "0.1.0") in
   let arch = `X86_64 in
-  let build ~opam_version ~lower_bounds ~revdeps _s variant =
+  let build ~opam_version ~lower_bounds ~revdeps ~dag_label:_ _s variant =
     let image = [ Spec.opam ~variant ~lower_bounds:false ~with_tests:false ~opam_version pkg ] in
     let lower_bounds =
       if lower_bounds then

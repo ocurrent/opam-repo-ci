@@ -5,6 +5,7 @@ val compilers :
     (opam_version:[> `Dev ] ->
     lower_bounds:bool ->
     revdeps:bool ->
+    dag_label:string ->
     string ->
     Opam_ci_check.Variant.t ->
     'a) ->
@@ -17,6 +18,7 @@ val linux_distributions :
     (opam_version:[> `Dev ] ->
     lower_bounds:bool ->
     revdeps:bool ->
+    dag_label:string ->
     string ->
     Opam_ci_check.Variant.t ->
     'a) ->
@@ -27,6 +29,7 @@ val macos :
     (opam_version:[> `Dev ] ->
     lower_bounds:bool ->
     revdeps:bool ->
+    dag_label:string ->
     string ->
     Opam_ci_check.Variant.t ->
     'a) ->
@@ -37,6 +40,7 @@ val freebsd :
     (opam_version:[> `Dev ] ->
     lower_bounds:bool ->
     revdeps:bool ->
+    dag_label:string ->
     string ->
     Opam_ci_check.Variant.t ->
     'a) ->
@@ -47,6 +51,7 @@ val extras :
     (opam_version:Opam_ci_check.Opam_version.t ->
     lower_bounds:bool ->
     revdeps:bool ->
+    dag_label:string ->
     string ->
     Opam_ci_check.Variant.t ->
     'a) ->

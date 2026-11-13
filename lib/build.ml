@@ -62,7 +62,7 @@ let compilers ?(minimal=false) ~arch ~build () =
     let revdeps = List.exists (Ocaml_version.equal v) default_compilers in (* TODO: Remove this when the cluster is ready *)
     let v = Ocaml_version.to_string v in
     let variant = Variant.v ~arch ~distro:master_distro ~compiler:(v, None) in
-    build ~opam_version ~lower_bounds:true ~revdeps v variant
+    build ~opam_version ~lower_bounds:true ~revdeps ~dag_label:v v variant
   ) versions
 
 let is_supported_linux_distro distro =
@@ -82,7 +82,7 @@ let linux_distributions ~arch ~build =
   let build ~distro ~arch ~compiler =
     let variant = Variant.v ~arch ~distro ~compiler in
     let label = Fmt.str "%s-ocaml-%s" distro (Variant.ocaml_version_to_string variant) in
-    build ~opam_version ~lower_bounds:false ~revdeps:false label variant
+    build ~opam_version ~lower_bounds:false ~revdeps:false ~dag_label:label label variant
   in
   List.fold_left (fun acc comp ->
     let comp = Ocaml_version.to_string comp in
@@ -99,7 +99,7 @@ let macos ~build =
   let build ~distro ~arch ~compiler =
     let variant = Variant.v ~arch ~distro ~compiler in
     let label = Fmt.str "%s-%s" (Variant.docker_tag variant) (Ocaml_version.string_of_arch arch) in
-    build ~opam_version ~lower_bounds:false ~revdeps:false label variant
+    build ~opam_version ~lower_bounds:false ~revdeps:false ~dag_label:label label variant
   in
   List.fold_left (fun acc comp ->
     let comp = Ocaml_version.to_string comp in
@@ -112,7 +112,7 @@ let freebsd ~build =
   let build ~distro ~arch ~compiler =
     let variant = Variant.v ~arch ~distro ~compiler in
     let label = Fmt.str "%s-%s" (Variant.docker_tag variant) (Ocaml_version.string_of_arch arch) in
-    build ~opam_version ~lower_bounds:false ~revdeps:false label variant
+    build ~opam_version ~lower_bounds:false ~revdeps:false ~dag_label:label label variant
   in
   List.fold_left (fun acc comp ->
     let comp = Ocaml_version.to_string comp in
@@ -127,7 +127,7 @@ let extras ~build =
     let variant = Variant.v ~arch ~distro ~compiler in
     let label = if String.equal label "" then "" else label^"-" in
     let label = Fmt.str "%socaml-%s" label (Variant.ocaml_version_to_string variant) in
-    build ~opam_version ~lower_bounds:false ~revdeps:false label variant
+    build ~opam_version ~lower_bounds:false ~revdeps:false ~dag_label:label label variant
   in
   let master_distro = Distro.tag_of_distro master_distro in
   List.fold_left (fun acc comp_full ->
@@ -196,7 +196,12 @@ let get_base ~arch variant =
       in
       Spec.Docker repo_id
 
-let build (module Builder : Build_intf.S) ~analysis ~pkgopts ~master ~source ~opam_version ~lower_bounds ~revdeps label variant =
+let build (module Builder : Build_intf.S) ~analysis ~pkgopts ~master ~source ~opam_version ~lower_bounds ~revdeps ~dag_label label variant =
+  (* [label] names the node in the status-tree bullet list (and the index path);
+     [dag_label] is the value of the one collapse box the SVG draws for this
+     build. They are equal everywhere except day10, whose nested tree wants a
+     clean [label] but whose SVG box must carry distro/arch/version to be
+     findable (branch labels aren't drawn in the SVG). *)
   let arch = Variant.arch variant in
   let analysis = with_label label analysis in
   let pkgopts =
@@ -252,13 +257,22 @@ let build (module Builder : Build_intf.S) ~analysis ~pkgopts ~master ~source ~op
   in
   Node.list_map ~collapse_key:"pkg" (module Package_opt) build_pkg pkgopts
   |> (fun x -> Node.branch ~label [x])
-  |> Node.collapse ~key:"platform" ~value:label ~input:analysis
+  |> Node.collapse ~key:"platform" ~value:dag_label ~input:analysis
 
 (* Shadow OBuilder builds through day10, in addition to the OBuilder tests.
    Same variants, distinct ["day10-"] labels; the [build] passed in is the day10
    builder, which routes to the day10 pool — including the revdeps list (day10's
    [revdeps] verb) and each revdep build, on the debian-13 / x86_64 leaf. *)
 let day10 ~build =
+  (* Group [xs] by [key], preserving first-seen order; returns (key, members). *)
+  let group_by key xs =
+    List.fold_left (fun acc x ->
+      let k = key x in
+      if List.mem_assoc k acc
+      then List.map (fun (k', g) -> if k' = k then (k', g @ [ x ]) else (k', g)) acc
+      else acc @ [ (k, [ x ]) ])
+      [] xs
+  in
   (* Per-arch distro sets: riscv64 stays debian-13-only; x86_64/arm64/ppc64 mirror
      the OBuilder [distributions] node (active linux distros + [master_distro],
      which that node omits — master is tested in [compilers]). All validated on
@@ -303,24 +317,28 @@ let day10 ~build =
       default_compilers
   in
   let leaves = leaves @ windows_leaves @ macos_leaves in
-  (* One flat leaf per variant, each labelled [day10-<distro>-<arch>-ocaml-<ver>].
-     The nesting we used before (day10 > distro > arch > ocaml) drew nothing in
-     the DAG — [Node.branch] only prepends to the index path; the one box drawn
-     per build is its [Current.collapse], whose value is this label — so the
-     label has to carry distro/arch/version itself to be visible and filterable.
-     Label only: the day10 cache key is pool/commit/variant/ty (see
-     [Cluster_build]), so this re-keys and rebuilds nothing. lower-bounds stays
-     off (day10's --prefer-oldest is validated separately and the OBuilder
-     [compilers] node still covers lower-bounds). revdeps mirror that node, which
-     runs them on x86_64 / [master_distro] only, so the day10 shadow enables them
-     on the debian-13 / x86_64 leaf alone. *)
+  (* Nest as [day10 > distro > arch > ocaml] for the status-tree bullet list, so
+     the leaf [label] is just the ocaml version and the list reads cleanly. The
+     SVG draws only the per-build collapse box (branch labels aren't drawn), so
+     pass [~dag_label] carrying day10/distro/arch/version to make that box
+     searchable and uniquely selectable. Labels only — the day10 cache key is
+     pool/commit/variant/ty (see [Cluster_build]), so this re-keys and rebuilds
+     nothing. lower-bounds stays off (day10's --prefer-oldest is validated
+     separately and the OBuilder [compilers] node still covers lower-bounds).
+     revdeps mirror that node, which runs them on x86_64 / [master_distro] only,
+     so the day10 shadow enables them on the debian-13 / x86_64 leaf alone. *)
   let master_distro_tag = Distro.tag_of_distro master_distro in
   let leaf (distro, arch, variant) =
     let revdeps = String.equal distro master_distro_tag && String.equal arch "x86_64" in
-    let label = Fmt.str "day10-%s-%s-ocaml-%s" distro arch (Variant.ocaml_version_to_string variant) in
-    build ~opam_version ~lower_bounds:false ~revdeps label variant
+    let dag_label = Fmt.str "day10-%s-%s-ocaml-%s" distro arch (Variant.ocaml_version_to_string variant) in
+    build ~opam_version ~lower_bounds:false ~revdeps ~dag_label
+      (Variant.ocaml_version_to_string variant) variant
   in
-  List.map leaf leaves
+  group_by (fun (distro, _, _) -> distro) leaves
+  |> List.map (fun (distro, dls) ->
+         group_by (fun (_, arch, _) -> arch) dls
+         |> List.map (fun (arch, als) -> Node.branch ~label:arch (List.map leaf als))
+         |> Node.branch ~label:distro)
 
 let with_cluster ~ocluster ~analysis ~lint ~master source =
   let module Builder : Build_intf.S = struct
