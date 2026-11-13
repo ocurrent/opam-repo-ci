@@ -126,6 +126,15 @@ let day10_platform variant =
         | None -> d
       in
       (dist, "")
+    | `Freebsd ->
+      (* "freebsd-15.1" -> distribution "freebsd"; the version is an osreldate
+         (1501000 for 15.1) that day10 fills in from the host, so leave it
+         empty rather than passing the "15.1" from the tag. *)
+      let dist = match String.rindex_opt d '-' with
+        | Some i -> String.sub d 0 i
+        | None -> d
+      in
+      (dist, "")
     | _ ->
       (match String.rindex_opt d '-' with
        | Some i -> (String.sub d 0 i, String.sub d (i + 1) (String.length d - i - 1))
