@@ -3,26 +3,23 @@ open Current.Syntax
 
 let pool_size = 4
 let pool = Current.Pool.create ~label:"lint" pool_size
-let () = Lwt_preemptive.init 0 1 (fun _errlog -> ()) (* NOTE: Lwt_preemptive is used to wrap
-                                                        long opam calls, and as of today (opam 2.1.0)
-                                                        opam uses Unix.chdir to normalize paths
-                                                        which isn't thread-safe. *)
+let () = Lwt_preemptive.init 0 1 (fun _errlog -> ())
 
+(* NOTE: Lwt_preemptive is used to wrap
+   long opam calls, and as of today (opam 2.1.0)
+   opam uses Unix.chdir to normalize paths
+   which isn't thread-safe. *)
 let ( // ) = Filename.concat
 let ( >>/= ) x f = x >>= fun x -> f (Result.get_ok x)
-let exec ~cwd ~job cmd = Current.Process.exec ~cwd ~cancellable:true ~job ("", cmd)
+
+let exec ~cwd ~job cmd =
+  Current.Process.exec ~cwd ~cancellable:true ~job ("", cmd)
 
 (** If either a restricted prefix or conflict class exists,
     then the corresponding other must also exist. *)
 type prefix_conflict_class_mismatch =
-  | WrongPrefix of {
-      conflict_class: string;
-      required_prefix: string;
-    }
-  | WrongConflictClass of {
-      prefix: string;
-      required_conflict_class: string;
-    }
+  | WrongPrefix of { conflict_class : string; required_prefix : string }
+  | WrongConflictClass of { prefix : string; required_conflict_class : string }
 
 type error =
   | UnnecessaryField of string
@@ -35,7 +32,7 @@ type error =
   | BadDuneConstraint of string * string
   | UnexpectedFile of string
   | ForbiddenPerm of string
-  | OpamLint of (int * [`Warning | `Error] * string)
+  | OpamLint of (int * [ `Warning | `Error ] * string)
   | FailedToDownload of string
   | NameCollision of string
   | WeakChecksum of string
@@ -53,105 +50,107 @@ module Check = struct
   let unmarshal _ = ()
 
   let path_from_pkg pkg =
-    "packages" //
-    (OpamPackage.Name.to_string (OpamPackage.name pkg)) //
-    (OpamPackage.to_string pkg)
+    "packages"
+    // OpamPackage.Name.to_string (OpamPackage.name pkg)
+    // OpamPackage.to_string pkg
 
   let get_opam ~cwd pkg =
-    Analyse.Analysis.get_opam ~cwd (path_from_pkg pkg // "opam") >>/= fun opam ->
-    Lwt.return (OpamFile.OPAM.read_from_string opam)
+    Analyse.Analysis.get_opam ~cwd (path_from_pkg pkg // "opam")
+    >>/= fun opam -> Lwt.return (OpamFile.OPAM.read_from_string opam)
 
   let is_perm_correct file =
     Lwt_unix.stat file >|= function
-    | {st_kind = S_REG; st_perm = 0o644; _} -> true
-    | {st_kind = S_REG; st_perm = 0o664; _} -> true
+    | { st_kind = S_REG; st_perm = 0o644; _ } -> true
+    | { st_kind = S_REG; st_perm = 0o664; _ } -> true
     | _ -> false
 
   let get_files dirname =
     Lwt_unix.opendir dirname >>= fun dir ->
     let rec aux files =
-      Lwt.catch begin fun () ->
-        Lwt_unix.readdir dir >>= fun file ->
-        if Fpath.is_rel_seg file then
-          aux files
-        else
-          aux (file :: files)
-      end begin function
-      | End_of_file -> Lwt.return files
-      | exn -> Lwt.fail exn
-      end
+      Lwt.catch
+        (fun () ->
+          Lwt_unix.readdir dir >>= fun file ->
+          if Fpath.is_rel_seg file then aux files else aux (file :: files))
+        (function End_of_file -> Lwt.return files | exn -> Lwt.fail exn)
     in
-    Lwt.finalize
-      (fun () -> aux [])
-      (fun () -> Lwt_unix.closedir dir)
+    Lwt.finalize (fun () -> aux []) (fun () -> Lwt_unix.closedir dir)
 
-  let get_packages ~cwd =
-    get_files @@ Fpath.to_string cwd // "packages"
+  let get_packages ~cwd = get_files @@ (Fpath.to_string cwd // "packages")
 
   let scan_dir ~cwd errors pkg =
     let dir = Fpath.to_string cwd // path_from_pkg pkg in
     get_files dir >>= fun files ->
-    let rec aux errors  = function
+    let rec aux errors = function
       | [] -> Lwt.return errors
-      | "opam"::files ->
-          is_perm_correct (dir // "opam") >|= begin function
-          | true -> errors
-          | false -> ((pkg, ForbiddenPerm (dir // "opam")) :: errors)
-          end >>= fun errors ->
-          aux errors files
-      | file::files ->
-          aux ((pkg, UnexpectedFile file) :: errors) files
+      | "opam" :: files ->
+          (is_perm_correct (dir // "opam") >|= function
+           | true -> errors
+           | false -> (pkg, ForbiddenPerm (dir // "opam")) :: errors)
+          >>= fun errors -> aux errors files
+      | file :: files -> aux ((pkg, UnexpectedFile file) :: errors) files
     in
     aux errors files
 
   let get_dune_project_version ~pkg url =
     Lwt_io.with_temp_dir @@ fun dir ->
-    Lwt_preemptive.detach begin fun () ->
-      OpamProcess.Job.run @@
-      OpamRepository.pull_tree (OpamPackage.to_string pkg)
-        (OpamFilename.Dir.of_string dir)
-        (OpamFile.URL.checksum url)
-        [OpamFile.URL.url url]
-    end () >>= function
-    | OpamTypes.Not_available (_, msg) ->
-        Lwt.return (Error msg)
+    Lwt_preemptive.detach
+      (fun () ->
+        OpamProcess.Job.run
+        @@ OpamRepository.pull_tree
+             (OpamPackage.to_string pkg)
+             (OpamFilename.Dir.of_string dir)
+             (OpamFile.URL.checksum url)
+             [ OpamFile.URL.url url ])
+      ()
+    >>= function
+    | OpamTypes.Not_available (_, msg) -> Lwt.return (Error msg)
     | Up_to_date _ | Result _ ->
         let dune_project = Filename.concat dir "dune-project" in
-        Lwt.catch begin fun () ->
-          Lwt_io.with_file ~mode:Lwt_io.Input dune_project (fun ch -> Lwt_io.read ch >|= Sexplib.Sexp.parse) >>= begin function
-          | Sexplib.Sexp.(Done (List [Atom "lang"; Atom "dune"; Atom version], _)) -> Lwt.return (Ok (Some version))
-          | Done _ -> Lwt.fail_with "(lang dune ...) is not the first construct"
-          | Cont _ -> Lwt.fail_with "Failed to parse the dune-project file"
-          end
-        end begin function
-        | Unix.Unix_error (Unix.ENOENT, _, _) -> Lwt.return (Ok None)
-        | exn -> Lwt.fail exn
-        end
+        Lwt.catch
+          (fun () ->
+            Lwt_io.with_file ~mode:Lwt_io.Input dune_project (fun ch ->
+                Lwt_io.read ch >|= Sexplib.Sexp.parse)
+            >>= function
+            | Sexplib.Sexp.(
+                Done (List [ Atom "lang"; Atom "dune"; Atom version ], _)) ->
+                Lwt.return (Ok (Some version))
+            | Done _ ->
+                Lwt.fail_with "(lang dune ...) is not the first construct"
+            | Cont _ -> Lwt.fail_with "Failed to parse the dune-project file")
+          (function
+            | Unix.Unix_error (Unix.ENOENT, _, _) -> Lwt.return (Ok None)
+            | exn -> Lwt.fail exn)
 
   (** On MacOS [get_dune_project_version] does not work and causes a hang
       https://github.com/ocurrent/opam-repo-ci/issues/260 *)
   let get_dune_project_version_portable ~pkg url =
     Lwt_io.with_temp_dir @@ fun dir ->
-    let res = OpamProcess.Job.run @@
-      OpamRepository.pull_tree (OpamPackage.to_string pkg)
-        (OpamFilename.Dir.of_string dir)
-        (OpamFile.URL.checksum url)
-        [OpamFile.URL.url url] in
+    let res =
+      OpamProcess.Job.run
+      @@ OpamRepository.pull_tree
+           (OpamPackage.to_string pkg)
+           (OpamFilename.Dir.of_string dir)
+           (OpamFile.URL.checksum url)
+           [ OpamFile.URL.url url ]
+    in
     match res with
-    | OpamTypes.Not_available (_, msg) ->
-        Lwt.return (Error msg)
+    | OpamTypes.Not_available (_, msg) -> Lwt.return (Error msg)
     | Up_to_date _ | Result _ ->
         let dune_project = Filename.concat dir "dune-project" in
-        Lwt.catch begin fun () ->
-          Lwt_io.with_file ~mode:Lwt_io.Input dune_project (fun ch -> Lwt_io.read ch >|= Sexplib.Sexp.parse) >>= begin function
-          | Sexplib.Sexp.(Done (List [Atom "lang"; Atom "dune"; Atom version], _)) -> Lwt.return (Ok (Some version))
-          | Done _ -> Lwt.fail_with "(lang dune ...) is not the first construct"
-          | Cont _ -> Lwt.fail_with "Failed to parse the dune-project file"
-          end
-        end begin function
-        | Unix.Unix_error (Unix.ENOENT, _, _) -> Lwt.return (Ok None)
-        | exn -> Lwt.fail exn
-        end
+        Lwt.catch
+          (fun () ->
+            Lwt_io.with_file ~mode:Lwt_io.Input dune_project (fun ch ->
+                Lwt_io.read ch >|= Sexplib.Sexp.parse)
+            >>= function
+            | Sexplib.Sexp.(
+                Done (List [ Atom "lang"; Atom "dune"; Atom version ], _)) ->
+                Lwt.return (Ok (Some version))
+            | Done _ ->
+                Lwt.fail_with "(lang dune ...) is not the first construct"
+            | Cont _ -> Lwt.fail_with "Failed to parse the dune-project file")
+          (function
+            | Unix.Unix_error (Unix.ENOENT, _, _) -> Lwt.return (Ok None)
+            | exn -> Lwt.fail exn)
 
   let is_dune name =
     OpamPackage.Name.equal name (OpamPackage.Name.of_string "dune")
@@ -171,8 +170,14 @@ module Check = struct
     in
     let is_build = ref false in
     let rec get_lower_bound = function
-      | OpamFormula.Atom (OpamTypes.Constraint ((`Gt | `Geq | `Eq), OpamTypes.FString version)) -> Some version
-      | Atom (Filter (FIdent (_, var, _))) when String.equal (OpamVariable.to_string var) "build" -> is_build := true; None (* TODO: remove this hack *)
+      | OpamFormula.Atom
+          (OpamTypes.Constraint ((`Gt | `Geq | `Eq), OpamTypes.FString version))
+        ->
+          Some version
+      | Atom (Filter (FIdent (_, var, _)))
+        when String.equal (OpamVariable.to_string var) "build" ->
+          is_build := true;
+          None (* TODO: remove this hack *)
       | Empty | Atom (Filter _) | Atom (Constraint _) -> None
       | Block x -> get_lower_bound x
       | And (x, y) -> get_max (get_lower_bound x, get_lower_bound y)
@@ -183,8 +188,7 @@ module Check = struct
           if is_dune pkg then
             let v = get_lower_bound constr in
             Some (Option.value ~default:"1.0" v)
-          else
-            None
+          else None
       | Empty -> None
       | Block x -> aux x
       | And (x, y) -> get_max (aux x, aux y)
@@ -203,24 +207,19 @@ module Check = struct
         get_dune_project_version ~pkg url >|= fun dune_version ->
         let is_build, dune_constraint = get_dune_constraint opam in
         let errors =
-          match dune_constraint, dune_version with
+          match (dune_constraint, dune_version) with
           | _, Error msg -> (pkg, FailedToDownload msg) :: errors
           | None, Ok None -> errors
           | Some _, Ok None -> (pkg, DuneProjectMissing) :: errors
           | None, Ok (Some _) ->
-              if is_dune (OpamPackage.name pkg) then
-                errors
-              else
-                (pkg, DuneConstraintMissing) :: errors
+              if is_dune (OpamPackage.name pkg) then errors
+              else (pkg, DuneConstraintMissing) :: errors
           | Some dep, Ok (Some ver) ->
-              if OpamVersionCompare.compare dep ver >= 0 then
-                errors
-              else
-                (pkg, BadDuneConstraint (dep, ver)) :: errors
+              if OpamVersionCompare.compare dep ver >= 0 then errors
+              else (pkg, BadDuneConstraint (dep, ver)) :: errors
         in
         if is_build then (pkg, DuneIsBuild) :: errors else errors
-    | None ->
-        Lwt.return errors
+    | None -> Lwt.return errors
 
   (** [package_name_collision p0 p1] returns true if [p0] is similar to [p1].
     Similarity is defined to be either:
@@ -239,10 +238,7 @@ module Check = struct
     - [ocamlfind] and [ocamlbind] do not collide *)
   let package_name_collision p0 p1 =
     let dash_underscore p0 p1 =
-      let f = function
-        | '_' -> '-'
-        | c -> c
-      in
+      let f = function '_' -> '-' | c -> c in
       let p0 = String.map f p0 in
       let p1 = String.map f p1 in
       String.equal p0 p1
@@ -264,14 +260,15 @@ module Check = struct
   let check_name_collisions ~errors ~pkg packages =
     let pkg_name = pkg.OpamPackage.name |> OpamPackage.Name.to_string in
     let pkg_name_lower = String.lowercase_ascii pkg_name in
-    let other_pkgs = List.filter (fun s -> not @@ String.equal s pkg_name) packages in
+    let other_pkgs =
+      List.filter (fun s -> not @@ String.equal s pkg_name) packages
+    in
     List.fold_left
       (fun errors other_pkg ->
         let other_pkg_lower = String.lowercase_ascii other_pkg in
         if package_name_collision pkg_name_lower other_pkg_lower then
           (pkg, NameCollision other_pkg) :: errors
-        else
-          errors)
+        else errors)
       errors other_pkgs
 
   let check_name_field ~errors ~pkg opam =
@@ -280,8 +277,7 @@ module Check = struct
     | Some name ->
         if OpamPackage.Name.equal name (OpamPackage.name pkg) then
           (pkg, UnnecessaryField "name") :: errors
-        else
-          (pkg, UnmatchedName name) :: errors
+        else (pkg, UnmatchedName name) :: errors
 
   let check_version_field ~errors ~pkg opam =
     match OpamFile.OPAM.version_opt opam with
@@ -289,28 +285,24 @@ module Check = struct
     | Some version ->
         if OpamPackage.Version.equal version (OpamPackage.version pkg) then
           (pkg, UnnecessaryField "version") :: errors
-        else
-          (pkg, UnmatchedVersion version) :: errors
+        else (pkg, UnmatchedVersion version) :: errors
 
   let check_dune_subst ~errors ~pkg opam =
     List.fold_left
       (fun errors -> function
-          | OpamTypes.([(CString "dune", None); (CString "subst", None)], filter) ->
-              begin match filter with
-              | Some (OpamTypes.FIdent ([], var, None)) when
-                  String.equal (OpamVariable.to_string var) "dev" -> errors
-              | _ -> (pkg, DubiousDuneSubst) :: errors
-              end
-          | _ -> errors
-      )
-      errors
-      opam.OpamFile.OPAM.build
+        | OpamTypes.(
+            [ (CString "dune", None); (CString "subst", None) ], filter) -> (
+            match filter with
+            | Some (OpamTypes.FIdent ([], var, None))
+              when String.equal (OpamVariable.to_string var) "dev" ->
+                errors
+            | _ -> (pkg, DubiousDuneSubst) :: errors)
+        | _ -> errors)
+      errors opam.OpamFile.OPAM.build
 
   let check_checksums ~errors ~pkg opam =
     let err ~ctx ~filename msg =
-      let err = Fmt.str "opam field %s contains %s for %s"
-          ctx msg filename
-      in
+      let err = Fmt.str "opam field %s contains %s for %s" ctx msg filename in
       (pkg, WeakChecksum err)
     in
     let check_one_url ~ctx url =
@@ -319,34 +311,33 @@ module Check = struct
       match checksums with
       | [] -> [ err ~ctx ~filename "no checksum" ]
       | _ ->
-        if List.for_all (fun hash ->
-            match OpamHash.kind hash with
-            | `MD5 -> true
-            | _ -> false)
-            checksums
-        then
-          [ err ~ctx ~filename "only MD5 as checksum" ]
-        else
-          []
+          if
+            List.for_all
+              (fun hash ->
+                match OpamHash.kind hash with `MD5 -> true | _ -> false)
+              checksums
+          then [ err ~ctx ~filename "only MD5 as checksum" ]
+          else []
     in
     let check_extra_file (basename, hash) =
       match OpamHash.kind hash with
       | `MD5 ->
-        let filename = OpamFilename.Base.to_string basename in
-        [ err ~ctx:"extra-files" ~filename "only MD5 as checksum" ]
+          let filename = OpamFilename.Base.to_string basename in
+          [ err ~ctx:"extra-files" ~filename "only MD5 as checksum" ]
       | _ -> []
     in
     let extra_src_errs =
       List.concat
-        (List.map (fun (_, url) -> check_one_url ~ctx:"extra-sources" url)
+        (List.map
+           (fun (_, url) -> check_one_url ~ctx:"extra-sources" url)
            (OpamFile.OPAM.extra_sources opam))
     and url_errs =
       Option.value ~default:[]
-        (Option.map (check_one_url ~ctx:"url")
-           (OpamFile.OPAM.url opam))
+        (Option.map (check_one_url ~ctx:"url") (OpamFile.OPAM.url opam))
     and extra_file_errs =
       Option.value ~default:[]
-        (Option.map (fun efs -> List.concat (List.map check_extra_file efs))
+        (Option.map
+           (fun efs -> List.concat (List.map check_extra_file efs))
            (OpamFile.OPAM.extra_files opam))
     in
     url_errs @ extra_file_errs @ extra_src_errs @ errors
@@ -363,17 +354,19 @@ module Check = struct
 
   module Prefix = struct
     (* For context, see https://github.com/ocurrent/opam-repo-ci/pull/316#issuecomment-2160069803 *)
-    let prefix_conflict_class_map = [
-      ("mysys2-", "msys2-env");
-      ("arch-", "ocaml-arch");
-      ("ocaml-env-mingw", "ocaml-env-mingw");
-      ("ocaml-env-msvc", "ocaml-env-msvc");
-      ("host-arch-", "ocaml-host-arch");
-      ("host-system-", "ocaml-host-system");
-      ("system-", "ocaml-system");
-    ]
+    let prefix_conflict_class_map =
+      [
+        ("mysys2-", "msys2-env");
+        ("arch-", "ocaml-arch");
+        ("ocaml-env-mingw", "ocaml-env-mingw");
+        ("ocaml-env-msvc", "ocaml-env-msvc");
+        ("host-arch-", "ocaml-host-arch");
+        ("host-system-", "ocaml-host-system");
+        ("system-", "ocaml-system");
+      ]
 
-    let conflict_class_prefix_map = List.map (fun (a, b) -> (b, a)) prefix_conflict_class_map
+    let conflict_class_prefix_map =
+      List.map (fun (a, b) -> (b, a)) prefix_conflict_class_map
 
     let prefixes = List.map fst prefix_conflict_class_map
 
@@ -383,30 +376,28 @@ module Check = struct
         (fun errors prefix ->
           if String.starts_with ~prefix name then
             (pkg, RestrictedPrefix prefix) :: errors
-          else
-            errors)
-        errors
-        prefixes
+          else errors)
+        errors prefixes
 
     let check_prefix_without_conflict_class ~errors ~pkg name conflict_classes =
-      let prefix = List.find_opt
-        (fun prefix -> String.starts_with ~prefix name)
-        prefixes
+      let prefix =
+        List.find_opt (fun prefix -> String.starts_with ~prefix name) prefixes
       in
       match prefix with
       | None -> errors
-      | Some prefix ->
-        match List.assoc_opt prefix prefix_conflict_class_map with
-        | None ->
-          Logs.err
-            (fun m -> m "BUG: prefix '%s' not found in conflict class map" prefix);
-          errors
-        | Some required_conflict_class ->
-          if List.mem required_conflict_class conflict_classes then
-            errors
-          else
-            (pkg, PrefixConflictClassMismatch
-              (WrongConflictClass { prefix; required_conflict_class })) :: errors
+      | Some prefix -> (
+          match List.assoc_opt prefix prefix_conflict_class_map with
+          | None ->
+              Logs.err (fun m ->
+                  m "BUG: prefix '%s' not found in conflict class map" prefix);
+              errors
+          | Some required_conflict_class ->
+              if List.mem required_conflict_class conflict_classes then errors
+              else
+                ( pkg,
+                  PrefixConflictClassMismatch
+                    (WrongConflictClass { prefix; required_conflict_class }) )
+                :: errors)
 
     let check_conflict_class_without_prefix ~errors ~pkg name conflict_classes =
       List.fold_left
@@ -414,81 +405,94 @@ module Check = struct
           match List.assoc_opt conflict_class conflict_class_prefix_map with
           | None -> errors
           | Some prefix ->
-            if String.starts_with ~prefix name then
-              errors
-            else
-              (pkg, PrefixConflictClassMismatch
-                (WrongPrefix { conflict_class; required_prefix=prefix })) :: errors
-        )
-        errors
-        conflict_classes
+              if String.starts_with ~prefix name then errors
+              else
+                ( pkg,
+                  PrefixConflictClassMismatch
+                    (WrongPrefix { conflict_class; required_prefix = prefix })
+                )
+                :: errors)
+        errors conflict_classes
 
     let check_prefix_conflict_class_mismatch ~errors ~pkg opam =
-      let conflict_classes = List.map OpamPackage.Name.to_string @@ OpamFile.OPAM.conflict_class opam in
+      let conflict_classes =
+        List.map OpamPackage.Name.to_string @@ OpamFile.OPAM.conflict_class opam
+      in
       let name = OpamPackage.name_to_string pkg in
-      let errors = check_prefix_without_conflict_class ~errors ~pkg name conflict_classes in
+      let errors =
+        check_prefix_without_conflict_class ~errors ~pkg name conflict_classes
+      in
       check_conflict_class_without_prefix ~errors ~pkg name conflict_classes
   end
 
   let opam_lint ~errors ~pkg opam =
-    OpamFileTools.lint ~check_upstream:true opam |>
-    List.fold_left (fun errors x -> (pkg, OpamLint x) :: errors) errors
+    OpamFileTools.lint ~check_upstream:true opam
+    |> List.fold_left (fun errors x -> (pkg, OpamLint x) :: errors) errors
 
   let of_dir ~host_os ~master ~job ~packages cwd =
     let master = Current_git.Commit.hash master in
-    exec ~cwd ~job [|"git"; "merge"; "-q"; "--"; master|] >>/= fun () ->
+    exec ~cwd ~job [| "git"; "merge"; "-q"; "--"; master |] >>/= fun () ->
     get_packages ~cwd >>= fun existing_packages ->
-    Lwt_list.fold_left_s (fun errors (pkg, kind) ->
-      match kind with
-      | Analyse.Analysis.Deleted ->
-          Lwt.return errors (* TODO *)
-      | Analyse.Analysis.(New _ | Unavailable | SignificantlyChanged | InsignificantlyChanged) ->
-          get_opam ~cwd pkg >>= fun opam ->
-          let errors = check_name_field ~errors ~pkg opam in
-          let errors = check_version_field ~errors ~pkg opam in
-          let errors = check_dune_subst ~errors ~pkg opam in
-          let errors = check_checksums ~errors ~pkg opam in
-          let errors = check_no_pin_depends ~errors ~pkg opam in
-          let errors = check_no_extra_files ~errors ~pkg opam in
-          let errors = Prefix.check_prefix_conflict_class_mismatch ~errors ~pkg opam in
-          check_dune_constraints ~host_os ~errors ~pkg opam >>= fun errors ->
-          (* Check directory structure correctness *)
-          scan_dir ~cwd errors pkg >>= fun errors ->
-          let errors = opam_lint ~errors ~pkg opam in
-          match kind with
-          | New Package ->
-            let errors = check_name_collisions ~errors ~pkg existing_packages in
-            Lwt.return (Prefix.check_name_restricted_prefix ~errors ~pkg)
-          | _ -> Lwt.return errors
-    ) [] packages
+    Lwt_list.fold_left_s
+      (fun errors (pkg, kind) ->
+        match kind with
+        | Analyse.Analysis.Deleted -> Lwt.return errors (* TODO *)
+        | Analyse.Analysis.(
+            New _ | Unavailable | SignificantlyChanged | InsignificantlyChanged)
+          -> (
+            get_opam ~cwd pkg >>= fun opam ->
+            let errors = check_name_field ~errors ~pkg opam in
+            let errors = check_version_field ~errors ~pkg opam in
+            let errors = check_dune_subst ~errors ~pkg opam in
+            let errors = check_checksums ~errors ~pkg opam in
+            let errors = check_no_pin_depends ~errors ~pkg opam in
+            let errors = check_no_extra_files ~errors ~pkg opam in
+            let errors =
+              Prefix.check_prefix_conflict_class_mismatch ~errors ~pkg opam
+            in
+            check_dune_constraints ~host_os ~errors ~pkg opam >>= fun errors ->
+            (* Check directory structure correctness *)
+            scan_dir ~cwd errors pkg >>= fun errors ->
+            let errors = opam_lint ~errors ~pkg opam in
+            match kind with
+            | New Package ->
+                let errors =
+                  check_name_collisions ~errors ~pkg existing_packages
+                in
+                Lwt.return (Prefix.check_name_restricted_prefix ~errors ~pkg)
+            | _ -> Lwt.return errors))
+      [] packages
 end
 
 module Lint = struct
-  type t = {
-    master : Current_git.Commit.t;
-  }
+  type t = { master : Current_git.Commit.t }
 
   module Key = struct
     type t = {
       src : Current_git.Commit.t;
-      packages : (OpamPackage.t * Analyse.Analysis.kind) list
+      packages : (OpamPackage.t * Analyse.Analysis.kind) list;
     }
 
-    let digest {src; packages} =
-      Yojson.Safe.to_string (`Assoc [
-        "src", `String (Current_git.Commit.hash src);
-        "packages", `List (List.map (fun (pkg, kind) ->
-          `Assoc [
-            "pkg", `String (OpamPackage.to_string pkg);
-            "kind", Analyse.Analysis.kind_to_yojson kind;
-          ]) packages);
-      ])
+    let digest { src; packages } =
+      Yojson.Safe.to_string
+        (`Assoc
+          [
+            ("src", `String (Current_git.Commit.hash src));
+            ( "packages",
+              `List
+                (List.map
+                   (fun (pkg, kind) ->
+                     `Assoc
+                       [
+                         ("pkg", `String (OpamPackage.to_string pkg));
+                         ("kind", Analyse.Analysis.kind_to_yojson kind);
+                       ])
+                   packages) );
+          ])
   end
 
   module Value = struct
-    type t = {
-      host_os : host_os
-    } [@@deriving to_yojson]
+    type t = { host_os : host_os } [@@deriving to_yojson]
 
     let digest t = Yojson.Safe.to_string @@ to_yojson t
   end
@@ -499,73 +503,107 @@ module Lint = struct
 
   let msg_of_prefix_conflict_class_mismatch ~pkg = function
     | WrongPrefix { conflict_class; required_prefix } ->
-      Fmt.str
-        "Error in %s: package with conflict class '%s' requires name prefix '%s'"
-        pkg conflict_class required_prefix
-    | WrongConflictClass { prefix; required_conflict_class} ->
-      Fmt.str
-        "Error in %s: package with prefix '%s' requires conflict class '%s'"
-        pkg prefix required_conflict_class
+        Fmt.str
+          "Error in %s: package with conflict class '%s' requires name prefix \
+           '%s'"
+          pkg conflict_class required_prefix
+    | WrongConflictClass { prefix; required_conflict_class } ->
+        Fmt.str
+          "Error in %s: package with prefix '%s' requires conflict class '%s'"
+          pkg prefix required_conflict_class
 
   let msg_of_error (package, err) =
     let pkg = OpamPackage.to_string package in
     match err with
     | UnnecessaryField field ->
-        Fmt.str "Warning in %s: Unnecessary field '%s'. It is suggested to remove it." pkg field
+        Fmt.str
+          "Warning in %s: Unnecessary field '%s'. It is suggested to remove it."
+          pkg field
     | UnmatchedName value ->
-        Fmt.str "Error in %s: The field 'name' that doesn't match its context. \
-                  Field 'name' has value '%s' but was expected of value '%s'."
+        Fmt.str
+          "Error in %s: The field 'name' that doesn't match its context. Field \
+           'name' has value '%s' but was expected of value '%s'."
           pkg
           (OpamPackage.Name.to_string value)
           (OpamPackage.Name.to_string (OpamPackage.name package))
     | UnmatchedVersion value ->
-        Fmt.str "Error in %s: The field 'version' that doesn't match its context. \
-                  Field 'version' has value '%s' but was expected of value '%s'."
+        Fmt.str
+          "Error in %s: The field 'version' that doesn't match its context. \
+           Field 'version' has value '%s' but was expected of value '%s'."
           pkg
           (OpamPackage.Version.to_string value)
           (OpamPackage.Version.to_string (OpamPackage.version package))
     | DubiousDuneSubst ->
-        Fmt.str "Warning in %s: Dubious use of 'dune subst'. \
-                  'dune subst' should always only be called with {dev} (i.e. [\"dune\" \"subst\"] {dev}) \
-                  If your opam file has been autogenerated by dune, you need to upgrade your dune-project \
-                  to at least (lang dune 2.7)."
+        Fmt.str
+          "Warning in %s: Dubious use of 'dune subst'. 'dune subst' should \
+           always only be called with {dev} (i.e. [\"dune\" \"subst\"] {dev}) \
+           If your opam file has been autogenerated by dune, you need to \
+           upgrade your dune-project to at least (lang dune 2.7)."
           pkg
     | DuneProjectMissing ->
-        Fmt.str "Warning in %s: The package seems to use dune but the dune-project file is missing." pkg
+        Fmt.str
+          "Warning in %s: The package seems to use dune but the dune-project \
+           file is missing."
+          pkg
     | DuneConstraintMissing ->
-        Fmt.str "Warning in %s: The package has a dune-project file but no explicit dependency on dune was found." pkg
+        Fmt.str
+          "Warning in %s: The package has a dune-project file but no explicit \
+           dependency on dune was found."
+          pkg
     | DuneIsBuild ->
-        Fmt.str "Warning in %s: The package tagged dune as a build dependency. \
-                  Due to a bug in dune (https://github.com/ocaml/dune/issues/2147) this should never be the case. \
-                  Please remove the {build} tag from its filter."
+        Fmt.str
+          "Warning in %s: The package tagged dune as a build dependency. Due \
+           to a bug in dune (https://github.com/ocaml/dune/issues/2147) this \
+           should never be the case. Please remove the {build} tag from its \
+           filter."
           pkg
     | BadDuneConstraint (dep, ver) ->
-        Fmt.str "Error in %s: Your dune-project file indicates that this package requires at least dune %s \
-                  but your opam file only requires dune >= %s. Please check which requirement is the right one, and fix the other."
+        Fmt.str
+          "Error in %s: Your dune-project file indicates that this package \
+           requires at least dune %s but your opam file only requires dune >= \
+           %s. Please check which requirement is the right one, and fix the \
+           other."
           pkg ver dep
     | UnexpectedFile file ->
-        Fmt.str "Error in %s: Unexpected file in %s/%s" pkg (Check.path_from_pkg package) file
+        Fmt.str "Error in %s: Unexpected file in %s/%s" pkg
+          (Check.path_from_pkg package)
+          file
     | ForbiddenPerm file ->
         Fmt.str
-          "Error in %s: Forbidden permission for file %s/%s. All files should have permissions 644."
-          pkg (Check.path_from_pkg package) file
+          "Error in %s: Forbidden permission for file %s/%s. All files should \
+           have permissions 644."
+          pkg
+          (Check.path_from_pkg package)
+          file
     | OpamLint warn ->
-        let warn = OpamFileTools.warns_to_string [warn] in
+        let warn = OpamFileTools.warns_to_string [ warn ] in
         Fmt.str "Error in %s: %s" pkg warn
     | FailedToDownload msg ->
-        Fmt.str "Error in %s: Failed to download the archive. Details: %s" pkg msg
+        Fmt.str "Error in %s: Failed to download the archive. Details: %s" pkg
+          msg
     | NameCollision other_pkg ->
-        Fmt.str "Warning in %s: Possible name collision with package '%s'" pkg other_pkg
+        Fmt.str "Warning in %s: Possible name collision with package '%s'" pkg
+          other_pkg
     | WeakChecksum msg ->
-      Fmt.str "Error in %s: Weak checksum algorithm(s) provided. Please use SHA-256 or SHA-512. Details: %s" pkg msg
+        Fmt.str
+          "Error in %s: Weak checksum algorithm(s) provided. Please use \
+           SHA-256 or SHA-512. Details: %s"
+          pkg msg
     | PinDepends ->
-      Fmt.str "Error in %s: pin-depends present. This is not allowed in the opam-repository." pkg
+        Fmt.str
+          "Error in %s: pin-depends present. This is not allowed in the \
+           opam-repository."
+          pkg
     | ExtraFiles ->
-      Fmt.str "Error in %s: extra-files present. This is not allowed in the opam-repository. Please use extra-source instead." pkg
+        Fmt.str
+          "Error in %s: extra-files present. This is not allowed in the \
+           opam-repository. Please use extra-source instead."
+          pkg
     | RestrictedPrefix prefix ->
-      Fmt.str "Warning in %s: package name has restricted prefix '%s'" pkg prefix
+        Fmt.str "Warning in %s: package name has restricted prefix '%s'" pkg
+          prefix
     | PrefixConflictClassMismatch mismatch ->
-      msg_of_prefix_conflict_class_mismatch ~pkg mismatch
+        msg_of_prefix_conflict_class_mismatch ~pkg mismatch
 
   let run { master } job { Key.src; packages } { Value.host_os } =
     Current.Job.start job ~pool ~level:Current.Level.Harmless >>= fun () ->
@@ -575,30 +613,30 @@ module Lint = struct
     List.iter (Current.Job.log job "%s") errors;
     match errors with
     | [] -> Ok ()
-    | [msg] -> Error (`Msg msg)
+    | [ msg ] -> Error (`Msg msg)
     | l ->
-      let err_str = String.concat "\n" @@ List.sort String.compare l in
-      Error (`Msg (Fmt.str "%d errors:\n%s" (List.length errors) err_str))
+        let err_str = String.concat "\n" @@ List.sort String.compare l in
+        Error (`Msg (Fmt.str "%d errors:\n%s" (List.length errors) err_str))
 
   let pp f _ = Fmt.string f "Lint"
-
   let auto_cancel = true
   let latched = true
 end
 
-module Lint_cache = Current_cache.Generic(Lint)
+module Lint_cache = Current_cache.Generic (Lint)
 
 let get_packages_kind =
   Current.map (fun packages ->
-    List.map (fun (pkg, {Analyse.Analysis.kind; has_tests = _}) ->
-      (pkg, kind))
-      packages)
+      List.map
+        (fun (pkg, { Analyse.Analysis.kind; has_tests = _ }) -> (pkg, kind))
+        packages)
 
 let check ?test_config ~host_os ~master ~packages src =
-  Current.component "Lint" |>
-  let> src
+  Current.component "Lint"
+  |>
+  let> src = src
   and> packages = get_packages_kind packages
-  and> master in
+  and> master = master in
   let host_os = if String.equal host_os "macos" then Macos else Other in
   Lint_cache.run { master } { src; packages } { host_os }
   |> Current.Primitive.map_result @@ Integration_test.check_lint ?test_config
