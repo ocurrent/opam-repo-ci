@@ -1,0 +1,48 @@
+opam-version: "2.0"
+synopsis:
+  "CLI tool that tests whether packages are publishable on the opam repository"
+description:
+  "opam-ci-check is used in the opam repo CI and can be used locally and in other CI pipelines to test the deliverability of packages."
+maintainer: [
+  "Puneeth Chaganti <punchagan@muse-amuse.in>"
+  "Shon Feder <shon.feder@gmail.com>"
+]
+authors: [
+  "Puneeth Chaganti <punchagan@muse-amuse.in>"
+  "Shon Feder <shon.feder@gmail.com>"
+]
+license: "Apache-2.0"
+tags: ["opam" "ci" "lint" "reverse dependency"]
+homepage: "https://github.com/ocurrent/opam-repo-ci/tree/master/opam-ci-check"
+doc: "https://www.ocurrent.org/opam-repo-ci/opam-ci-check/index.html"
+bug-reports: "https://github.com/ocurrent/opam-repo-ci/issues"
+depends: [
+  "ocaml" {>= "4.14.0"}
+  "dune" {>= "3.16"}
+  "sexplib"
+  "bos" {>= "0.2.1"}
+  "fpath" {>= "0.7.3"}
+  "cmdliner" {>= "1.1.1"}
+  "opam-client" {>= "2.5.0"}
+  "ocaml-version" {= "4.1.5"}
+  "dockerfile-opam" {= "8.4.7"}
+  "obuilder-spec" {>= "0.6.0"}
+  "odoc" {with-doc}
+  "ppx_deriving" {>= "5.2.1"}
+  "ppx_deriving_yojson"
+]
+build: [
+  ["dune" "subst"] {dev}
+  [
+    "dune"
+    "build"
+    "-p"
+    name
+    "-j"
+    jobs
+    "@install"
+    "@runtest" {with-test}
+    "@doc" {with-doc}
+  ]
+]
+dev-repo: "git+https://github.com/ocurrent/opam-repo-ci.git"

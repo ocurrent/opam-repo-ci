@@ -12,12 +12,29 @@ let headers = Cohttp.Header.init_with "Content-Type" "text/html; charset=utf-8"
 let normal_response x =
   x >|= fun x -> `Response x
 
+(* Error bodies may echo client-supplied strings (e.g. an unknown variant), so
+   never serve them as HTML. *)
+let error_headers = Cohttp.Header.init_with "Content-Type" "text/plain; charset=utf-8"
+
 let respond_error status body =
-  Server.respond_error ~status ~headers ~body () |> normal_response
+  Server.respond_error ~status ~headers:error_headers ~body () |> normal_response
+
+(* The engine reports a URL that names something it does not have (a commit,
+   ref, variant or repository) as an ordinary Cap'n Proto failure. Those are
+   404s: the request was fine, there is just nothing there. *)
+let not_found_reasons =
+  [ "Unknown Git hash"; "Ambiguous commit hash"; "Invalid Git hash";
+    "Unknown ref"; "No such variant"; "Invalid GitHub repo" ]
+
+let status_of_capnp_error = function
+  | `Exception { Capnp_rpc.Exception.ty = `Failed; reason }
+    when List.exists (fun prefix -> String.starts_with ~prefix reason) not_found_reasons ->
+    `Not_found
+  | _ -> `Internal_server_error
 
 let (>>!=) x f =
   x >>= function
-  | Error `Capnp ex -> respond_error `Internal_server_error (Fmt.to_to_string Capnp_rpc.Error.pp ex)
+  | Error `Capnp ex -> respond_error (status_of_capnp_error ex) (Fmt.to_to_string Capnp_rpc.Error.pp ex)
   | Error `Msg msg -> respond_error `Internal_server_error msg
   | Ok y -> f y
 
@@ -129,9 +146,23 @@ let link_jobs ~owner ~name ~hash ?selected jobs =
     let k = String.split_on_char Common.status_sep variant in
     let x =
       let label_txt = List.hd (List.rev k) in
-      let label = txt (Fmt.str "%s (%a)" label_txt Client.State.pp outcome) in
+      let is_lint = String.equal label_txt "(lint)" in
+      let label_status =
+        match (outcome, is_lint) with
+        | Failed _, true -> "failed"
+        | _ -> Fmt.str "%a" Client.State.pp outcome
+      in
+      let label = txt (Fmt.str "%s (%s)" label_txt label_status) in
       let label = if selected = Some variant then b [label] else label in
-      outcome, [a ~a:[a_href uri] [label]]
+      let log_link = a ~a:[a_href uri] [label] in
+      let error_ul =
+        match (outcome, is_lint) with
+        | Failed msg, true ->
+          let items = String.split_on_char '\n' msg |> List.map (fun s -> li [txt s]) in
+          [ul items]
+        | _ -> [] in
+      let elements = log_link :: error_ul in
+      outcome, elements
     in
     Status_tree.add k x trees
   in
@@ -269,10 +300,9 @@ module Repo_handle = struct
         (* Otherwise, an nginx reverse proxy will wait for the whole log before sending anything. *)
         Cohttp.Header.init_with "X-Accel-Buffering" "no"
       in
-      let res = Cohttp.Response.make ~status:`OK ~flush:true ~encoding:Cohttp.Transfer.Chunked ~headers () in
+      let res = Cohttp.Response.make ~status:`OK ~encoding:Cohttp.Transfer.Chunked ~headers () in
       let write _ic oc =
-        let flush = Cohttp.Response.flush res in
-        let writer = Transfer_IO.make_writer ~flush Cohttp.Transfer.Chunked oc in
+        let writer = Transfer_IO.make_writer ~flush:true Cohttp.Transfer.Chunked oc in
         Lwt.finalize
           (fun () ->
              stream_logs job ~owner ~name ~refs ~hash ~variant ~status chunk writer >>= fun () ->
@@ -295,7 +325,7 @@ module Repo_handle = struct
       let uri = job_url ~owner ~name ~hash variant |> Uri.of_string in
       Server.respond_redirect ~uri () |> normal_response
     | Error { Capnp_rpc.Exception.reason; _ } ->
-      Server.respond_error ~body:reason () |> normal_response
+      respond_error `Internal_server_error reason
 
   let post_rebuild_mode ~owner ~name ~repo hash rebuild_mode =
     let rebuild_all =

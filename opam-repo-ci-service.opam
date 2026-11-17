@@ -12,18 +12,17 @@ homepage: "https://github.com/ocurrent/opam-repo-ci"
 bug-reports: "https://github.com/ocurrent/opam-repo-ci/issues"
 depends: [
   "routes" {>= "2.0.0"} # needed for ocurrent
-  "prometheus-app" {>= "1.2"} # needed for ocurrent
-  "prometheus" {>= "1.2"} # needed for ocurrent
+  "prometheus-app" {>= "2.0"}
   "ppx_sexp_conv"
   "ppx_deriving_yojson"
-  "ppx_deriving"
+  "ppx_deriving" {with-test}
   "mirage-crypto-rng" {>= "0.11.0"}
   "logs"
   "fmt" {>= "0.8.7"}
-  "dune" {>= "3.7"}
+  "dune" {>= "3.16"}
   "ocaml" {>= "4.14.1"}
   "current_incr" {>= "0.6.0"} # see https://github.com/ocurrent/opam-repo-ci/pull/161
-  "current" {>= "0.6.6"}
+  "current" {>= "0.8.0"}
   "current_git"
   "current_github"
   "current_docker"
@@ -35,25 +34,22 @@ depends: [
   "memtrace" {>= "0.1.1"}
   "capnp-rpc-lwt" {>= "0.8.0"}
   "capnp-rpc-unix" {>= "0.8.0"}
-  "opam-repo-ci-api"
-  "opam-state" {>= "2.2.0~beta1"}
-  "opam-format" {>= "2.2.0~beta1"}
+  "opam-state" {>= "2.5.0"}
+  "opam-format" {>= "2.5.0"}
   "opam-file-format" {>= "2.1.2"}
   "sexplib" {>= "v0.14.0"}
   "conf-libev"
-  "dockerfile" {>= "6.3.0"}
-  "dockerfile-opam" {>= "6.3.0"}
-  "ocaml-version" {>= "2.4.0"}
+  "dockerfile" {= "8.4.7"}
+  "dockerfile-opam" {= "8.4.7"}
+  "ocaml-version" {= "4.1.5"}
   "mula" {>= "0.1.2"}
   "alcotest" {>= "1.0.0" & with-test}
   "alcotest-lwt" {>= "1.0.1" & with-test}
   "odoc" {with-doc}
 
-  # pin-depends
+  # Internal dependencies
   "opam-ci-check"
-]
-pin-depends: [
-  "opam-ci-check.0.1~dev" "git+https://github.com/ocurrent/opam-ci-check.git#94890d5ed8d2ff6bbca0e5278af008d70468e25d"
+  "opam-repo-ci-api"
 ]
 conflicts: [
   "ocaml-migrate-parsetree" {= "1.7.1"}

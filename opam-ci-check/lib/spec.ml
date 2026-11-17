@@ -1,11 +1,11 @@
 (* TODO: Make macOS use docker images *)
 type base =
-  | Docker of Current_docker.Raw.Image.t
+  | Docker of string
   | Macos of string
   | Freebsd of string
 
 let base_to_string = function
-  | Docker img -> Current_docker.Raw.Image.hash img
+  | Docker img -> img
   | Macos base -> base
   | Freebsd base -> base
 
@@ -17,11 +17,11 @@ type opam_build = {
   revdep : package option;
   with_tests : bool;
   lower_bounds : bool;
-  opam_version : Opam_version.t;
+  opam_version : Dockerfile_opam.Opam_version.t;
 } [@@deriving to_yojson]
 
 type list_revdeps = {
-  opam_version : Opam_version.t;
+  opam_version : Dockerfile_opam.Opam_version.t;
 } [@@deriving to_yojson]
 
 type ty = [
@@ -37,6 +37,10 @@ let opam ?revdep ~variant ~lower_bounds ~with_tests ~opam_version pkg =
   let ty = `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) in
   { variant; ty }
 
+let opam_list_revdeps ~variant ~opam_version pkg =
+  let ty = `Opam (`List_revdeps { opam_version }, pkg) in
+  { variant; ty }
+
 let pp_pkg ?revdep f pkg =
   match revdep with
   | Some revdep -> Fmt.pf f "%s with %s" (OpamPackage.to_string revdep) (OpamPackage.to_string pkg)
@@ -45,12 +49,12 @@ let pp_pkg ?revdep f pkg =
 let pp_ty f = function
   | `Opam (`List_revdeps {opam_version}, pkg) ->
       Fmt.pf f "list revdeps of %s, using opam %s" (OpamPackage.to_string pkg)
-        (Opam_version.to_string opam_version)
+        (Dockerfile_opam.Opam_version.to_string opam_version)
   | `Opam (`Build { revdep; lower_bounds; with_tests; opam_version }, pkg) ->
     let action = if with_tests then "test" else "build" in
     Fmt.pf f "%s %a%s, using opam %s" action (pp_pkg ?revdep) pkg
       (if lower_bounds then ", lower-bounds" else "")
-      (Opam_version.to_string opam_version)
+      (Dockerfile_opam.Opam_version.to_string opam_version)
 
 let pp_summary f = function
   | `Opam (`List_revdeps _, _) -> Fmt.string f "Opam list revdeps"

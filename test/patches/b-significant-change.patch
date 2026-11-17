@@ -1,0 +1,11 @@
+diff --git a/packages/b/b.0.0.1/opam b/packages/b/b.0.0.1/opam
+index 6a903ae..0808e56 100644
+--- a/packages/b/b.0.0.1/opam
++++ b/packages/b/b.0.0.1/opam
+@@ -10,5 +10,5 @@ dev-repo: "git+https://github.com/ocurrent/opam-repo-ci.git"
+ doc: "https://ocurrent.github.io/ocurrent/"
+ build: []
+ depends: [
+-  "a-1" {>= "0.0.1"}
++  "a-1" {>= "0.0.2"}
+ ]

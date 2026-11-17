@@ -59,8 +59,13 @@ CREATE TABLE IF NOT EXISTS ci_build_index (
                                      WHERE owner = ? AND name = ? AND hash = ? AND variant = ?" in
   let get_job_ids = Sqlite3.prepare db "SELECT variant, job_id FROM ci_build_index \
                                      WHERE owner = ? AND name = ? AND hash = ?" in
+  (* GLOB (not LIKE) so the query uses the primary-key index: LIKE is
+     case-insensitive by default, which disables the index and forces a full
+     scan of the (millions-of-rows) table on every call. GLOB is case-sensitive
+     and its prefix pattern compiles to an indexed range seek. Git hashes are
+     lowercase hex, so case-sensitivity is a non-issue. *)
   let full_hash = Sqlite3.prepare db "SELECT DISTINCT hash FROM ci_build_index \
-                                      WHERE owner = ? AND name = ? AND hash LIKE ?" in
+                                      WHERE owner = ? AND name = ? AND hash GLOB ?" in
   {
     record_job;
     remove;
@@ -134,10 +139,10 @@ module Commit_info_cache = struct
     let key = (owner, name, hash) in
     (* Decrement existing status if it exists *)
     Hashtbl.find_opt cache key
-    |> Option.iter (fun x -> Metrics.modify_n_per_status (fun x -> x - 1) x.build_status);
+    |> Stdlib.Option.iter (fun x -> Metrics.modify_n_per_status (fun x -> x - 1) x.build_status);
     (* Increment new status *)
     Metrics.modify_n_per_status (fun x -> x + 1) status.build_status;
-    Hashtbl.add cache key status
+    Hashtbl.replace cache key status
 
   let find ~owner ~name ~hash =
     Hashtbl.find_opt cache (owner, name, hash)
@@ -152,7 +157,7 @@ module Commit_info_cache = struct
   let remove ~owner ~name ~hash =
     let key = (owner, name, hash) in
     Hashtbl.find_opt cache key
-    |> Option.iter (fun status ->
+    |> Stdlib.Option.iter (fun status ->
       Metrics.modify_n_per_status (fun x -> x - 1) status.build_status;
       Hashtbl.remove cache key)
 
@@ -225,7 +230,7 @@ let get_full_hash ~owner ~name short_hash =
   let t = Lazy.force db in
   if is_valid_hash short_hash then (
     Log.info (fun f -> f "@[<h>Index.get_full_hash %s/%s %s@]" owner name short_hash);
-    match Db.query t.full_hash Sqlite3.Data.[ TEXT owner; TEXT name; TEXT (short_hash ^ "%") ] with
+    match Db.query t.full_hash Sqlite3.Data.[ TEXT owner; TEXT name; TEXT (short_hash ^ "*") ] with
     | [] -> Error `Unknown
     | [Sqlite3.Data.[ TEXT hash ]] -> Ok hash
     | [_] -> failwith "get_full_hash: invalid result!"
@@ -279,7 +284,7 @@ let active_refs : (string * string) list Repo_map.t ref = ref Repo_map.empty
 let set_active_refs ~repo (refs : (string * string) list) =
   (* Remove statuses from Commit_info_cache corresponding to removed refs *)
   Repo_map.find_opt repo !active_refs
-  |> Option.iter (fun old_refs ->
+  |> Stdlib.Option.iter (fun old_refs ->
     (* Set difference: find removed refs that have been merged or closed *)
     let removed_refs =
       List.filter
@@ -295,7 +300,7 @@ let set_active_refs ~repo (refs : (string * string) list) =
   active_refs := Repo_map.add repo refs !active_refs
 
 let get_active_refs repo =
-  Repo_map.find_opt repo !active_refs |> Option.value ~default:[]
+  Repo_map.find_opt repo !active_refs |> Stdlib.Option.value ~default:[]
 
 let get_jobs_per_ref repo =
   let active_refs = get_active_refs repo in

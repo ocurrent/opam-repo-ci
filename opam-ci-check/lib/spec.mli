@@ -4,7 +4,7 @@
     MacOS and FreeBSD do not yet have Docker images and
     start from custom base images stored in the workers. *)
 type base =
-  | Docker of Current_docker.Raw.Image.t
+  | Docker of string
   | Macos of string
   | Freebsd of string
 
@@ -17,12 +17,12 @@ type opam_build = {
   revdep : package option;
   with_tests : bool;
   lower_bounds : bool;
-  opam_version : Opam_version.t;
+  opam_version : Dockerfile_opam.Opam_version.t;
 }
 
 (** Configuration for a [list_revdeps] job *)
 type list_revdeps = {
-  opam_version : [ `Dev | `V2_0 | `V2_1 | `V2_2 ];
+  opam_version : Dockerfile_opam.Opam_version.t;
 }
 
 (** Configuration for any job along with the package to build *)
@@ -37,7 +37,12 @@ val opam :
   ?revdep:package ->
   variant:Variant.t ->
   lower_bounds:bool ->
-  with_tests:bool -> opam_version:Opam_version.t -> package -> t
+  with_tests:bool -> opam_version:Dockerfile_opam.Opam_version.t -> package -> t
+
+(** Generate configuration for a [list_revdeps] job *)
+val opam_list_revdeps :
+  variant:Variant.t ->
+  opam_version:Dockerfile_opam.Opam_version.t -> package -> t
 
 val pp_ty :
   Format.formatter ->

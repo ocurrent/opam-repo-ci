@@ -1,13 +1,12 @@
-build: debian-12-ocaml-4.02/amd64 opam-dev
+build: debian-13-ocaml-4.11/amd64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -24,7 +23,7 @@ build: debian-12-ocaml-4.02/amd64 opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -32,16 +31,15 @@ build: debian-12-ocaml-4.02/amd64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-12-ocaml-4.02/amd64 opam-dev lower-bounds
+build: debian-13-ocaml-4.11/amd64 opam-dev lower-bounds
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -58,7 +56,7 @@ build: debian-12-ocaml-4.02/amd64 opam-dev lower-bounds
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -68,7 +66,6 @@ build: debian-12-ocaml-4.02/amd64 opam-dev lower-bounds
     ENV OPAMCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMFIXUPCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMUPGRADECRITERIA="+removed,+count[version-lag,solution]"
-    RUN opam option solver=builtin-0install
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
         test "$res" != 31 && exit "$res"; \
@@ -77,7 +74,7 @@ build: debian-12-ocaml-4.02/amd64 opam-dev lower-bounds
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -85,16 +82,15 @@ build: debian-12-ocaml-4.02/amd64 opam-dev lower-bounds
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-12-ocaml-4.03/amd64 opam-dev
+build: debian-13-ocaml-4.14/amd64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -111,7 +107,7 @@ build: debian-12-ocaml-4.03/amd64 opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -119,16 +115,15 @@ build: debian-12-ocaml-4.03/amd64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-12-ocaml-4.03/amd64 opam-dev lower-bounds
+build: debian-13-ocaml-4.14/amd64 opam-dev lower-bounds
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -145,7 +140,7 @@ build: debian-12-ocaml-4.03/amd64 opam-dev lower-bounds
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -155,7 +150,6 @@ build: debian-12-ocaml-4.03/amd64 opam-dev lower-bounds
     ENV OPAMCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMFIXUPCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMUPGRADECRITERIA="+removed,+count[version-lag,solution]"
-    RUN opam option solver=builtin-0install
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
         test "$res" != 31 && exit "$res"; \
@@ -164,7 +158,7 @@ build: debian-12-ocaml-4.03/amd64 opam-dev lower-bounds
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -172,973 +166,15 @@ build: debian-12-ocaml-4.03/amd64 opam-dev lower-bounds
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-12-ocaml-4.04/amd64 opam-dev
+list-revdeps: debian-13-ocaml-4.14/amd64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
-    ENV OPAMPRECISETRACKING="1"
-    ENV CI="true"
-    ENV OPAM_REPO_CI="true"
-    RUN rm -rf opam-repository/
-    COPY --chown=1000:1000 . opam-repository/
-    RUN opam repository set-url --strict default opam-repository/
-    RUN opam update --depexts || true
-    RUN opam pin add -k version -yn a.0.0.1 0.0.1
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-
-build: debian-12-ocaml-4.04/amd64 opam-dev lower-bounds
-    FROM BASE_IMAGE_TAG
-    USER 1000:1000
-    WORKDIR /home/opam
-    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
-    RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
-    ENV OPAMDOWNLOADJOBS="1"
-    ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
-    ENV OPAMPRECISETRACKING="1"
-    ENV CI="true"
-    ENV OPAM_REPO_CI="true"
-    RUN rm -rf opam-repository/
-    COPY --chown=1000:1000 . opam-repository/
-    RUN opam repository set-url --strict default opam-repository/
-    RUN opam update --depexts || true
-    RUN opam pin add -k version -yn a.0.0.1 0.0.1
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-    ENV OPAMCRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMFIXUPCRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMUPGRADECRITERIA="+removed,+count[version-lag,solution]"
-    RUN opam option solver=builtin-0install
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-
-build: debian-12-ocaml-4.05/amd64 opam-dev
-    FROM BASE_IMAGE_TAG
-    USER 1000:1000
-    WORKDIR /home/opam
-    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
-    RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
-    ENV OPAMDOWNLOADJOBS="1"
-    ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
-    ENV OPAMPRECISETRACKING="1"
-    ENV CI="true"
-    ENV OPAM_REPO_CI="true"
-    RUN rm -rf opam-repository/
-    COPY --chown=1000:1000 . opam-repository/
-    RUN opam repository set-url --strict default opam-repository/
-    RUN opam update --depexts || true
-    RUN opam pin add -k version -yn a.0.0.1 0.0.1
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-
-build: debian-12-ocaml-4.05/amd64 opam-dev lower-bounds
-    FROM BASE_IMAGE_TAG
-    USER 1000:1000
-    WORKDIR /home/opam
-    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
-    RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
-    ENV OPAMDOWNLOADJOBS="1"
-    ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
-    ENV OPAMPRECISETRACKING="1"
-    ENV CI="true"
-    ENV OPAM_REPO_CI="true"
-    RUN rm -rf opam-repository/
-    COPY --chown=1000:1000 . opam-repository/
-    RUN opam repository set-url --strict default opam-repository/
-    RUN opam update --depexts || true
-    RUN opam pin add -k version -yn a.0.0.1 0.0.1
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-    ENV OPAMCRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMFIXUPCRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMUPGRADECRITERIA="+removed,+count[version-lag,solution]"
-    RUN opam option solver=builtin-0install
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-
-build: debian-12-ocaml-4.06/amd64 opam-dev
-    FROM BASE_IMAGE_TAG
-    USER 1000:1000
-    WORKDIR /home/opam
-    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
-    RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
-    ENV OPAMDOWNLOADJOBS="1"
-    ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
-    ENV OPAMPRECISETRACKING="1"
-    ENV CI="true"
-    ENV OPAM_REPO_CI="true"
-    RUN rm -rf opam-repository/
-    COPY --chown=1000:1000 . opam-repository/
-    RUN opam repository set-url --strict default opam-repository/
-    RUN opam update --depexts || true
-    RUN opam pin add -k version -yn a.0.0.1 0.0.1
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-
-build: debian-12-ocaml-4.06/amd64 opam-dev lower-bounds
-    FROM BASE_IMAGE_TAG
-    USER 1000:1000
-    WORKDIR /home/opam
-    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
-    RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
-    ENV OPAMDOWNLOADJOBS="1"
-    ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
-    ENV OPAMPRECISETRACKING="1"
-    ENV CI="true"
-    ENV OPAM_REPO_CI="true"
-    RUN rm -rf opam-repository/
-    COPY --chown=1000:1000 . opam-repository/
-    RUN opam repository set-url --strict default opam-repository/
-    RUN opam update --depexts || true
-    RUN opam pin add -k version -yn a.0.0.1 0.0.1
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-    ENV OPAMCRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMFIXUPCRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMUPGRADECRITERIA="+removed,+count[version-lag,solution]"
-    RUN opam option solver=builtin-0install
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-
-build: debian-12-ocaml-4.07/amd64 opam-dev
-    FROM BASE_IMAGE_TAG
-    USER 1000:1000
-    WORKDIR /home/opam
-    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
-    RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
-    ENV OPAMDOWNLOADJOBS="1"
-    ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
-    ENV OPAMPRECISETRACKING="1"
-    ENV CI="true"
-    ENV OPAM_REPO_CI="true"
-    RUN rm -rf opam-repository/
-    COPY --chown=1000:1000 . opam-repository/
-    RUN opam repository set-url --strict default opam-repository/
-    RUN opam update --depexts || true
-    RUN opam pin add -k version -yn a.0.0.1 0.0.1
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-
-build: debian-12-ocaml-4.07/amd64 opam-dev lower-bounds
-    FROM BASE_IMAGE_TAG
-    USER 1000:1000
-    WORKDIR /home/opam
-    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
-    RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
-    ENV OPAMDOWNLOADJOBS="1"
-    ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
-    ENV OPAMPRECISETRACKING="1"
-    ENV CI="true"
-    ENV OPAM_REPO_CI="true"
-    RUN rm -rf opam-repository/
-    COPY --chown=1000:1000 . opam-repository/
-    RUN opam repository set-url --strict default opam-repository/
-    RUN opam update --depexts || true
-    RUN opam pin add -k version -yn a.0.0.1 0.0.1
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-    ENV OPAMCRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMFIXUPCRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMUPGRADECRITERIA="+removed,+count[version-lag,solution]"
-    RUN opam option solver=builtin-0install
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-
-build: debian-12-ocaml-4.08/amd64 opam-dev
-    FROM BASE_IMAGE_TAG
-    USER 1000:1000
-    WORKDIR /home/opam
-    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
-    RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
-    ENV OPAMDOWNLOADJOBS="1"
-    ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
-    ENV OPAMPRECISETRACKING="1"
-    ENV CI="true"
-    ENV OPAM_REPO_CI="true"
-    RUN rm -rf opam-repository/
-    COPY --chown=1000:1000 . opam-repository/
-    RUN opam repository set-url --strict default opam-repository/
-    RUN opam update --depexts || true
-    RUN opam pin add -k version -yn a.0.0.1 0.0.1
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-
-build: debian-12-ocaml-4.08/amd64 opam-dev lower-bounds
-    FROM BASE_IMAGE_TAG
-    USER 1000:1000
-    WORKDIR /home/opam
-    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
-    RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
-    ENV OPAMDOWNLOADJOBS="1"
-    ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
-    ENV OPAMPRECISETRACKING="1"
-    ENV CI="true"
-    ENV OPAM_REPO_CI="true"
-    RUN rm -rf opam-repository/
-    COPY --chown=1000:1000 . opam-repository/
-    RUN opam repository set-url --strict default opam-repository/
-    RUN opam update --depexts || true
-    RUN opam pin add -k version -yn a.0.0.1 0.0.1
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-    ENV OPAMCRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMFIXUPCRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMUPGRADECRITERIA="+removed,+count[version-lag,solution]"
-    RUN opam option solver=builtin-0install
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-
-build: debian-12-ocaml-4.09/amd64 opam-dev
-    FROM BASE_IMAGE_TAG
-    USER 1000:1000
-    WORKDIR /home/opam
-    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
-    RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
-    ENV OPAMDOWNLOADJOBS="1"
-    ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
-    ENV OPAMPRECISETRACKING="1"
-    ENV CI="true"
-    ENV OPAM_REPO_CI="true"
-    RUN rm -rf opam-repository/
-    COPY --chown=1000:1000 . opam-repository/
-    RUN opam repository set-url --strict default opam-repository/
-    RUN opam update --depexts || true
-    RUN opam pin add -k version -yn a.0.0.1 0.0.1
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-
-build: debian-12-ocaml-4.09/amd64 opam-dev lower-bounds
-    FROM BASE_IMAGE_TAG
-    USER 1000:1000
-    WORKDIR /home/opam
-    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
-    RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
-    ENV OPAMDOWNLOADJOBS="1"
-    ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
-    ENV OPAMPRECISETRACKING="1"
-    ENV CI="true"
-    ENV OPAM_REPO_CI="true"
-    RUN rm -rf opam-repository/
-    COPY --chown=1000:1000 . opam-repository/
-    RUN opam repository set-url --strict default opam-repository/
-    RUN opam update --depexts || true
-    RUN opam pin add -k version -yn a.0.0.1 0.0.1
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-    ENV OPAMCRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMFIXUPCRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMUPGRADECRITERIA="+removed,+count[version-lag,solution]"
-    RUN opam option solver=builtin-0install
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-
-build: debian-12-ocaml-4.10/amd64 opam-dev
-    FROM BASE_IMAGE_TAG
-    USER 1000:1000
-    WORKDIR /home/opam
-    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
-    RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
-    ENV OPAMDOWNLOADJOBS="1"
-    ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
-    ENV OPAMPRECISETRACKING="1"
-    ENV CI="true"
-    ENV OPAM_REPO_CI="true"
-    RUN rm -rf opam-repository/
-    COPY --chown=1000:1000 . opam-repository/
-    RUN opam repository set-url --strict default opam-repository/
-    RUN opam update --depexts || true
-    RUN opam pin add -k version -yn a.0.0.1 0.0.1
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-
-build: debian-12-ocaml-4.10/amd64 opam-dev lower-bounds
-    FROM BASE_IMAGE_TAG
-    USER 1000:1000
-    WORKDIR /home/opam
-    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
-    RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
-    ENV OPAMDOWNLOADJOBS="1"
-    ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
-    ENV OPAMPRECISETRACKING="1"
-    ENV CI="true"
-    ENV OPAM_REPO_CI="true"
-    RUN rm -rf opam-repository/
-    COPY --chown=1000:1000 . opam-repository/
-    RUN opam repository set-url --strict default opam-repository/
-    RUN opam update --depexts || true
-    RUN opam pin add -k version -yn a.0.0.1 0.0.1
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-    ENV OPAMCRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMFIXUPCRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMUPGRADECRITERIA="+removed,+count[version-lag,solution]"
-    RUN opam option solver=builtin-0install
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-
-build: debian-12-ocaml-4.11/amd64 opam-dev
-    FROM BASE_IMAGE_TAG
-    USER 1000:1000
-    WORKDIR /home/opam
-    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
-    RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
-    ENV OPAMDOWNLOADJOBS="1"
-    ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
-    ENV OPAMPRECISETRACKING="1"
-    ENV CI="true"
-    ENV OPAM_REPO_CI="true"
-    RUN rm -rf opam-repository/
-    COPY --chown=1000:1000 . opam-repository/
-    RUN opam repository set-url --strict default opam-repository/
-    RUN opam update --depexts || true
-    RUN opam pin add -k version -yn a.0.0.1 0.0.1
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-
-build: debian-12-ocaml-4.11/amd64 opam-dev lower-bounds
-    FROM BASE_IMAGE_TAG
-    USER 1000:1000
-    WORKDIR /home/opam
-    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
-    RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
-    ENV OPAMDOWNLOADJOBS="1"
-    ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
-    ENV OPAMPRECISETRACKING="1"
-    ENV CI="true"
-    ENV OPAM_REPO_CI="true"
-    RUN rm -rf opam-repository/
-    COPY --chown=1000:1000 . opam-repository/
-    RUN opam repository set-url --strict default opam-repository/
-    RUN opam update --depexts || true
-    RUN opam pin add -k version -yn a.0.0.1 0.0.1
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-    ENV OPAMCRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMFIXUPCRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMUPGRADECRITERIA="+removed,+count[version-lag,solution]"
-    RUN opam option solver=builtin-0install
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-
-build: debian-12-ocaml-4.12/amd64 opam-dev
-    FROM BASE_IMAGE_TAG
-    USER 1000:1000
-    WORKDIR /home/opam
-    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
-    RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
-    ENV OPAMDOWNLOADJOBS="1"
-    ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
-    ENV OPAMPRECISETRACKING="1"
-    ENV CI="true"
-    ENV OPAM_REPO_CI="true"
-    RUN rm -rf opam-repository/
-    COPY --chown=1000:1000 . opam-repository/
-    RUN opam repository set-url --strict default opam-repository/
-    RUN opam update --depexts || true
-    RUN opam pin add -k version -yn a.0.0.1 0.0.1
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-
-build: debian-12-ocaml-4.12/amd64 opam-dev lower-bounds
-    FROM BASE_IMAGE_TAG
-    USER 1000:1000
-    WORKDIR /home/opam
-    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
-    RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
-    ENV OPAMDOWNLOADJOBS="1"
-    ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
-    ENV OPAMPRECISETRACKING="1"
-    ENV CI="true"
-    ENV OPAM_REPO_CI="true"
-    RUN rm -rf opam-repository/
-    COPY --chown=1000:1000 . opam-repository/
-    RUN opam repository set-url --strict default opam-repository/
-    RUN opam update --depexts || true
-    RUN opam pin add -k version -yn a.0.0.1 0.0.1
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-    ENV OPAMCRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMFIXUPCRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMUPGRADECRITERIA="+removed,+count[version-lag,solution]"
-    RUN opam option solver=builtin-0install
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-
-build: debian-12-ocaml-4.13/amd64 opam-dev
-    FROM BASE_IMAGE_TAG
-    USER 1000:1000
-    WORKDIR /home/opam
-    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
-    RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
-    ENV OPAMDOWNLOADJOBS="1"
-    ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
-    ENV OPAMPRECISETRACKING="1"
-    ENV CI="true"
-    ENV OPAM_REPO_CI="true"
-    RUN rm -rf opam-repository/
-    COPY --chown=1000:1000 . opam-repository/
-    RUN opam repository set-url --strict default opam-repository/
-    RUN opam update --depexts || true
-    RUN opam pin add -k version -yn a.0.0.1 0.0.1
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-
-build: debian-12-ocaml-4.13/amd64 opam-dev lower-bounds
-    FROM BASE_IMAGE_TAG
-    USER 1000:1000
-    WORKDIR /home/opam
-    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
-    RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
-    ENV OPAMDOWNLOADJOBS="1"
-    ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
-    ENV OPAMPRECISETRACKING="1"
-    ENV CI="true"
-    ENV OPAM_REPO_CI="true"
-    RUN rm -rf opam-repository/
-    COPY --chown=1000:1000 . opam-repository/
-    RUN opam repository set-url --strict default opam-repository/
-    RUN opam update --depexts || true
-    RUN opam pin add -k version -yn a.0.0.1 0.0.1
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-    ENV OPAMCRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMFIXUPCRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMUPGRADECRITERIA="+removed,+count[version-lag,solution]"
-    RUN opam option solver=builtin-0install
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-
-build: debian-12-ocaml-4.14/amd64 opam-dev
-    FROM BASE_IMAGE_TAG
-    USER 1000:1000
-    WORKDIR /home/opam
-    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
-    RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
-    ENV OPAMDOWNLOADJOBS="1"
-    ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
-    ENV OPAMPRECISETRACKING="1"
-    ENV CI="true"
-    ENV OPAM_REPO_CI="true"
-    RUN rm -rf opam-repository/
-    COPY --chown=1000:1000 . opam-repository/
-    RUN opam repository set-url --strict default opam-repository/
-    RUN opam update --depexts || true
-    RUN opam pin add -k version -yn a.0.0.1 0.0.1
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-
-build: debian-12-ocaml-4.14/amd64 opam-dev lower-bounds
-    FROM BASE_IMAGE_TAG
-    USER 1000:1000
-    WORKDIR /home/opam
-    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
-    RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
-    ENV OPAMDOWNLOADJOBS="1"
-    ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
-    ENV OPAMPRECISETRACKING="1"
-    ENV CI="true"
-    ENV OPAM_REPO_CI="true"
-    RUN rm -rf opam-repository/
-    COPY --chown=1000:1000 . opam-repository/
-    RUN opam repository set-url --strict default opam-repository/
-    RUN opam update --depexts || true
-    RUN opam pin add -k version -yn a.0.0.1 0.0.1
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-    ENV OPAMCRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMFIXUPCRITERIA="+removed,+count[version-lag,solution]"
-    ENV OPAMUPGRADECRITERIA="+removed,+count[version-lag,solution]"
-    RUN opam option solver=builtin-0install
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-
-list-revdeps: debian-12-ocaml-4.14/amd64 opam-dev
-    FROM BASE_IMAGE_TAG
-    USER 1000:1000
-    WORKDIR /home/opam
-    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
-    RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
-    ENV OPAMDOWNLOADJOBS="1"
-    ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1148,16 +184,15 @@ list-revdeps: debian-12-ocaml-4.14/amd64 opam-dev
     RUN opam update --depexts || true
     RUN echo '@@@OUTPUT' && opam list -s --color=never --depends-on 'a.0.0.1' --coinstallable-with 'a.0.0.1' --all-versions --depopts && opam list -s --color=never --depends-on 'a.0.0.1' --coinstallable-with 'a.0.0.1' --all-versions --recursive && opam list -s --color=never --depends-on 'a.0.0.1' --coinstallable-with 'a.0.0.1' --all-versions --with-test --depopts && echo '@@@OUTPUT'
 
-build: debian-12-ocaml-4.14/amd64 opam-dev with-tests
+build: debian-13-ocaml-4.14/amd64 opam-dev with-tests
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1174,7 +209,7 @@ build: debian-12-ocaml-4.14/amd64 opam-dev with-tests
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -1190,7 +225,7 @@ build: debian-12-ocaml-4.14/amd64 opam-dev with-tests
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -1198,16 +233,15 @@ build: debian-12-ocaml-4.14/amd64 opam-dev with-tests
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-12-ocaml-5.0/amd64 opam-dev
+build: debian-13-ocaml-5.2/amd64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1224,7 +258,7 @@ build: debian-12-ocaml-5.0/amd64 opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -1232,16 +266,15 @@ build: debian-12-ocaml-5.0/amd64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-12-ocaml-5.0/amd64 opam-dev lower-bounds
+build: debian-13-ocaml-5.2/amd64 opam-dev lower-bounds
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1258,7 +291,7 @@ build: debian-12-ocaml-5.0/amd64 opam-dev lower-bounds
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -1268,7 +301,6 @@ build: debian-12-ocaml-5.0/amd64 opam-dev lower-bounds
     ENV OPAMCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMFIXUPCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMUPGRADECRITERIA="+removed,+count[version-lag,solution]"
-    RUN opam option solver=builtin-0install
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
         test "$res" != 31 && exit "$res"; \
@@ -1277,7 +309,7 @@ build: debian-12-ocaml-5.0/amd64 opam-dev lower-bounds
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -1285,16 +317,15 @@ build: debian-12-ocaml-5.0/amd64 opam-dev lower-bounds
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-12-ocaml-5.1/amd64 opam-dev
+build: debian-13-ocaml-5.4/amd64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1311,7 +342,7 @@ build: debian-12-ocaml-5.1/amd64 opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -1319,16 +350,15 @@ build: debian-12-ocaml-5.1/amd64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-12-ocaml-5.1/amd64 opam-dev lower-bounds
+build: debian-13-ocaml-5.4/amd64 opam-dev lower-bounds
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1345,7 +375,7 @@ build: debian-12-ocaml-5.1/amd64 opam-dev lower-bounds
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -1355,7 +385,6 @@ build: debian-12-ocaml-5.1/amd64 opam-dev lower-bounds
     ENV OPAMCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMFIXUPCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMUPGRADECRITERIA="+removed,+count[version-lag,solution]"
-    RUN opam option solver=builtin-0install
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
         test "$res" != 31 && exit "$res"; \
@@ -1364,7 +393,7 @@ build: debian-12-ocaml-5.1/amd64 opam-dev lower-bounds
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -1372,16 +401,15 @@ build: debian-12-ocaml-5.1/amd64 opam-dev lower-bounds
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-12-ocaml-5.2/amd64 opam-dev
+build: debian-13-ocaml-5.5/amd64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1398,7 +426,7 @@ build: debian-12-ocaml-5.2/amd64 opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -1406,16 +434,15 @@ build: debian-12-ocaml-5.2/amd64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-12-ocaml-5.2/amd64 opam-dev lower-bounds
+build: debian-13-ocaml-5.5/amd64 opam-dev lower-bounds
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1432,7 +459,7 @@ build: debian-12-ocaml-5.2/amd64 opam-dev lower-bounds
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -1442,7 +469,6 @@ build: debian-12-ocaml-5.2/amd64 opam-dev lower-bounds
     ENV OPAMCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMFIXUPCRITERIA="+removed,+count[version-lag,solution]"
     ENV OPAMUPGRADECRITERIA="+removed,+count[version-lag,solution]"
-    RUN opam option solver=builtin-0install
     RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
         res=$?; \
         test "$res" != 31 && exit "$res"; \
@@ -1451,7 +477,7 @@ build: debian-12-ocaml-5.2/amd64 opam-dev lower-bounds
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -1459,16 +485,15 @@ build: debian-12-ocaml-5.2/amd64 opam-dev lower-bounds
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-list-revdeps: debian-12-ocaml-5.2/amd64 opam-dev
+list-revdeps: debian-13-ocaml-5.5/amd64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1478,16 +503,15 @@ list-revdeps: debian-12-ocaml-5.2/amd64 opam-dev
     RUN opam update --depexts || true
     RUN echo '@@@OUTPUT' && opam list -s --color=never --depends-on 'a.0.0.1' --coinstallable-with 'a.0.0.1' --all-versions --depopts && opam list -s --color=never --depends-on 'a.0.0.1' --coinstallable-with 'a.0.0.1' --all-versions --recursive && opam list -s --color=never --depends-on 'a.0.0.1' --coinstallable-with 'a.0.0.1' --all-versions --with-test --depopts && echo '@@@OUTPUT'
 
-build: debian-12-ocaml-5.2/amd64 opam-dev with-tests
+build: debian-13-ocaml-5.5/amd64 opam-dev with-tests
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1504,7 +528,7 @@ build: debian-12-ocaml-5.2/amd64 opam-dev with-tests
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -1520,7 +544,7 @@ build: debian-12-ocaml-5.2/amd64 opam-dev with-tests
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -1528,16 +552,81 @@ build: debian-12-ocaml-5.2/amd64 opam-dev with-tests
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: ubuntu-24.04-ocaml-5.2/amd64 opam-dev
+build: ubuntu-26.10-ocaml-5.5/amd64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMPRECISETRACKING="1"
+    ENV CI="true"
+    ENV OPAM_REPO_CI="true"
+    RUN rm -rf opam-repository/
+    COPY --chown=1000:1000 . opam-repository/
+    RUN opam repository set-url --strict default opam-repository/
+    RUN opam update --depexts || true
+    RUN opam pin add -k version -yn a.0.0.1 0.0.1
+    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
+        res=$?; \
+        test "$res" != 31 && exit "$res"; \
+        export OPAMCLI=2.0; \
+        build_dir=$(opam var prefix)/.opam-switch/build; \
+        failed=$(ls "$build_dir"); \
+        partial_fails=""; \
+        for pkg in $failed; do \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"ubuntu-26.10\""; then \
+        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+        fi; \
+        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
+        done; \
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+        exit 1
+
+build: ubuntu-26.04-ocaml-5.5/amd64 opam-dev
+    FROM BASE_IMAGE_TAG
+    USER 1000:1000
+    WORKDIR /home/opam
+    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+    RUN opam init --reinit -ni
+    RUN opam option solver=builtin-0install && opam config report
+    ENV OPAMDOWNLOADJOBS="1"
+    ENV OPAMERRLOGLEN="0"
+    ENV OPAMPRECISETRACKING="1"
+    ENV CI="true"
+    ENV OPAM_REPO_CI="true"
+    RUN rm -rf opam-repository/
+    COPY --chown=1000:1000 . opam-repository/
+    RUN opam repository set-url --strict default opam-repository/
+    RUN opam update --depexts || true
+    RUN opam pin add -k version -yn a.0.0.1 0.0.1
+    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
+        res=$?; \
+        test "$res" != 31 && exit "$res"; \
+        export OPAMCLI=2.0; \
+        build_dir=$(opam var prefix)/.opam-switch/build; \
+        failed=$(ls "$build_dir"); \
+        partial_fails=""; \
+        for pkg in $failed; do \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"ubuntu-26.04\""; then \
+        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+        fi; \
+        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
+        done; \
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+        exit 1
+
+build: ubuntu-24.04-ocaml-5.5/amd64 opam-dev
+    FROM BASE_IMAGE_TAG
+    USER 1000:1000
+    WORKDIR /home/opam
+    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+    RUN opam init --reinit -ni
+    RUN opam option solver=builtin-0install && opam config report
+    ENV OPAMDOWNLOADJOBS="1"
+    ENV OPAMERRLOGLEN="0"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1562,16 +651,15 @@ build: ubuntu-24.04-ocaml-5.2/amd64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: ubuntu-22.04-ocaml-5.2/amd64 opam-dev
+build: ubuntu-22.04-ocaml-5.5/amd64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1596,50 +684,15 @@ build: ubuntu-22.04-ocaml-5.2/amd64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: ubuntu-20.04-ocaml-5.2/amd64 opam-dev
+build: opensuse-tumbleweed-ocaml-5.5/amd64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
-    ENV OPAMPRECISETRACKING="1"
-    ENV CI="true"
-    ENV OPAM_REPO_CI="true"
-    RUN rm -rf opam-repository/
-    COPY --chown=1000:1000 . opam-repository/
-    RUN opam repository set-url --strict default opam-repository/
-    RUN opam update --depexts || true
-    RUN opam pin add -k version -yn a.0.0.1 0.0.1
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"ubuntu-20.04\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-
-build: opensuse-tumbleweed-ocaml-5.2/amd64 opam-dev
-    FROM BASE_IMAGE_TAG
-    USER 1000:1000
-    WORKDIR /home/opam
-    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
-    RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
-    ENV OPAMDOWNLOADJOBS="1"
-    ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1664,16 +717,15 @@ build: opensuse-tumbleweed-ocaml-5.2/amd64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: opensuse-15.6-ocaml-5.2/amd64 opam-dev
+build: opensuse-16.0-ocaml-5.5/amd64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1690,7 +742,7 @@ build: opensuse-15.6-ocaml-5.2/amd64 opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"opensuse-15.6\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"opensuse-16.0\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -1698,16 +750,15 @@ build: opensuse-15.6-ocaml-5.2/amd64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: fedora-40-ocaml-5.2/amd64 opam-dev
+build: fedora-45-ocaml-5.5/amd64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1724,7 +775,7 @@ build: fedora-40-ocaml-5.2/amd64 opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"fedora-40\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"fedora-45\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -1732,16 +783,15 @@ build: fedora-40-ocaml-5.2/amd64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: fedora-39-ocaml-5.2/amd64 opam-dev
+build: fedora-44-ocaml-5.5/amd64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1758,7 +808,7 @@ build: fedora-39-ocaml-5.2/amd64 opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"fedora-39\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"fedora-44\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -1766,16 +816,48 @@ build: fedora-39-ocaml-5.2/amd64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-unstable-ocaml-5.2/amd64 opam-dev
+build: fedora-43-ocaml-5.5/amd64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMPRECISETRACKING="1"
+    ENV CI="true"
+    ENV OPAM_REPO_CI="true"
+    RUN rm -rf opam-repository/
+    COPY --chown=1000:1000 . opam-repository/
+    RUN opam repository set-url --strict default opam-repository/
+    RUN opam update --depexts || true
+    RUN opam pin add -k version -yn a.0.0.1 0.0.1
+    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
+        res=$?; \
+        test "$res" != 31 && exit "$res"; \
+        export OPAMCLI=2.0; \
+        build_dir=$(opam var prefix)/.opam-switch/build; \
+        failed=$(ls "$build_dir"); \
+        partial_fails=""; \
+        for pkg in $failed; do \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"fedora-43\""; then \
+        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+        fi; \
+        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
+        done; \
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+        exit 1
+
+build: debian-unstable-ocaml-5.5/amd64 opam-dev
+    FROM BASE_IMAGE_TAG
+    USER 1000:1000
+    WORKDIR /home/opam
+    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+    RUN opam init --reinit -ni
+    RUN opam option solver=builtin-0install && opam config report
+    ENV OPAMDOWNLOADJOBS="1"
+    ENV OPAMERRLOGLEN="0"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1800,16 +882,15 @@ build: debian-unstable-ocaml-5.2/amd64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-testing-ocaml-5.2/amd64 opam-dev
+build: debian-testing-ocaml-5.5/amd64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1834,16 +915,15 @@ build: debian-testing-ocaml-5.2/amd64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-11-ocaml-5.2/amd64 opam-dev
+build: debian-12-ocaml-5.5/amd64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1860,7 +940,7 @@ build: debian-11-ocaml-5.2/amd64 opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-11\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -1868,16 +948,81 @@ build: debian-11-ocaml-5.2/amd64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: archlinux-ocaml-5.2/amd64 opam-dev
+build: centos-10-ocaml-5.5/amd64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMPRECISETRACKING="1"
+    ENV CI="true"
+    ENV OPAM_REPO_CI="true"
+    RUN rm -rf opam-repository/
+    COPY --chown=1000:1000 . opam-repository/
+    RUN opam repository set-url --strict default opam-repository/
+    RUN opam update --depexts || true
+    RUN opam pin add -k version -yn a.0.0.1 0.0.1
+    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
+        res=$?; \
+        test "$res" != 31 && exit "$res"; \
+        export OPAMCLI=2.0; \
+        build_dir=$(opam var prefix)/.opam-switch/build; \
+        failed=$(ls "$build_dir"); \
+        partial_fails=""; \
+        for pkg in $failed; do \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"centos-10\""; then \
+        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+        fi; \
+        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
+        done; \
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+        exit 1
+
+build: centos-9-ocaml-5.5/amd64 opam-dev
+    FROM BASE_IMAGE_TAG
+    USER 1000:1000
+    WORKDIR /home/opam
+    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+    RUN opam init --reinit -ni
+    RUN opam option solver=builtin-0install && opam config report
+    ENV OPAMDOWNLOADJOBS="1"
+    ENV OPAMERRLOGLEN="0"
+    ENV OPAMPRECISETRACKING="1"
+    ENV CI="true"
+    ENV OPAM_REPO_CI="true"
+    RUN rm -rf opam-repository/
+    COPY --chown=1000:1000 . opam-repository/
+    RUN opam repository set-url --strict default opam-repository/
+    RUN opam update --depexts || true
+    RUN opam pin add -k version -yn a.0.0.1 0.0.1
+    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
+        res=$?; \
+        test "$res" != 31 && exit "$res"; \
+        export OPAMCLI=2.0; \
+        build_dir=$(opam var prefix)/.opam-switch/build; \
+        failed=$(ls "$build_dir"); \
+        partial_fails=""; \
+        for pkg in $failed; do \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"centos-9\""; then \
+        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+        fi; \
+        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
+        done; \
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+        exit 1
+
+build: archlinux-ocaml-5.5/amd64 opam-dev
+    FROM BASE_IMAGE_TAG
+    USER 1000:1000
+    WORKDIR /home/opam
+    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+    RUN opam init --reinit -ni
+    RUN opam option solver=builtin-0install && opam config report
+    ENV OPAMDOWNLOADJOBS="1"
+    ENV OPAMERRLOGLEN="0"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1902,16 +1047,15 @@ build: archlinux-ocaml-5.2/amd64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: alpine-3.20-ocaml-5.2/amd64 opam-dev
+build: alpine-3.24-ocaml-5.5/amd64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1928,7 +1072,73 @@ build: alpine-3.20-ocaml-5.2/amd64 opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"alpine-3.20\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"alpine-3.24\""; then \
+        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+        fi; \
+        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
+        done; \
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+        exit 1
+
+build: ubuntu-26.10-ocaml-4.14/amd64 opam-dev
+    FROM BASE_IMAGE_TAG
+    USER 1000:1000
+    WORKDIR /home/opam
+    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+    RUN opam init --reinit -ni
+    RUN opam option solver=builtin-0install && opam config report
+    ENV OPAMDOWNLOADJOBS="1"
+    ENV OPAMERRLOGLEN="0"
+    ENV OPAMPRECISETRACKING="1"
+    ENV CI="true"
+    ENV OPAM_REPO_CI="true"
+    RUN rm -rf opam-repository/
+    COPY --chown=1000:1000 . opam-repository/
+    RUN opam repository set-url --strict default opam-repository/
+    RUN opam update --depexts || true
+    RUN opam pin add -k version -yn a.0.0.1 0.0.1
+    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
+        res=$?; \
+        test "$res" != 31 && exit "$res"; \
+        export OPAMCLI=2.0; \
+        build_dir=$(opam var prefix)/.opam-switch/build; \
+        failed=$(ls "$build_dir"); \
+        partial_fails=""; \
+        for pkg in $failed; do \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"ubuntu-26.10\""; then \
+        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+        fi; \
+        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
+        done; \
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+        exit 1
+
+build: ubuntu-26.04-ocaml-4.14/amd64 opam-dev
+    FROM BASE_IMAGE_TAG
+    USER 1000:1000
+    WORKDIR /home/opam
+    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+    RUN opam init --reinit -ni
+    RUN opam option solver=builtin-0install && opam config report
+    ENV OPAMDOWNLOADJOBS="1"
+    ENV OPAMERRLOGLEN="0"
+    ENV OPAMPRECISETRACKING="1"
+    ENV CI="true"
+    ENV OPAM_REPO_CI="true"
+    RUN rm -rf opam-repository/
+    COPY --chown=1000:1000 . opam-repository/
+    RUN opam repository set-url --strict default opam-repository/
+    RUN opam update --depexts || true
+    RUN opam pin add -k version -yn a.0.0.1 0.0.1
+    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
+        res=$?; \
+        test "$res" != 31 && exit "$res"; \
+        export OPAMCLI=2.0; \
+        build_dir=$(opam var prefix)/.opam-switch/build; \
+        failed=$(ls "$build_dir"); \
+        partial_fails=""; \
+        for pkg in $failed; do \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"ubuntu-26.04\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -1942,10 +1152,9 @@ build: ubuntu-24.04-ocaml-4.14/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -1976,10 +1185,9 @@ build: ubuntu-22.04-ocaml-4.14/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2004,50 +1212,15 @@ build: ubuntu-22.04-ocaml-4.14/amd64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: ubuntu-20.04-ocaml-4.14/amd64 opam-dev
-    FROM BASE_IMAGE_TAG
-    USER 1000:1000
-    WORKDIR /home/opam
-    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
-    RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
-    ENV OPAMDOWNLOADJOBS="1"
-    ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
-    ENV OPAMPRECISETRACKING="1"
-    ENV CI="true"
-    ENV OPAM_REPO_CI="true"
-    RUN rm -rf opam-repository/
-    COPY --chown=1000:1000 . opam-repository/
-    RUN opam repository set-url --strict default opam-repository/
-    RUN opam update --depexts || true
-    RUN opam pin add -k version -yn a.0.0.1 0.0.1
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"ubuntu-20.04\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-
 build: opensuse-tumbleweed-ocaml-4.14/amd64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2072,16 +1245,15 @@ build: opensuse-tumbleweed-ocaml-4.14/amd64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: opensuse-15.6-ocaml-4.14/amd64 opam-dev
+build: opensuse-16.0-ocaml-4.14/amd64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2098,7 +1270,7 @@ build: opensuse-15.6-ocaml-4.14/amd64 opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"opensuse-15.6\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"opensuse-16.0\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -2106,16 +1278,15 @@ build: opensuse-15.6-ocaml-4.14/amd64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: fedora-40-ocaml-4.14/amd64 opam-dev
+build: fedora-45-ocaml-4.14/amd64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2132,7 +1303,7 @@ build: fedora-40-ocaml-4.14/amd64 opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"fedora-40\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"fedora-45\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -2140,16 +1311,15 @@ build: fedora-40-ocaml-4.14/amd64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: fedora-39-ocaml-4.14/amd64 opam-dev
+build: fedora-44-ocaml-4.14/amd64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2166,7 +1336,40 @@ build: fedora-39-ocaml-4.14/amd64 opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"fedora-39\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"fedora-44\""; then \
+        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+        fi; \
+        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
+        done; \
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+        exit 1
+
+build: fedora-43-ocaml-4.14/amd64 opam-dev
+    FROM BASE_IMAGE_TAG
+    USER 1000:1000
+    WORKDIR /home/opam
+    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+    RUN opam init --reinit -ni
+    RUN opam option solver=builtin-0install && opam config report
+    ENV OPAMDOWNLOADJOBS="1"
+    ENV OPAMERRLOGLEN="0"
+    ENV OPAMPRECISETRACKING="1"
+    ENV CI="true"
+    ENV OPAM_REPO_CI="true"
+    RUN rm -rf opam-repository/
+    COPY --chown=1000:1000 . opam-repository/
+    RUN opam repository set-url --strict default opam-repository/
+    RUN opam update --depexts || true
+    RUN opam pin add -k version -yn a.0.0.1 0.0.1
+    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
+        res=$?; \
+        test "$res" != 31 && exit "$res"; \
+        export OPAMCLI=2.0; \
+        build_dir=$(opam var prefix)/.opam-switch/build; \
+        failed=$(ls "$build_dir"); \
+        partial_fails=""; \
+        for pkg in $failed; do \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"fedora-43\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -2180,10 +1383,9 @@ build: debian-unstable-ocaml-4.14/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2214,10 +1416,9 @@ build: debian-testing-ocaml-4.14/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2242,16 +1443,15 @@ build: debian-testing-ocaml-4.14/amd64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-11-ocaml-4.14/amd64 opam-dev
+build: debian-12-ocaml-4.14/amd64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2268,7 +1468,73 @@ build: debian-11-ocaml-4.14/amd64 opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-11\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+        fi; \
+        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
+        done; \
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+        exit 1
+
+build: centos-10-ocaml-4.14/amd64 opam-dev
+    FROM BASE_IMAGE_TAG
+    USER 1000:1000
+    WORKDIR /home/opam
+    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+    RUN opam init --reinit -ni
+    RUN opam option solver=builtin-0install && opam config report
+    ENV OPAMDOWNLOADJOBS="1"
+    ENV OPAMERRLOGLEN="0"
+    ENV OPAMPRECISETRACKING="1"
+    ENV CI="true"
+    ENV OPAM_REPO_CI="true"
+    RUN rm -rf opam-repository/
+    COPY --chown=1000:1000 . opam-repository/
+    RUN opam repository set-url --strict default opam-repository/
+    RUN opam update --depexts || true
+    RUN opam pin add -k version -yn a.0.0.1 0.0.1
+    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
+        res=$?; \
+        test "$res" != 31 && exit "$res"; \
+        export OPAMCLI=2.0; \
+        build_dir=$(opam var prefix)/.opam-switch/build; \
+        failed=$(ls "$build_dir"); \
+        partial_fails=""; \
+        for pkg in $failed; do \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"centos-10\""; then \
+        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+        fi; \
+        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
+        done; \
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+        exit 1
+
+build: centos-9-ocaml-4.14/amd64 opam-dev
+    FROM BASE_IMAGE_TAG
+    USER 1000:1000
+    WORKDIR /home/opam
+    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+    RUN opam init --reinit -ni
+    RUN opam option solver=builtin-0install && opam config report
+    ENV OPAMDOWNLOADJOBS="1"
+    ENV OPAMERRLOGLEN="0"
+    ENV OPAMPRECISETRACKING="1"
+    ENV CI="true"
+    ENV OPAM_REPO_CI="true"
+    RUN rm -rf opam-repository/
+    COPY --chown=1000:1000 . opam-repository/
+    RUN opam repository set-url --strict default opam-repository/
+    RUN opam update --depexts || true
+    RUN opam pin add -k version -yn a.0.0.1 0.0.1
+    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
+        res=$?; \
+        test "$res" != 31 && exit "$res"; \
+        export OPAMCLI=2.0; \
+        build_dir=$(opam var prefix)/.opam-switch/build; \
+        failed=$(ls "$build_dir"); \
+        partial_fails=""; \
+        for pkg in $failed; do \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"centos-9\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -2282,10 +1548,9 @@ build: archlinux-ocaml-4.14/amd64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2310,16 +1575,15 @@ build: archlinux-ocaml-4.14/amd64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: alpine-3.20-ocaml-4.14/amd64 opam-dev
+build: alpine-3.24-ocaml-4.14/amd64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2336,7 +1600,7 @@ build: alpine-3.20-ocaml-4.14/amd64 opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"alpine-3.20\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"alpine-3.24\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -2344,81 +1608,14 @@ build: alpine-3.20-ocaml-4.14/amd64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: macos-homebrew-ocaml-5.2/amd64 opam-dev
+build: macos-homebrew-ocaml-5.5/arm64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     RUN ln -f ~/local/bin/opam-dev ~/local/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
-    ENV OPAMPRECISETRACKING="1"
-    ENV CI="true"
-    ENV OPAM_REPO_CI="true"
-    RUN rm -rf opam-repository/
-    COPY --chown=1000:1000 . opam-repository/
-    RUN opam repository set-url -k local --strict default opam-repository/
-    RUN opam update --depexts || true
-    RUN opam pin add -k version -yn a.0.0.1 0.0.1
-    RUN --mount=type=cache,id=opam-archives,target=/Users/mac1000/.opam/download-cache,uid=1000 --mount=type=cache,id=homebrew,target=/Users/mac1000/Library/Caches/Homebrew,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"macos-homebrew\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-
-build: macos-homebrew-ocaml-5.2/arm64 opam-dev
-    FROM BASE_IMAGE_TAG
-    USER 1000:1000
-    RUN ln -f ~/local/bin/opam-dev ~/local/bin/opam
-    RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
-    ENV OPAMDOWNLOADJOBS="1"
-    ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
-    ENV OPAMPRECISETRACKING="1"
-    ENV CI="true"
-    ENV OPAM_REPO_CI="true"
-    RUN rm -rf opam-repository/
-    COPY --chown=1000:1000 . opam-repository/
-    RUN opam repository set-url -k local --strict default opam-repository/
-    RUN opam update --depexts || true
-    RUN opam pin add -k version -yn a.0.0.1 0.0.1
-    RUN --mount=type=cache,id=opam-archives,target=/Users/mac1000/.opam/download-cache,uid=1000 --mount=type=cache,id=homebrew,target=/Users/mac1000/Library/Caches/Homebrew,uid=1000 opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"macos-homebrew\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-
-build: macos-homebrew-ocaml-4.14/amd64 opam-dev
-    FROM BASE_IMAGE_TAG
-    USER 1000:1000
-    RUN ln -f ~/local/bin/opam-dev ~/local/bin/opam
-    RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
-    ENV OPAMDOWNLOADJOBS="1"
-    ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2448,10 +1645,9 @@ build: macos-homebrew-ocaml-4.14/arm64 opam-dev
     USER 1000:1000
     RUN ln -f ~/local/bin/opam-dev ~/local/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2476,16 +1672,15 @@ build: macos-homebrew-ocaml-4.14/arm64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: freebsd-ocaml-5.2/amd64 opam-dev
+build: freebsd-15.1-ocaml-5.5/amd64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/local/bin/opam-dev /usr/local/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2502,7 +1697,7 @@ build: freebsd-ocaml-5.2/amd64 opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"freebsd\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"freebsd-15.1\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -2510,16 +1705,15 @@ build: freebsd-ocaml-5.2/amd64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: freebsd-ocaml-4.14/amd64 opam-dev
+build: freebsd-15.1-ocaml-4.14/amd64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/local/bin/opam-dev /usr/local/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2536,7 +1730,7 @@ build: freebsd-ocaml-4.14/amd64 opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"freebsd\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"freebsd-15.1\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -2544,50 +1738,15 @@ build: freebsd-ocaml-4.14/amd64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-12-ocaml-5.2/amd64 opam-2.0
-    FROM BASE_IMAGE_TAG
-    USER 1000:1000
-    WORKDIR /home/opam
-    RUN sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam
-    RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
-    ENV OPAMDOWNLOADJOBS="1"
-    ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
-    ENV OPAMPRECISETRACKING="1"
-    ENV CI="true"
-    ENV OPAM_REPO_CI="true"
-    RUN rm -rf opam-repository/
-    COPY --chown=1000:1000 . opam-repository/
-    RUN opam repository set-url --strict default opam-repository/
-    RUN opam depext -u || true
-    RUN opam pin add -k version -yn a.0.0.1 0.0.1
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam depext a.0.0.1 && opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-
-build: debian-12-ocaml-5.2/amd64 opam-2.1
+build: debian-13-ocaml-5.5/amd64 opam-2.1
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2604,7 +1763,7 @@ build: debian-12-ocaml-5.2/amd64 opam-2.1
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -2612,16 +1771,15 @@ build: debian-12-ocaml-5.2/amd64 opam-2.1
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-12-ocaml-5.2/amd64 opam-2.2
+build: debian-13-ocaml-5.5/amd64 opam-2.2
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-2.2 /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2638,7 +1796,7 @@ build: debian-12-ocaml-5.2/amd64 opam-2.2
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -2646,16 +1804,15 @@ build: debian-12-ocaml-5.2/amd64 opam-2.2
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-12-ocaml-5.2-afl/amd64 opam-dev
+build: debian-13-ocaml-5.5/amd64 opam-2.3
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
-    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+    RUN sudo ln -f /usr/bin/opam-2.3 /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2672,7 +1829,7 @@ build: debian-12-ocaml-5.2-afl/amd64 opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -2680,16 +1837,15 @@ build: debian-12-ocaml-5.2-afl/amd64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-12-ocaml-5.2-flambda/amd64 opam-dev
+build: debian-13-ocaml-5.5/amd64 opam-2.4
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
-    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+    RUN sudo ln -f /usr/bin/opam-2.4 /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2706,7 +1862,7 @@ build: debian-12-ocaml-5.2-flambda/amd64 opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -2714,16 +1870,15 @@ build: debian-12-ocaml-5.2-flambda/amd64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-12-ocaml-5.2-no-flat-float-array/amd64 opam-dev
+build: debian-13-ocaml-5.5/amd64 opam-2.5
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
-    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+    RUN sudo ln -f /usr/bin/opam-2.5 /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2740,7 +1895,7 @@ build: debian-12-ocaml-5.2-no-flat-float-array/amd64 opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -2748,17 +1903,15 @@ build: debian-12-ocaml-5.2-no-flat-float-array/amd64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-12-ocaml-5.2/i386 opam-dev
+build: debian-13-ocaml-5.5/amd64 opam-2.6
     FROM BASE_IMAGE_TAG
-    SHELL [ "/usr/bin/linux32", "/bin/sh", "-c" ]
     USER 1000:1000
     WORKDIR /home/opam
-    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+    RUN sudo ln -f /usr/bin/opam-2.6 /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2775,7 +1928,7 @@ build: debian-12-ocaml-5.2/i386 opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -2783,16 +1936,15 @@ build: debian-12-ocaml-5.2/i386 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-12-ocaml-5.2/arm64 opam-dev
+build: debian-13-ocaml-5.5-afl/amd64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2809,7 +1961,7 @@ build: debian-12-ocaml-5.2/arm64 opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -2817,16 +1969,15 @@ build: debian-12-ocaml-5.2/arm64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-12-ocaml-5.2/ppc64le opam-dev
+build: debian-13-ocaml-5.5-flambda/amd64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2843,7 +1994,7 @@ build: debian-12-ocaml-5.2/ppc64le opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -2851,17 +2002,15 @@ build: debian-12-ocaml-5.2/ppc64le opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-12-ocaml-5.2/arm32v7 opam-dev
+build: debian-13-ocaml-5.5-no-flat-float-array/amd64 opam-dev
     FROM BASE_IMAGE_TAG
-    SHELL [ "/usr/bin/linux32", "/bin/sh", "-c" ]
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2878,7 +2027,7 @@ build: debian-12-ocaml-5.2/arm32v7 opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -2886,16 +2035,15 @@ build: debian-12-ocaml-5.2/arm32v7 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-12-ocaml-5.2/s390x opam-dev
+build: debian-13-ocaml-5.5/arm64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2912,7 +2060,7 @@ build: debian-12-ocaml-5.2/s390x opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -2920,16 +2068,81 @@ build: debian-12-ocaml-5.2/s390x opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: ubuntu-24.04-ocaml-5.2/riscv64 opam-dev
+build: debian-13-ocaml-5.5/ppc64le opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
+    ENV OPAMPRECISETRACKING="1"
+    ENV CI="true"
+    ENV OPAM_REPO_CI="true"
+    RUN rm -rf opam-repository/
+    COPY --chown=1000:1000 . opam-repository/
+    RUN opam repository set-url --strict default opam-repository/
+    RUN opam update --depexts || true
+    RUN opam pin add -k version -yn a.0.0.1 0.0.1
+    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
+        res=$?; \
+        test "$res" != 31 && exit "$res"; \
+        export OPAMCLI=2.0; \
+        build_dir=$(opam var prefix)/.opam-switch/build; \
+        failed=$(ls "$build_dir"); \
+        partial_fails=""; \
+        for pkg in $failed; do \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
+        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+        fi; \
+        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
+        done; \
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+        exit 1
+
+build: debian-13-ocaml-5.5/s390x opam-dev
+    FROM BASE_IMAGE_TAG
+    USER 1000:1000
+    WORKDIR /home/opam
+    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+    RUN opam init --reinit -ni
+    RUN opam option solver=builtin-0install && opam config report
+    ENV OPAMDOWNLOADJOBS="1"
+    ENV OPAMERRLOGLEN="0"
+    ENV OPAMPRECISETRACKING="1"
+    ENV CI="true"
+    ENV OPAM_REPO_CI="true"
+    RUN rm -rf opam-repository/
+    COPY --chown=1000:1000 . opam-repository/
+    RUN opam repository set-url --strict default opam-repository/
+    RUN opam update --depexts || true
+    RUN opam pin add -k version -yn a.0.0.1 0.0.1
+    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
+        res=$?; \
+        test "$res" != 31 && exit "$res"; \
+        export OPAMCLI=2.0; \
+        build_dir=$(opam var prefix)/.opam-switch/build; \
+        failed=$(ls "$build_dir"); \
+        partial_fails=""; \
+        for pkg in $failed; do \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
+        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+        fi; \
+        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
+        done; \
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+        exit 1
+
+build: ubuntu-24.04-ocaml-5.5/riscv64 opam-dev
+    FROM BASE_IMAGE_TAG
+    USER 1000:1000
+    WORKDIR /home/opam
+    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+    RUN opam init --reinit -ni
+    RUN opam option solver=builtin-0install && opam config report
+    ENV OPAMDOWNLOADJOBS="1"
+    ENV OPAMERRLOGLEN="0"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -2954,50 +2167,15 @@ build: ubuntu-24.04-ocaml-5.2/riscv64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-12-ocaml-4.14/amd64 opam-2.0
-    FROM BASE_IMAGE_TAG
-    USER 1000:1000
-    WORKDIR /home/opam
-    RUN sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam
-    RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
-    ENV OPAMDOWNLOADJOBS="1"
-    ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
-    ENV OPAMPRECISETRACKING="1"
-    ENV CI="true"
-    ENV OPAM_REPO_CI="true"
-    RUN rm -rf opam-repository/
-    COPY --chown=1000:1000 . opam-repository/
-    RUN opam repository set-url --strict default opam-repository/
-    RUN opam depext -u || true
-    RUN opam pin add -k version -yn a.0.0.1 0.0.1
-    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam depext a.0.0.1 && opam reinstall a.0.0.1; \
-        res=$?; \
-        test "$res" != 31 && exit "$res"; \
-        export OPAMCLI=2.0; \
-        build_dir=$(opam var prefix)/.opam-switch/build; \
-        failed=$(ls "$build_dir"); \
-        partial_fails=""; \
-        for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
-        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
-        fi; \
-        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
-        done; \
-        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
-        exit 1
-
-build: debian-12-ocaml-4.14/amd64 opam-2.1
+build: debian-13-ocaml-4.14/amd64 opam-2.1
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -3014,7 +2192,7 @@ build: debian-12-ocaml-4.14/amd64 opam-2.1
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -3022,16 +2200,15 @@ build: debian-12-ocaml-4.14/amd64 opam-2.1
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-12-ocaml-4.14/amd64 opam-2.2
+build: debian-13-ocaml-4.14/amd64 opam-2.2
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-2.2 /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -3048,7 +2225,7 @@ build: debian-12-ocaml-4.14/amd64 opam-2.2
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -3056,16 +2233,15 @@ build: debian-12-ocaml-4.14/amd64 opam-2.2
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-12-ocaml-4.14-afl/amd64 opam-dev
+build: debian-13-ocaml-4.14/amd64 opam-2.3
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
-    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+    RUN sudo ln -f /usr/bin/opam-2.3 /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -3082,7 +2258,7 @@ build: debian-12-ocaml-4.14-afl/amd64 opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -3090,16 +2266,15 @@ build: debian-12-ocaml-4.14-afl/amd64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-12-ocaml-4.14-flambda/amd64 opam-dev
+build: debian-13-ocaml-4.14/amd64 opam-2.4
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
-    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+    RUN sudo ln -f /usr/bin/opam-2.4 /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -3116,7 +2291,7 @@ build: debian-12-ocaml-4.14-flambda/amd64 opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -3124,16 +2299,15 @@ build: debian-12-ocaml-4.14-flambda/amd64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-12-ocaml-4.14-fp/amd64 opam-dev
+build: debian-13-ocaml-4.14/amd64 opam-2.5
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
-    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+    RUN sudo ln -f /usr/bin/opam-2.5 /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -3150,7 +2324,7 @@ build: debian-12-ocaml-4.14-fp/amd64 opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -3158,16 +2332,15 @@ build: debian-12-ocaml-4.14-fp/amd64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-12-ocaml-4.14-flambda-fp/amd64 opam-dev
+build: debian-13-ocaml-4.14/amd64 opam-2.6
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
-    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+    RUN sudo ln -f /usr/bin/opam-2.6 /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -3184,7 +2357,7 @@ build: debian-12-ocaml-4.14-flambda-fp/amd64 opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -3192,16 +2365,15 @@ build: debian-12-ocaml-4.14-flambda-fp/amd64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-12-ocaml-4.14-no-flat-float-array/amd64 opam-dev
+build: debian-13-ocaml-4.14-afl/amd64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -3218,7 +2390,7 @@ build: debian-12-ocaml-4.14-no-flat-float-array/amd64 opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -3226,16 +2398,15 @@ build: debian-12-ocaml-4.14-no-flat-float-array/amd64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-12-ocaml-4.14-nnp/amd64 opam-dev
+build: debian-13-ocaml-4.14-flambda/amd64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -3252,7 +2423,7 @@ build: debian-12-ocaml-4.14-nnp/amd64 opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -3260,16 +2431,15 @@ build: debian-12-ocaml-4.14-nnp/amd64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-12-ocaml-4.14-nnpchecker/amd64 opam-dev
+build: debian-13-ocaml-4.14-fp/amd64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -3286,7 +2456,7 @@ build: debian-12-ocaml-4.14-nnpchecker/amd64 opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -3294,17 +2464,15 @@ build: debian-12-ocaml-4.14-nnpchecker/amd64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-12-ocaml-4.14/i386 opam-dev
+build: debian-13-ocaml-4.14-flambda-fp/amd64 opam-dev
     FROM BASE_IMAGE_TAG
-    SHELL [ "/usr/bin/linux32", "/bin/sh", "-c" ]
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -3321,7 +2489,7 @@ build: debian-12-ocaml-4.14/i386 opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -3329,16 +2497,15 @@ build: debian-12-ocaml-4.14/i386 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-12-ocaml-4.14/arm64 opam-dev
+build: debian-13-ocaml-4.14-no-flat-float-array/amd64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -3355,7 +2522,7 @@ build: debian-12-ocaml-4.14/arm64 opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -3363,16 +2530,15 @@ build: debian-12-ocaml-4.14/arm64 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-12-ocaml-4.14/ppc64le opam-dev
+build: debian-13-ocaml-4.14-nnp/amd64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -3389,7 +2555,7 @@ build: debian-12-ocaml-4.14/ppc64le opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -3397,17 +2563,15 @@ build: debian-12-ocaml-4.14/ppc64le opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-12-ocaml-4.14/arm32v7 opam-dev
+build: debian-13-ocaml-4.14-nnpchecker/amd64 opam-dev
     FROM BASE_IMAGE_TAG
-    SHELL [ "/usr/bin/linux32", "/bin/sh", "-c" ]
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -3424,7 +2588,7 @@ build: debian-12-ocaml-4.14/arm32v7 opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -3432,16 +2596,15 @@ build: debian-12-ocaml-4.14/arm32v7 opam-dev
         test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
         exit 1
 
-build: debian-12-ocaml-4.14/s390x opam-dev
+build: debian-13-ocaml-4.14/arm64 opam-dev
     FROM BASE_IMAGE_TAG
     USER 1000:1000
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"
@@ -3458,7 +2621,73 @@ build: debian-12-ocaml-4.14/s390x opam-dev
         failed=$(ls "$build_dir"); \
         partial_fails=""; \
         for pkg in $failed; do \
-        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
+        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+        fi; \
+        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
+        done; \
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+        exit 1
+
+build: debian-13-ocaml-4.14/ppc64le opam-dev
+    FROM BASE_IMAGE_TAG
+    USER 1000:1000
+    WORKDIR /home/opam
+    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+    RUN opam init --reinit -ni
+    RUN opam option solver=builtin-0install && opam config report
+    ENV OPAMDOWNLOADJOBS="1"
+    ENV OPAMERRLOGLEN="0"
+    ENV OPAMPRECISETRACKING="1"
+    ENV CI="true"
+    ENV OPAM_REPO_CI="true"
+    RUN rm -rf opam-repository/
+    COPY --chown=1000:1000 . opam-repository/
+    RUN opam repository set-url --strict default opam-repository/
+    RUN opam update --depexts || true
+    RUN opam pin add -k version -yn a.0.0.1 0.0.1
+    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
+        res=$?; \
+        test "$res" != 31 && exit "$res"; \
+        export OPAMCLI=2.0; \
+        build_dir=$(opam var prefix)/.opam-switch/build; \
+        failed=$(ls "$build_dir"); \
+        partial_fails=""; \
+        for pkg in $failed; do \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
+        echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+        fi; \
+        test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
+        done; \
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+        exit 1
+
+build: debian-13-ocaml-4.14/s390x opam-dev
+    FROM BASE_IMAGE_TAG
+    USER 1000:1000
+    WORKDIR /home/opam
+    RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+    RUN opam init --reinit -ni
+    RUN opam option solver=builtin-0install && opam config report
+    ENV OPAMDOWNLOADJOBS="1"
+    ENV OPAMERRLOGLEN="0"
+    ENV OPAMPRECISETRACKING="1"
+    ENV CI="true"
+    ENV OPAM_REPO_CI="true"
+    RUN rm -rf opam-repository/
+    COPY --chown=1000:1000 . opam-repository/
+    RUN opam repository set-url --strict default opam-repository/
+    RUN opam update --depexts || true
+    RUN opam pin add -k version -yn a.0.0.1 0.0.1
+    RUN --mount=type=cache,id=opam-archives,target=/home/opam/.opam/download-cache,uid=1000 opam reinstall a.0.0.1; \
+        res=$?; \
+        test "$res" != 31 && exit "$res"; \
+        export OPAMCLI=2.0; \
+        build_dir=$(opam var prefix)/.opam-switch/build; \
+        failed=$(ls "$build_dir"); \
+        partial_fails=""; \
+        for pkg in $failed; do \
+        if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-13\""; then \
         echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
         fi; \
         test "$pkg" != 'a.0.0.1' && partial_fails="$partial_fails $pkg"; \
@@ -3472,10 +2701,9 @@ build: ubuntu-24.04-ocaml-4.14/riscv64 opam-dev
     WORKDIR /home/opam
     RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
     RUN opam init --reinit -ni
-    RUN uname -rs && opam exec -- ocaml -version && opam --version
+    RUN opam option solver=builtin-0install && opam config report
     ENV OPAMDOWNLOADJOBS="1"
     ENV OPAMERRLOGLEN="0"
-    ENV OPAMSOLVERTIMEOUT="500"
     ENV OPAMPRECISETRACKING="1"
     ENV CI="true"
     ENV OPAM_REPO_CI="true"

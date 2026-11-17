@@ -96,7 +96,7 @@ module Analysis = struct
 
   (* we check extensions in case it changes the outcome of the CI (e.g. x-ci-accept-failures) *)
   let ci_extensions_equal old_file new_file =
-    let filter_ci_exts = OpamStd.String.Map.filter (fun name _ -> OpamStd.String.starts_with ~prefix:"x-ci-" name) in
+    let filter_ci_exts = OpamStd.String.Map.filter (fun name _ -> OpamCompat.String.starts_with ~prefix:"x-ci-" name) in
     let old_exts = filter_ci_exts (OpamFile.OPAM.extensions old_file) in
     let new_exts = filter_ci_exts (OpamFile.OPAM.extensions new_file) in
     OpamStd.String.Map.equal OpamPrinter.FullPos.value_equals old_exts new_exts
@@ -143,8 +143,8 @@ module Analysis = struct
     let filename = OpamFile.make (OpamFilename.raw path) in
     match OpamFile.OPAM.read_from_string ~filename content with
     | opam_file -> Ok opam_file
-    | exception OpamPp.Bad_format (_, msg)
-    | exception OpamPp.Bad_version (_, msg) ->
+    | exception OpamPp.Bad_format ((_, msg) : OpamPp.bad_format)
+    | exception OpamPp.Bad_version (((_, msg): OpamPp.bad_format), _) ->
       Error (`Msg (Printf.sprintf "%S failed to be parsed: %s" path msg))
 
   let files_are_changed_significantly ~old_file ~new_file =
@@ -195,8 +195,6 @@ module Analysis = struct
         | Error _ as err -> Lwt.return err
         | Ok pkgs ->
           match String.split_on_char '/' path with
-          | [_] | ".github"::_ ->
-            Lwt_result.return pkgs
           | "packages" :: name :: package :: "files" :: _ ->
             Lwt_result.return (add_pkg ~path ~name ~package SignificantlyChanged pkgs)
           | ["packages"; name; package; "opam"] ->
@@ -211,8 +209,11 @@ module Analysis = struct
                 get_opam ~cwd:dir path
                 >>= add_changed_pkg ~path ~name ~package ~old_content pkgs
             end
+          | "packages" :: _ ->
+            Fmt.failwith "Unexpected path %S in packages directory (expecting 'packages/name/name.l.m.n/{opam,files/*}')" path
           | _ ->
-            Fmt.failwith "Unexpected path %S in output (expecting 'packages/name/pkg/...')" path
+            (* Changes to any other path should be reviewed manually, since it's a change into repository meta data *)
+            Lwt_result.return pkgs
       ) (Ok OpamPackage.Map.empty)
 
   let has_tests opam =
@@ -244,9 +245,12 @@ module Analysis = struct
     Fpath.v "packages" // name // (name^"."^version) // "opam"
 
   let add_package_data ~dir (pkg, kind) packages =
-    match packages with
-    | Error _ as err -> Lwt.return err
-    | Ok packages ->
+    match (packages, kind) with
+    | Error _ as err, _ ->
+      Lwt.return err
+    | Ok packages, Deleted ->
+      Lwt.return_ok ((pkg, {kind; has_tests = false}) :: packages)
+    | Ok packages, _ ->
       let open Lwt_result.Syntax in
       let path = Fpath.to_string (package_to_path pkg) in
       let* content = get_opam ~cwd:dir path |> Lwt_result.map_error (fun _ -> `Msg "impossible") in

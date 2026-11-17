@@ -2,6 +2,9 @@ open Current.Syntax
 
 module Docker = Current_docker.Default
 module Distro = Dockerfile_opam.Distro
+module Opam_version = Opam_ci_check.Opam_version
+module Variant = Opam_ci_check.Variant
+module Spec = Opam_ci_check.Spec
 
 let master_distro = (Distro.resolve_alias Distro.master_distro :> Distro.t)
 let default_compilers_full = Ocaml_version.Releases.[ v4_14; Ocaml_version.Releases.latest ] (* NOTE: Should probably stay with list length 2 *)
@@ -52,7 +55,7 @@ let compilers ?(minimal=false) ~arch ~build () =
     if minimal then
       [ List.hd @@ List.rev Ocaml_version.Releases.recent ]
     else
-      Ocaml_version.Releases.recent @ Ocaml_version.Releases.unreleased_betas
+      Opam_ci_check.Compiler_version.all_supported
   in
   List.map (fun v ->
     let v = Ocaml_version.with_just_major_and_minor v in
@@ -102,7 +105,7 @@ let macos ~build =
     let comp = Ocaml_version.to_string comp in
     List.fold_left (fun acc arch ->
       build ~distro:Variant.macos_homebrew ~arch ~compiler:(comp, None) :: acc
-    ) acc [`Aarch64; `X86_64]
+    ) acc [`Aarch64]
   ) [] default_compilers
 
 let freebsd ~build =
@@ -142,11 +145,12 @@ let extras ~build =
     in
     let arches =
       List.filter_map (function
-        | `X86_64 -> None
+        | `X86_64 | `Aarch32 | `I386 -> None
         | `Riscv64 ->
             let label = Ocaml_version.to_opam_arch `Riscv64 in
-            let riscv_distro = (Distro.resolve_alias (`Ubuntu `LTS) :> Distro.t) in
-            let riscv_distro = Distro.tag_of_distro riscv_distro in
+            (* Pinned to 24.04: should track `Ubuntu `LTS, but we lack the
+               hardware to build ocaml/opam riscv64 images for newer LTSes. *)
+            let riscv_distro = Distro.tag_of_distro (`Ubuntu `V24_04) in
             Some (build ~opam_version ~arch:`Riscv64 ~distro:riscv_distro ~compiler:(comp, None) label)
         | arch ->
             let label = Ocaml_version.to_opam_arch arch in
@@ -156,7 +160,7 @@ let extras ~build =
     List.map (fun opam_version ->
       let opam_string = "opam-" ^ Opam_version.to_string opam_version in
       build ~opam_version ~arch:`X86_64 ~distro:master_distro ~compiler:(comp, None) opam_string)
-      [ `V2_0; `V2_1; `V2_2 ] @
+      Opam_version.releases @
     switches @ arches @ acc
   ) [] default_compilers_full
 
@@ -192,7 +196,7 @@ let get_base ~arch variant =
         Docker.peek ~schedule:weekly ~arch:(Ocaml_version.to_docker_arch arch)
           ("ocaml/opam:" ^ Variant.docker_tag variant)
       in
-      Spec.Docker (Current_docker.Raw.Image.of_hash repo_id)
+      Spec.Docker repo_id
 
 let build (module Builder : Build_intf.S) ~analysis ~pkgopts ~master ~source ~opam_version ~lower_bounds ~revdeps label variant =
   let arch = Variant.arch variant in

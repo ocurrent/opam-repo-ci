@@ -93,6 +93,28 @@ Test adding new packages
     ]
   }
 
+Reset commits on [master] and [new-branch-2] and clear build cache
+
+  $ git reset -q --hard initial-state
+  $ git checkout -q master
+  $ git reset -q --hard initial-state
+  $ git checkout -q new-branch-2
+  $ rm -rf var
+
+Test deleting existing packages works
+
+  $ git rm packages/a-1/a-1.0.0.1/opam > /dev/null
+  $ git commit -qm "a-1.0.0.1 removed"
+  $ git log --graph --pretty=format:'%s%d'
+  * a-1.0.0.1 removed (HEAD -> new-branch-2)
+  * a-1 (tag: initial-state, new-branch-1, master)
+  $ opam-repo-ci-local --repo="." --branch=new-branch-2 --analyse-only --no-web-server
+  {
+    "packages": [
+      [ "a-1.0.0.1", { "kind": [ "Deleted" ], "has_tests": false } ]
+    ]
+  }
+
 Clean up the build cache
 
   $ rm -rf ./var
@@ -111,6 +133,15 @@ See https://github.com/ocurrent/opam-repo-ci/issues/291
   $ opam-repo-ci-local --repo="." --branch=analyze-invalid-opam-file --analyse-only --no-web-server
   Error ""packages/a-1/a-1.0.0.1/opam" failed to be parsed: '.' is not a valid token"
 
-Clean up the build cache
+  $ rm -rf var
 
-  $ rm -rf ./var
+Test that a new root directory can be created.
+See https://github.com/ocurrent/opam-repo-ci/pull/397
+
+  $ git checkout -q -b add-a-new-dir initial-state
+  $ mkdir a-new-directory
+  $ touch a-new-directory/foo
+  $ git add  a-new-directory/foo
+  $ git commit -q -m "Add a new directory"
+  $ opam-repo-ci-local --repo="." --branch=add-a-new-dir --analyse-only --no-web-server
+  { "packages": [] }

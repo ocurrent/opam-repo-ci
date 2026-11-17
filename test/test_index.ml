@@ -29,6 +29,29 @@ let test_simple () =
   Index.record ~repo ~hash @@ Index.Job_map.of_list [ "analysis", Some "job1" ];
   Alcotest.(check jobs) "Jobs" ["analysis", `Passed] @@ Index.get_jobs ~owner ~name hash
 
+let test_status_updates () =
+  let owner = "owner" in
+  let name = "updates" in
+  let repo = { Current_github.Repo_id.owner; name } in
+  let hash = "def" in
+  let build_status =
+    let pp f = function
+      | `Not_started -> Fmt.string f "not started"
+      | `Pending -> Fmt.string f "pending"
+      | `Failed -> Fmt.string f "failed"
+      | `Passed -> Fmt.string f "passed"
+    in
+    Alcotest.testable pp (=)
+  in
+  Index.set_active_refs ~repo ["pr", hash];
+  Index.set_status ~owner ~name ~hash (`Pending, Summary.empty);
+  Index.set_status ~owner ~name ~hash (`Failed, Summary.empty);
+  Index.set_status ~owner ~name ~hash (`Passed, Summary.empty);
+  Alcotest.(check int) "One entry per ref" 1 @@ List.length (Index.get_jobs_per_ref repo);
+  Index.set_active_refs ~repo [];
+  Alcotest.(check build_status) "Removed" `Not_started @@ Index.get_build_status ~owner ~name ~hash
+
 let tests = [
     Alcotest_lwt.test_case_sync "simple" `Quick test_simple;
+    Alcotest_lwt.test_case_sync "status-updates" `Quick test_status_updates;
   ]
