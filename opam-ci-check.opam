@@ -4,12 +4,15 @@ synopsis:
 description:
   "opam-ci-check is used in the opam repo CI and can be used locally and in other CI pipelines to test the deliverability of packages."
 maintainer: [
-  "Puneeth Chaganti <punchagan@muse-amuse.in>"
+  "Mark Elvers <mark.elvers@tunbury.org>"
   "Shon Feder <shon.feder@gmail.com>"
+  "Puneeth Chaganti <punchagan@muse-amuse.in>"
 ]
 authors: [
-  "Puneeth Chaganti <punchagan@muse-amuse.in>"
-  "Shon Feder <shon.feder@gmail.com>"
+  "Kate <kit-ty-kate@outlook.com>"
+  "Thomas Leonard <talex5@gmail.com>"
+  "Craig Ferguson <me@craigfe.io>"
+  "Anil Madhavapeddy <anil@recoil.org>"
 ]
 license: "Apache-2.0"
 tags: ["opam" "ci" "lint" "reverse dependency"]
